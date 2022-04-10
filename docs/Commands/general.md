@@ -10,12 +10,8 @@
 
 - `:mag: react`: When a mod reacts to a message with :mag: the messages is flagged and a log is sent to the logs channel
 
-#### Tesseract
+#### Admin
 
-- `streamschedule` (alias `ss`): **Mod-only**. Interactive command, creates and sends an embed with a weekly Twitch stream schedule 
-    - Simply respond to the bot's prompts (being sure to use the proper date time format)
-    - The bot will preview the embed and request confirmation before sending 
-    - Example usage: 
-    <p align="center">
-        <img src="docs/img/ss_example.gif" width="50%"/>
-    </p>
+#### Moderation
+
+#### Utility / Debugging

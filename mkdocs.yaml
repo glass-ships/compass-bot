@@ -1,19 +1,46 @@
 site_name: 'Fragment Bot Documentation'
 
 repo_name: 'glass-ships/fragment-bot'
-repo_url: 'https://gitlab.com/glass-ships/fragment-bot'
-
-docs_dir: docs/
-
-nav: 
-    - Home: 'index.md'
-    - Commands: 'commands/general.md'
+repo_url: 'https://gitlab.com/glass-ships/4D-bot'
 
 theme:
     name: 'material'
+    docs_dir: docs/
+    logo: 'images/glassGlitch.png'
+    favicon:
+        'images/favicon.ico'
     features:
         - navigation.expand
         - navigation.instant
         - navigation.tracking
         - navigation.tabs
         - navigation.tabs.sticky
+    palette:
+        scheme: preference
+        primary: 'Blue Grey'
+        accent: 'Deep Purple'
+    font:
+        text: 'Roboto'
+        code: 'Fira Mono'
+
+extra:
+  social:
+    - icon: 'fontawesome/solid/house'
+      link: 'https://carl.gg'
+    - icon: 'fontawesome/brands/github-alt'
+      link: 'https://github.com/CarlGroth'
+    - icon: 'fontawesome/brands/twitter'
+      link: 'https://twitter.com/Carlgrrr'
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.keys
+  - attr_list
+  - pymdownx.betterem:
+      smart_enable: all
+
+
+copyright: 'Copyright &copy; 2020 - 2022 Glass (contact@glass-ships.com)'
