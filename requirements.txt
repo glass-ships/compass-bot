@@ -1,11 +1,14 @@
 #discord.py
-mkdocs
-mkdocs-material
+git+https://github.com/Rapptz/discord.py.git
 
-# for commands
+# For commands
 python-dateutil 
 pytz
 
 # database stuff
 pymongo
 pymongo[srv]
+
+# For documentation
+mkdocs
+mkdocs-material
