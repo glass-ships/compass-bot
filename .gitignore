@@ -1,4 +1,5 @@
 discordpy/
+site/
 config.json
 .env
 test.py
