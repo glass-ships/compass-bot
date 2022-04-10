@@ -23,7 +23,7 @@ async def get_db():
 ### Setup prefix (guild-specific or default)
 #
 DEFAULT_PREFIX = ';' 
-async def set_prefix(bot, ctx):
+async def get_prefix(bot, ctx):
     if not ctx.guild:
         return commands.when_mentioned_or(DEFAULT_PREFIX)(bot,ctx)
     prefix = bot.db.get_prefix(ctx.guild.id)
@@ -40,7 +40,7 @@ description="A general use and moderation bot in Python."
 bot = commands.Bot(
     application_id = 932737557836468297, # main bot
     #application_id = 535346715297841172, # test bot
-    command_prefix = set_prefix,
+    command_prefix = get_prefix,
     description = description,
     intents = intents
 )

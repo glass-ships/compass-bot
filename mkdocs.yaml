@@ -1,12 +1,12 @@
 site_name: 'Compass Bot Documentation'
 
 repo_name: 'glass-ships/compass-bot'
-repo_url: 'https://gitlab.com/glass-ships/4D-bot'
+repo_url: 'https://gitlab.com/glass-ships/compass-bot'
 
 theme:
     name: 'material'
     docs_dir: docs/
-    logo: 'images/glassGlitch.png'
+    logo: 'images/compassBkgd.png'
     favicon:
         'images/favicon.ico'
     features:
@@ -16,21 +16,21 @@ theme:
         - navigation.tabs
         - navigation.tabs.sticky
     palette:
-        scheme: preference
-        primary: 'Blue Grey'
-        accent: 'Deep Purple'
+        scheme: 'slate'
+        primary: 'brown'
+        accent: 'cyan'
     font:
         text: 'Roboto'
         code: 'Fira Mono'
 
 extra:
   social:
-    - icon: 'fontawesome/solid/house'
-      link: 'https://carl.gg'
+    #- icon: 'fontawesome/solid/house'
+    #  link: 'https://carl.gg'
     - icon: 'fontawesome/brands/github-alt'
-      link: 'https://github.com/CarlGroth'
-    - icon: 'fontawesome/brands/twitter'
-      link: 'https://twitter.com/Carlgrrr'
+      link: 'https://github.com/glass-ships'
+    #- icon: 'fontawesome/brands/twitter'
+    #  link: 'https://twitter.com/Carlgrrr'
 
 markdown_extensions:
   - admonition

@@ -23,9 +23,9 @@ class Admin(commands.Cog):
     async def on_ready(self):
         print(f"Cog Online: {self.qualified_name}")
 
-    @commands.command(name="change_prefix", aliases=["cp"])
+    @commands.command(name="set_prefix", aliases=["sp"])
     @commands.has_permissions(administrator=True)
-    async def change_prefix(self, ctx, new_prefix):
+    async def set_prefix(self, ctx, new_prefix):
         """
         Changes the bot's prefix for your server
         """
