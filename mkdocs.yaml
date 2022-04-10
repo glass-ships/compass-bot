@@ -1,6 +1,6 @@
-site_name: 'Fragment Bot Documentation'
+site_name: 'Compass Bot Documentation'
 
-repo_name: 'glass-ships/fragment-bot'
+repo_name: 'glass-ships/compass-bot'
 repo_url: 'https://gitlab.com/glass-ships/4D-bot'
 
 theme:

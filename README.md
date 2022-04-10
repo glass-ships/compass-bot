@@ -1,8 +1,8 @@
-# Fragment
+# Compass
 
 | [Documentation](docs/) | [Invite to your server](https://discord.com/api/oauth2/authorize?client_id=932737557836468297&scope=bot&permissions=1) |
 
-Fragment is a general Discord bot written in Python and hosted on Heroku. 
+Compass is a general Discord bot written in Python and hosted on Heroku. 
 
 If you have any questions, suggestions, or feedback, please feel free to create an issue, or message me on Discord directly (glass.ships#4517)!
 
