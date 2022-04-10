@@ -16,9 +16,10 @@ test:
 pages:
   stage: deploy
   script:
-  - mkdocs serve
+  - mkdocs build --strict --verbose
+  - mv site public
   artifacts:
     paths:
-    - site
+    - public
   only:
   - main
