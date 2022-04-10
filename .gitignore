@@ -1,0 +1,6 @@
+discordpy/
+config.json
+.env
+test.py
+
+**/__pycache__
