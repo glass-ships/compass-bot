@@ -66,15 +66,13 @@ class CustomHelpCommand(commands.HelpCommand):
 ### Define discord bot
 #
 token = os.getenv("DSC_API_TOKEN")
-intents = discord.Intents.all()
-description="A general use and moderation bot in Python."
 bot = commands.Bot(
     application_id = 932737557836468297, # main bot
     #application_id = 535346715297841172, # test bot
     help_command=CustomHelpCommand(),
     command_prefix = get_prefix,
-    description = description,
-    intents = intents
+    description = "A general use and moderation bot in Python.",
+    intents = discord.Intents.all()
 )
 
 async def startup_tasks():

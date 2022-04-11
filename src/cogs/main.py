@@ -26,22 +26,21 @@ class Main(commands.Cog):
     async def on_ready(self):
         print(f"Cog Online: {self.qualified_name}")
 
-    @app_commands.command(name="test2")
-    async def test2(self, interaction: discord.Interaction):
-        """Test slash command 2"""
-        response = 'Testing 2!'
-        await interaction.response.send_message(response, ephemeral=True)
+    @app_commands.command(name="ping")
+    async def ping(self, interaction: discord.Interaction):
+        """Responds with "pong" and the ping latency"""
+        await interaction.response.send_message(f"Pong! Latency: {round(self.bot.latency, 1)} ms", ephemeral=True)
         #await interaction.delete_original_message()
     
-    @commands.command(name="ping")
-    async def ping(self, ctx):
-        """
-        Responds with "pong"
-        Tests that the bot is connected and listening.
-        """
-        await ctx.send(f"Pong! Latency: {round(self.bot.latency, 1)} ms")#, delete_after=3.0)
-        await asyncio.sleep(2.0)
-        #await ctx.message.delete()
+    # @commands.command(name="ping")
+    # async def ping(self, ctx):
+    #     """
+    #     Responds with "pong"
+    #     Tests that the bot is connected and listening.
+    #     """
+    #     await ctx.send(f"Pong! Latency: {round(self.bot.latency, 1)} ms")#, delete_after=3.0)
+    #     await asyncio.sleep(2.0)
+    #     #await ctx.message.delete()
 
 
     @commands.command(name="avatar", aliases=['av'])

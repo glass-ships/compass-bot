@@ -1,6 +1,6 @@
 # Compass
 
-| [Documentation](docs/) | [Invite to your server](https://discord.com/api/oauth2/authorize?client_id=932737557836468297&scope=bot&permissions=1) |
+| [Documentation](https://glass-ships.gitlab.io/compass-bot) | [Invite Compass](https://discord.com/oauth2/authorize?client_id=932737557836468297&scope=bot&permissions=8&scope=applications.commands%20bot) |
 
 Compass is a general Discord bot written in Python and hosted on Heroku. 
 
