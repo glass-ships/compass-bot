@@ -98,7 +98,16 @@ class Admin(commands.Cog):
                 fmt2 += 1
             await ctx.send(f"Bot tree synced: {len(fmt1)} commands to {fmt2} of {len(guilds)} guilds.")
         elif spec == "all":
-            await ctx.send("WIP")
+            fmt1 = await self.bot.tree.sync()
+            fmt2 = 0
+            guilds = self.bot.db.get_all_guilds()
+            for guild in guilds:
+                print(f"Syncing to guild: {guild}")
+                g = self.bot.get_guild(int(guild))
+                print(f"Guild id: {g}")
+                await self.bot.tree.sync(guild=g)
+                fmt2 += 1
+            await ctx.send(f"Bot tree synced: {len(fmt1)} commands to {fmt2} of {len(guilds)} guilds.")
         else:
             await ctx.send("Unexpected argument.\nExample usage: `;sync guilds 123456789987654321 987654321123456789`\nType `;help` for more info.")
 
