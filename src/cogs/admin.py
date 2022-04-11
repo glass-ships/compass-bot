@@ -90,7 +90,7 @@ class Admin(commands.Cog):
             fmt = await self.bot.tree.sync()
             await self.bot.tree.sync(guild=ctx.guild.id)
             await ctx.send(f"Synced {len(fmt)} commands to guild.")
-        if spec == "guilds":
+        elif spec == "guilds":
             fmt1 = await self.bot.tree.sync()
             fmt2 = 0
             guilds = guilds.split(" ")
