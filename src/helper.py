@@ -18,6 +18,13 @@ async def role_check(ctx=None, roles=None):
     await ctx.message.delete()
     return False
 
+async def role_check_itx(itx: discord.Interaction=None, roles=None):
+    user_roles = [x.id for x in itx.user.roles]
+    if any(i in user_roles for i in roles):
+        return True
+    await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
+    return False
+
 # Assert datetime format
 def check_time_format(t):
     pattern = r"\d{4}-\d{1,2}-\d{1,2}\s\d{1,2}:\d{2}\s[a-zA-Z]{2}\s[a-zA-Z]{3}"

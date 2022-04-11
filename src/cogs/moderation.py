@@ -2,6 +2,7 @@
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 from discord.utils import get
 
 from typing import Optional 
@@ -23,22 +24,17 @@ class Moderation(commands.Cog):
     async def on_ready(self):
         print(f"Cog Online: {self.qualified_name}")
 
-    @commands.command(name="purge", aliases=['p'])
-    async def purge(self, ctx, num: int = 0):
-        """
-        Purges x messages from current channel
-        Example usage:
-        ;purge 50
-        """
-        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
-        if not await role_check(ctx, mod_roles):
+    @app_commands.command(name="purge")
+    async def purge(self, itx: discord.Interaction, num: int = 0):
+        """Purges x messages from current channel"""
+        mod_roles = self.bot.db.get_mod_roles(itx.guild_id)
+        if not await role_check_itx(itx, mod_roles):
             return
         num = int(num)
-        if num >= 99:
-            num = 99
-        await ctx.channel.purge(limit=num+1)
-        await ctx.send(f"{num} messages successfully purged!", 
-                    delete_after=3.0)
+        #if num >= 99:
+        #    num = 99
+        await itx.channel.purge(limit=num)#+1)
+        await itx.response.send_message(f"{num} messages successfully purged!", ephemeral=True)
 
     @commands.command(name="moveto", aliases=["mv", "mt"])
     async def moveto(self, ctx, channel, msg_id):

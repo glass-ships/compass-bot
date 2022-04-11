@@ -87,6 +87,7 @@ class Admin(commands.Cog):
     async def sync(self, ctx: commands.Context, guilds: Optional[Literal["all"]] = None):
         """Sync Compass's command tree"""
         if not guilds:
+            print(f"Syncing ships... Current guild: {ctx.guild.id}")
             fmt1 = await self.bot.tree.sync()
             fmt2 = await self.bot.tree.sync(guild=ctx.guild.id)
             await ctx.send(f"Bot tree synced: {fmt1} commands.\nSynced {len(fmt2)} commands to current guild.")
