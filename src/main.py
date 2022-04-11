@@ -67,8 +67,8 @@ class CustomHelpCommand(commands.HelpCommand):
 #
 token = os.getenv("DSC_API_TOKEN")
 bot = commands.Bot(
-    # application_id = 932737557836468297, # main bot
-    application_id = 535346715297841172, # test bot
+    application_id = 932737557836468297, # main bot
+    #application_id = 535346715297841172, # test bot
     help_command=CustomHelpCommand(),
     command_prefix = getprefix,
     description = "A general use and moderation bot in Python.",
