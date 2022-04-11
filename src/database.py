@@ -17,6 +17,13 @@ class serverDB():
         self.collection = db['server-info']
 
     #region Find methods
+    def get_all_guilds(self):
+        a = self.collection.find({})
+        guild_ids = []
+        for doc in a:
+            guild_ids.append(int(doc['guild_id']))
+        return guild_ids
+
     def get_guild_name(self, guild_id):
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
