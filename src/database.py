@@ -21,7 +21,7 @@ class serverDB():
         a = self.collection.find({})
         guild_ids = []
         for doc in a:
-            guild_ids.append(int(doc['guild_id']))
+            guild_ids.append(doc['guild_id'])
         return guild_ids
 
     def get_guild_name(self, guild_id):
