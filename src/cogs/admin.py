@@ -84,31 +84,27 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def sync(self, ctx: commands.Context, spec: Union[None, Literal["all"], Literal["guilds"]] = "all", *, guilds: Optional[str] = None):
+    async def sync(self, ctx: commands.Context, spec: Union[Literal["all"], Literal["guild"]]):#s"]] = "all", *, guilds: Optional[str] = None):
         print("--------------------------------------\nSyncing ships...")
-        if not spec:
+        if spec == "guild":
             fmt = await self.bot.tree.sync()
             await self.bot.tree.sync(guild=ctx.guild.id)
             await ctx.send(f"Synced {len(fmt)} commands to guild.")
-        elif spec == "guilds":
-            fmt1 = await self.bot.tree.sync()
-            fmt2 = 0
-            guilds = guilds.split(" ")
-            for guild in guilds:
-                print(f"Syncing to guild: {guild}")
-                g = self.bot.get_guild(int(guild))
-                print(f"Guild id: {g}")
-                await self.bot.tree.sync(guild=g)
-                fmt2 += 1
-            await ctx.send(f"Bot tree synced: {len(fmt1)} commands synced to {fmt2} of {len(guilds)} guilds.")
+        # elif spec == "guilds":
+        #     fmt1 = await self.bot.tree.sync()
+        #     fmt2 = 0
+        #     guilds = guilds.split(" ")
+        #     for guild in guilds:
+        #         g = self.bot.get_guild(int(guild))
+        #         await self.bot.tree.sync(guild=g)
+        #         fmt2 += 1
+        #     await ctx.send(f"Bot tree synced: {len(fmt1)} commands synced to {fmt2} of {len(guilds)} guilds.")
         elif spec == "all":
             fmt1 = await self.bot.tree.sync()
             fmt2 = 0
             guilds = self.bot.db.get_all_guilds()
             for guild in guilds:
-                print(f"Syncing to guild: {guild}")
                 g = self.bot.get_guild(int(guild))
-                print(f"Guild id: {g}")
                 await self.bot.tree.sync(guild=g)
                 fmt2 += 1
             await ctx.send(f"Bot tree synced: {len(fmt1)} commands to {fmt2} of {len(guilds)} guilds.")
