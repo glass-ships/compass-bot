@@ -88,21 +88,6 @@ async def startup_tasks():
 async def on_ready():
     print(f'\n{bot.user.name} has connected to Discord!')
 
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def synctree(ctx: commands.Context, guilds: commands.Greedy[discord.Object]):
-    if not guilds:
-        fmt = await bot.tree.sync()
-        await ctx.send(f"Synced {len(fmt)} commands globally")
-        return
-    else:
-        fmt = 0
-        for guild in guilds:
-            await bot.tree.sync(guild=guild)
-            fmt += 1
-        await ctx.send(f"Synced the tree to {fmt} pf {len(guilds)} guilds.")
-
-
 ##########################################################################
 
 asyncio.run(startup_tasks())

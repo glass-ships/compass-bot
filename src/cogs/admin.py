@@ -84,6 +84,20 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
+    async def synctree(self, ctx: commands.Context, guilds: commands.Greedy[discord.Object]):
+        if not guilds:
+            fmt = await self.bot.tree.sync()
+            await ctx.send(f"Synced {len(fmt)} commands globally")
+            return
+        else:
+            fmt = 0
+            for guild in guilds:
+                await self.bot.tree.sync(guild=guild)
+                fmt += 1
+            await ctx.send(f"Synced the tree to {fmt} of {len(guilds)} guilds.")
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
     async def sync(self, ctx: commands.Context):#, spec: Optional[Literal["all"]] = None):
         """Sync the command tree to your guild"""
         fmt1 = await self.bot.tree.sync()
