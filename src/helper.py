@@ -43,11 +43,3 @@ def dt_to_epoch(t):
     dt = datetime(int(temp[0]),int(temp[1]), int(temp[2]), int(temp[3]), int(temp[4]), tzinfo=stream_tz)
     et = int(time.mktime(dt.timetuple()))
     return et
-
-def get_guild(bot, gid):
-    guild = bot.get_guild(gid)
-    return guild
-
-async def send(guild, channel_id, content = None, embed = None):
-    channel = get(guild.text_channels, id=channel_id)
-    await channel.send(content=content, embed=embed)
