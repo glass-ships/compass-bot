@@ -17,10 +17,10 @@ A few boring files:
 - [start.sh](start.sh) - Heroku file - installs deps and runs the bot.
 
 The code: [src](src/)
-- [main.py](main.py) - Imports the [cogs](cogs/) and initiates the bot connection.  
-- [helper.py](helper.py) - Contains some helper functions to be used in commands in [cogs](cogs/)  
-- [database.py](database.py) - Commands for interacting with the database  
-- [cogs](cogs/) - The good stuff. Commands and listeners organized into separate files for general use, chat moderation, debugging utilities, etc.   
-    - I've included a [template](cogs/template) for new cogs. Just change "CogName" to something appropriate.  
+- [main.py](src/main.py) - Imports the [cogs](src/cogs/) and initiates the bot connection.  
+- [helper.py](src/helper.py) - Contains some helper functions to be used in commands in [cogs](src/cogs/)  
+- [database.py](src/database.py) - Commands for interacting with the database  
+- [cogs](src/cogs/) - The good stuff. Commands and listeners organized into separate files for general use, chat moderation, debugging utilities, etc.   
+    - I've included a [template](src/cogs/template) for new cogs. Just change "CogName" to something appropriate.  
   
 You can safely ignore the [archive](archive/), it's mostly just outdated or unused code that I may find handy for reference later. 

@@ -18,6 +18,7 @@ async def setup(bot):
 class Utils(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.name = self.qualified_name
 
     @commands.Cog.listener()
     async def on_ready(self):
