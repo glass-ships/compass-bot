@@ -30,11 +30,10 @@ class Moderation(commands.Cog):
         mod_roles = self.bot.db.get_mod_roles(itx.guild_id)
         if not await role_check_itx(itx, mod_roles):
             return
-        num = int(num)
-        #if num >= 99:
-        #    num = 99
-        await itx.channel.purge(limit=num)#+1)
+        await itx.channel.purge(limit=int(num))
         await itx.response.send_message(f"{num} messages successfully purged!", ephemeral=True)
+        await asyncio.sleep(2.0)
+        await itx.message.delete()
 
     @commands.command(name="moveto", aliases=["mv", "mt"])
     async def moveto(self, ctx, channel, msg_id):
