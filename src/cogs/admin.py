@@ -84,7 +84,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def sync(self, ctx: commands.Context):
+    async def sync(self, ctx: commands.Context):#, spec: Optional[Literal["all"]] = None):
         """Sync the command tree to your guild"""
         fmt1 = await self.bot.tree.sync()
         fmt2 = await self.bot.tree.sync(guild=ctx.guild)
