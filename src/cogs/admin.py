@@ -90,7 +90,8 @@ class Admin(commands.Cog):
             await ctx.send(f"{fmt1} commands synced globally.")
             fmt2 = 0
             for guild in guilds:
-                await self.bot.tree.sync(guild=int(guild))
+                g = self.bot.get_guild(guild)
+                await self.bot.tree.sync(guild=g)
                 fmt += 1
             await ctx.send(f"Bot tree synced: {len(fmt1)} commands to {fmt2} of {len(guilds)} guilds.")
         elif spec == "all":
