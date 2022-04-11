@@ -23,7 +23,7 @@ async def get_db():
 ### Setup prefix (guild-specific or default)
 #
 DEFAULT_PREFIX = ';' 
-async def get_prefix(bot, ctx):
+async def getprefix(bot, ctx):
     if not ctx.guild:
         return commands.when_mentioned_or(DEFAULT_PREFIX)(bot,ctx)
     prefix = bot.db.get_prefix(ctx.guild.id)
@@ -67,10 +67,10 @@ class CustomHelpCommand(commands.HelpCommand):
 #
 token = os.getenv("DSC_API_TOKEN")
 bot = commands.Bot(
-    application_id = 932737557836468297, # main bot
-    #application_id = 535346715297841172, # test bot
+    # application_id = 932737557836468297, # main bot
+    application_id = 535346715297841172, # test bot
     help_command=CustomHelpCommand(),
-    command_prefix = get_prefix,
+    command_prefix = getprefix,
     description = "A general use and moderation bot in Python.",
     intents = discord.Intents.all()
 )

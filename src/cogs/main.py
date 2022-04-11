@@ -29,7 +29,7 @@ class Main(commands.Cog):
     @app_commands.command(name="ping")
     async def ping(self, interaction: discord.Interaction):
         """Responds with "pong" and the ping latency"""
-        await interaction.response.send_message(f"Pong! Latency: {round(self.bot.latency, 1)} ms", ephemeral=True)
+        await interaction.response.send_message(f"Pong! Latency: {round(self.bot.latency, 2)} ms", ephemeral=True)
 
     @app_commands.command(name="avatar")
     async def avatar(self, itx: discord.Interaction, *, user: discord.Member=None):

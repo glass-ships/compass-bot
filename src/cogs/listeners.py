@@ -89,7 +89,7 @@ class Listeners(commands.Cog):
     async def on_guild_join(self, guild):
 
         # prep sending notif to Glass Harbor (for logging/debug)
-        glass_guild = get_guild(self.bot, 393995277713014785)
+        glass_guild = self.bot.get_guild(393995277713014785)
         chan_id = self.bot.db.get_channel_logs(glass_guild.id)
         channel = get(glass_guild.text_channels, id=chan_id)
 
@@ -110,7 +110,7 @@ class Listeners(commands.Cog):
     async def on_guild_remove(self, guild):
 
         # prep sending notif to Glass Harbor (for logging/debug)
-        glass_guild = get_guild(self.bot, 393995277713014785)
+        glass_guild = self.bot.get_guild(393995277713014785)
         chan_id = self.bot.db.get_channel_logs(glass_guild.id)
         channel = get(glass_guild.text_channels, id=chan_id)
 
