@@ -92,7 +92,7 @@ class Admin(commands.Cog):
             fmt2 = 0
             print("Syncing tree to guilds...")
             for guild in guilds:
-                g = self.bot.get_guild(guild)
+                g = self.bot.get_guild(int(guild))
                 print(f"Syncing to guild: {g.id}")
                 await self.bot.tree.sync(guild=g)
                 fmt2 += 1
