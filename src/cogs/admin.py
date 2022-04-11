@@ -100,9 +100,11 @@ class Admin(commands.Cog):
                 await self.bot.tree.sync(guild=g)
                 fmt2 += 1
             await ctx.send(f"Bot tree synced: {len(fmt1)} commands to {fmt2} of {len(guilds)} guilds.")
+            print("Ships synced!")
             return
         else:
             await ctx.send("Unexpected argument.\nExample usage: `;sync guilds 123456789987654321 987654321123456789`\nType `;help` for more info.")
+            print("Error syncing ships! (Bad argument)")
             return
 
     @commands.command()
