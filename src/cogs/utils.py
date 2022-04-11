@@ -45,4 +45,4 @@ class Utils(commands.Cog):
         for i in guilds:
             g = self.bot.get_guild(i)
             guildlist.append(f"Guild: {g}\nType: {type(g)}")
-        await ctx.send(f"Compass guilds:\n{guilds}")
+        await ctx.send(f"Compass guilds:\n{guildlist}")
