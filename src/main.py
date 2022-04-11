@@ -88,37 +88,6 @@ async def startup_tasks():
 async def on_ready():
     print(f'\n{bot.user.name} has connected to Discord!')
 
-### Bot configuration commands
-#
-@bot.command()
-@commands.has_permissions(administrator=True)
-async def sync(ctx: commands.Context, guilds: commands.Greedy[discord.Object]):#, spec: Union[None, Literal["~"]] = None):
-    # if not guilds:
-    #     if spec == "~":
-    #         fmt = await bot.tree.sync(guild=ctx.guild)
-    #     else:
-    #         fmt = await bot.tree.sync()
-    #     await ctx.send(f"Synced {len(fmt)} commands {'globally' if spec is not None else 'to the current guild.'}")
-    #     return
-
-    # assert guilds is not None
-    if not guilds:
-        fmt = await bot.tree.sync()
-        await ctx.send(f"Synced {len(fmt)} commands globally")
-        return
-    else:
-        fmt = 0
-        for guild in guilds:
-            await bot.tree.sync(guild=guild)
-            fmt += 1
-        await ctx.send(f"Synced the tree to {fmt}/{len(guilds)} guilds.")
-
-@bot.tree.command(name="test1")
-async def test1(interaction: discord.Interaction):
-    """Test slash command 1"""
-    response = 'Testing 1!'
-    await interaction.response.send_message(response, ephemeral=True)
-
 ##########################################################################
 
 asyncio.run(startup_tasks())
