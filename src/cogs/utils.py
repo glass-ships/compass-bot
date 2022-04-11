@@ -37,3 +37,8 @@ class Utils(commands.Cog):
         objects = obj.split(" ")
         for i in objects:
             await ctx.send(f"```Object: {i}\nType: {type(i)}\n```")
+    
+    @commands.command(aliases=['guilds'])
+    async def getallguilds(self, ctx):
+        guilds = self.bot.db.get_all_guilds()
+        await ctx.send(f"Compass guilds:\n{guilds}")

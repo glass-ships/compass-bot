@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 from discord.utils import get
 
-from typing import Optional 
+from typing import List, Optional, Literal, Union
 
 from helper import * 
 
@@ -70,7 +70,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def set_bot_channel(ctx, channel):
+    async def set_bot_channel(self, ctx, channel):
         # Get channel ID from mention
         nums = [i for i in channel if i.isdigit()]
         channel_id = int("".join(nums))
@@ -84,21 +84,23 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def synctree(self, ctx: commands.Context, guilds: commands.Greedy[discord.Object]):
-        if not guilds:
-            fmt = await self.bot.tree.sync()
-            await ctx.send(f"Synced {len(fmt)} commands globally")
-            return
-        else:
-            fmt = 0
+    async def sync(self, ctx: commands.Context, spec: Union[Literal["all"], Literal["guilds"]] = "all", guilds: Optional[List[discord.Object]] = None):
+        if spec == "guilds":
+            fmt1 = await self.bot.tree.sync()
+            await ctx.send(f"{fmt1} commands synced globally.")
+            fmt2 = 0
             for guild in guilds:
                 await self.bot.tree.sync(guild=guild)
                 fmt += 1
-            await ctx.send(f"Synced the tree to {fmt} of {len(guilds)} guilds.")
+            await ctx.send(f"Bot tree synced: {len(fmt1)} commands to {fmt2} of {len(guilds)} guilds.")
+        elif spec == "all":
+            await ctx.send("WIP")
+        else:
+            await ctx.send("Unexpected argument.\nExample usage: `;sync guilds 123456789987654321 987654321123456789`\nType `;help` for more info.")
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def sync(self, ctx: commands.Context):#, spec: Optional[Literal["all"]] = None):
+    async def synctree(self, ctx: commands.Context):#, spec: Optional[Literal["all"]] = None):
         """Sync the command tree to your guild"""
         fmt1 = await self.bot.tree.sync()
         fmt2 = await self.bot.tree.sync(guild=ctx.guild)
