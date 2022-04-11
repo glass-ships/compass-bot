@@ -33,10 +33,7 @@ class Main(commands.Cog):
 
     @app_commands.command(name="avatar")
     async def avatar(self, itx: discord.Interaction, *, user: discord.Member=None):
-        """
-        Returns a user's Discord avatar
-        if a user is mentioned, or self if not.
-        """
+        """Returns a user's Discord avatar"""
         u = user or itx.user
         mem = await itx.guild.fetch_member(u.id)
         userAvatarUrl = mem.avatar.url
@@ -44,20 +41,12 @@ class Main(commands.Cog):
         embed.set_image(url=f"{userAvatarUrl}")
         await itx.response.send_message(embed=embed)
 
-    @commands.command(name="banner", aliases=['b'])
-    async def banner(self, ctx, *, user: discord.Member=None):
-        """
-        Returns a user's Discord banner
-        if a user is mentioned, or self if not.
-        """
-        if not user:
-            u = ctx.author
-        else:
-            u = user
+    @app_commands.command(name="banner")
+    async def banner(self, itx: discord.Interaction, *, user: discord.Member=None):
+        """Returns a user's Discord banner"""
+        u = user or itx.user
         mem = await self.bot.fetch_user(u.id)
         userBannerUrl = mem.banner
         embed = discord.Embed(description=f"{mem.mention}'s banner")
         embed.set_image(url=f"{userBannerUrl}")
-        await ctx.send(embed=embed)
-        await asyncio.sleep(3.0)
-        await ctx.message.delete()
+        await itx.response.send_message(embed=embed)
