@@ -31,7 +31,7 @@ class Main(commands.Cog):
         """Responds with "pong" and the ping latency"""
         await interaction.response.send_message(f"Pong! Latency: {round(self.bot.latency, 1)} ms", ephemeral=True)
 
-    @app_commands.command(name="avatar", aliases=['av'])
+    @app_commands.command(name="avatar")
     async def avatar(self, itx: discord.Interaction, *, user: discord.Member=None):
         """
         Returns a user's Discord avatar
