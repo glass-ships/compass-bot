@@ -42,8 +42,10 @@ class Utils(commands.Cog):
     async def getallguilds(self, ctx):
         guilds = self.bot.db.get_all_guilds()
         guildlist = []
+        print("Guilds:")
         for i in guilds:
             print(i)
             g = self.bot.get_guild(i)
+            print(g)
             guildlist.append(f"Guild: {g} ID: {g.id} Type: {type(g)} ID Type: {type(g.id)}")
         await ctx.send(f"Compass guilds:\n{guildlist}")
