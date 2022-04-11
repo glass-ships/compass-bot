@@ -94,9 +94,9 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def syncall(self, ctx: commands.Context):
         """Sync the command tree to all guilds Compass is in"""
-        if ctx.guild.id != 393995277713014785:
-            await ctx.send("You do not have permission to use that command in this server! (Glass Harbor only)")
-            return
+        # if ctx.guild.id != 393995277713014785:
+        #     await ctx.send("You do not have permission to use that command in this server! (Glass Harbor only)")
+        #     return
         fmt1 = await self.bot.tree.sync()      
         fmt2 = 0
         guilds = self.bot.db.get_all_guilds()
