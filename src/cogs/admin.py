@@ -91,6 +91,7 @@ class Admin(commands.Cog):
             await ctx.send(f"{len(fmt1)} commands synced globally.")
             fmt2 = 0
             print("Syncing tree to guilds...")
+            guilds = guilds.split(" ")
             for guild in guilds:
                 print(f"Syncing to guild: {guild}")
                 g = self.bot.get_guild(int(guild))
