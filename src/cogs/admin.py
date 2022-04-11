@@ -86,13 +86,14 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def sync(self, ctx: commands.Context, guilds: Optional[Literal["all"]] = None):
         """Sync Compass's command tree"""
+        gid = ctx.guild.id
         if not guilds:
-            print(f"Syncing ships... Current guild: {ctx.guild.id}")
+            print(f"Syncing ships... Current guild: {gid}")
             fmt1 = await self.bot.tree.sync()
-            fmt2 = await self.bot.tree.sync(guild=ctx.guild.id)
+            fmt2 = await self.bot.tree.sync(guild=gid)
             await ctx.send(f"Bot tree synced: {fmt1} commands.\nSynced {len(fmt2)} commands to current guild.")
         elif guilds == "all":
-            if ctx.guild.id != 393995277713014785:
+            if gid != 393995277713014785:
                 await ctx.send("You do not have permission to use that command in this server! (Glass Harbor only)")
                 return
             fmt1 = await self.bot.tree.sync()      
