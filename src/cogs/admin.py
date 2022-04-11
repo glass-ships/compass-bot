@@ -88,7 +88,7 @@ class Admin(commands.Cog):
         print("--------------------------------------\nSyncing ships...")
         if spec == "guilds":
             fmt1 = await self.bot.tree.sync()
-            await ctx.send(f"{fmt1} commands synced globally.")
+            await ctx.send(f"{len(fmt1)} commands synced globally.")
             fmt2 = 0
             print("Syncing tree to guilds...")
             for guild in guilds:
