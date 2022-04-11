@@ -30,37 +30,19 @@ class Main(commands.Cog):
     async def ping(self, interaction: discord.Interaction):
         """Responds with "pong" and the ping latency"""
         await interaction.response.send_message(f"Pong! Latency: {round(self.bot.latency, 1)} ms", ephemeral=True)
-        #await interaction.delete_original_message()
-    
-    # @commands.command(name="ping")
-    # async def ping(self, ctx):
-    #     """
-    #     Responds with "pong"
-    #     Tests that the bot is connected and listening.
-    #     """
-    #     await ctx.send(f"Pong! Latency: {round(self.bot.latency, 1)} ms")#, delete_after=3.0)
-    #     await asyncio.sleep(2.0)
-    #     #await ctx.message.delete()
 
-
-    @commands.command(name="avatar", aliases=['av'])
-    async def avatar(self, ctx, *, user: discord.Member=None):
+    @app_commands.command(name="avatar", aliases=['av'])
+    async def avatar(self, itx: discord.Interaction, *, user: discord.Member=None):
         """
         Returns a user's Discord avatar
         if a user is mentioned, or self if not.
         """
-        if not user:
-            u = ctx.author
-        else:
-            u = user
-        mem = await ctx.guild.fetch_member(u.id)
+        u = user or itx.user
+        mem = await itx.guild.fetch_member(u.id)
         userAvatarUrl = mem.avatar.url
         embed = discord.Embed(description=f"{mem.mention}'s avatar")
         embed.set_image(url=f"{userAvatarUrl}")
-        await ctx.send(embed=embed)
-        await asyncio.sleep(3.0)
-        await ctx.message.delete()
-
+        await itx.response.send_message(embed=embed)
 
     @commands.command(name="banner", aliases=['b'])
     async def banner(self, ctx, *, user: discord.Member=None):
