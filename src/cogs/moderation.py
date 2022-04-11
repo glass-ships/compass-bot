@@ -33,7 +33,7 @@ class Moderation(commands.Cog):
         await itx.channel.purge(limit=int(num))
         await itx.response.send_message(f"{num} messages successfully purged!", ephemeral=True)
         await asyncio.sleep(2.0)
-        await itx.message.delete()
+        await itx.delete_original_message()
 
     @commands.command(name="moveto", aliases=["mv", "mt"])
     async def moveto(self, ctx, channel, msg_id):
