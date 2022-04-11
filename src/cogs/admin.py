@@ -87,7 +87,7 @@ class Admin(commands.Cog):
     async def sync(self, ctx: commands.Context):
         """Sync the command tree to your guild"""
         fmt1 = await self.bot.tree.sync()
-        fmt2 = await self.bot.tree.sync(guild=ctx.guild.id)
+        fmt2 = await self.bot.tree.sync(guild=ctx.guild)
         await ctx.send(f"Bot tree synced: {fmt1} commands.\nSynced {len(fmt2)} commands to current guild.")
 
     @commands.command()
