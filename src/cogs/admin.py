@@ -84,13 +84,11 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def sync(self, ctx: commands.Context, spec: Union[Literal["all"], Literal["guilds"]] = "all", guilds: Optional[str] = None):
+    async def sync(self, ctx: commands.Context, spec: Union[Literal["all"], Literal["guilds"]] = "all", *, guilds: Optional[str] = None):
         print("--------------------------------------\nSyncing ships...")
         if spec == "guilds":
             fmt1 = await self.bot.tree.sync()
-            await ctx.send(f"{len(fmt1)} commands synced globally.")
             fmt2 = 0
-            print(f"Syncing tree to guilds: {guilds}...")
             guilds = guilds.split(" ")
             for guild in guilds:
                 print(f"Syncing to guild: {guild}")
