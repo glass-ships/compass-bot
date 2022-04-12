@@ -37,6 +37,14 @@ class Utils(commands.Cog):
         objects = obj.split(" ")
         for i in objects:
             await ctx.send(f"```Object: {i}\nType: {type(i)}\n```")
+
+    @commands.command(aliases=['emojis'])
+    async def getallemojis(self, ctx):
+        g = self.bot.get_guild(ctx.guild.id)
+        emojis = []
+        for i in g.emojis:
+            emojis.append(i.name)
+        await ctx.send(f"Guild emojis:\n```\n{emojis}\n```")
     
     @commands.command(aliases=['guilds'])
     async def getallguilds(self, ctx):

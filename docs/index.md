@@ -6,12 +6,12 @@
 
 Compass is a general Discord bot written in Python and hosted on Heroku. 
 
-Check the [commands tabs](General/commands.md) for a list of Compass's commands. 
+Check the [commands tabs](Commands/index.md) for a list of Compass's commands. 
 
 ### How do I set up Compass in my server?
 
 Setting up Compass is pretty simple - just change your prefix if you want, set a logs and bot channel, and any mod roles you want to be able to use mod-only commands.
 
-Check out the [admin commands](Admin/commands.md) for more info.
+Check out the [Configuration page](Configuration/setup.md) for more info.
 
 <img src='images/compass.png' alt='Compass Logo' width='50%' style='display: block; margin-left: auto; margin-right: auto;'> 

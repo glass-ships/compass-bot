@@ -25,7 +25,7 @@ class Admin(commands.Cog):
 
     @commands.command(name="set_prefix", aliases=["sp"])
     @commands.has_permissions(administrator=True)
-    async def set_prefix(self, ctx, new_prefix):
+    async def setprefix(self, ctx, new_prefix):
         """
         Changes the bot's prefix for your server
         """
@@ -34,7 +34,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def set_mod_roles(self, ctx, *, mod_roles: str):
+    async def setmodroles(self, ctx, *, mod_roles: str):
         
         roles_list = mod_roles.split(" ")
         
@@ -56,7 +56,7 @@ class Admin(commands.Cog):
         
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def set_logs_channel(self, ctx, channel): 
+    async def setlogschannel(self, ctx, channel): 
         # Get channel ID from mention
         nums = [i for i in channel if i.isdigit()]
         channel_id = int("".join(nums))
@@ -70,7 +70,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def set_bot_channel(self, ctx, channel):
+    async def setbotchannel(self, ctx, channel):
         # Get channel ID from mention
         nums = [i for i in channel if i.isdigit()]
         channel_id = int("".join(nums))
@@ -84,7 +84,7 @@ class Admin(commands.Cog):
     
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def set_announcements_channel(self, ctx, channel):
+    async def setannouncementschannel(self, ctx, channel):
         # Get channel ID from mention
         nums = [i for i in channel if i.isdigit()]
         channel_id = int("".join(nums))
