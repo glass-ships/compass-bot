@@ -80,6 +80,20 @@ class Admin(commands.Cog):
             await ctx.send(f"Bot channel set to <#{channel_id}>")
             return True
         await ctx.send(f"{channel} is not a valid channel - please try again.")
+        return False
+    
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def set_announcements_channel(self, ctx, channel):
+        # Get channel ID from mention
+        nums = [i for i in channel if i.isdigit()]
+        channel_id = int("".join(nums))
+        chan = get(ctx.guild.text_channels, id=channel_id)
+        if chan:
+            self.bot.db.update_channel_announcements(ctx.guild.id, channel_id)
+            await ctx.send(f"Bot channel set to <#{channel_id}>")
+            return True
+        await ctx.send(f"{channel} is not a valid channel - please try again.")
         return False    
 
     @commands.command()
@@ -106,26 +120,3 @@ class Admin(commands.Cog):
             await ctx.send("Unexpected argument.\nExample usage: `;sync guilds 123456789987654321 987654321123456789`\nType `;help` for more info.")
             print("Error syncing ships! (Bad argument)")
             return
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def synctree(self, ctx: commands.Context):#, spec: Optional[Literal["all"]] = None):
-        """Sync the command tree to your guild"""
-        fmt1 = await self.bot.tree.sync()
-        fmt2 = await self.bot.tree.sync(guild=ctx.guild)
-        await ctx.send(f"Bot tree synced: {fmt1} commands.\nSynced {len(fmt2)} commands to current guild.")
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def syncall(self, ctx: commands.Context):
-        """Sync the command tree to all guilds Compass is in"""
-        # if ctx.guild.id != 393995277713014785:
-        #     await ctx.send("You do not have permission to use that command in this server! (Glass Harbor only)")
-        #     return
-        fmt1 = await self.bot.tree.sync()      
-        fmt2 = 0
-        guilds = self.bot.db.get_all_guilds()
-        for guild in guilds:
-            await self.bot.tree.sync(guild=guild)
-            fmt += 1
-        await ctx.send(f"Bot tree synced: {fmt1} commands.\nSynced {len(fmt2)} commands to current guild")

@@ -83,7 +83,10 @@ class Listeners(commands.Cog):
                 # Send embed to logs
                 channel_id = self.bot.db.get_channel_logs(flagged_message.guild.id)
                 channel = get(flagged_message.guild.text_channels, id=channel_id)
-                await channel.send(content=None, embed=ce)
+                if channel:
+                    await channel.send(content=None, embed=ce)
+                else:
+                    await flagged_message.channel.send(f"Logs channel has not been set! Use `;set_logs_channel <#channel>` to set one.")
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
