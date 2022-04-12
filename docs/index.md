@@ -8,7 +8,7 @@ Compass is a general Discord bot written in Python and hosted on Heroku.
 
 #### Where can I find a command list? 
 
-[Right here!](Commands/index.md)
+[Right here!](Commands/compass_commands.md)
 
 #### How do I set up Compass in my server?
 
