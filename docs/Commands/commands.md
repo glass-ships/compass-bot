@@ -20,15 +20,15 @@
 ???+ tldr "Chat Commands (mod only)"
     | Command | Arguments | Description |
     | :---| :--- | :--- |
-    | Reaction: `:mag:` | When a mod reacts to a message with :mag: the messages is flagged and a log is sent to the logs channel |
+    | Reaction: `:mag:` | When a mod reacts to a message with `:mag:` the messages is flagged and a log is sent to the logs channel |
     | `moveto` | `channel`: Destination channel<br>`message id`: Message to be moved | Move a message to a specific channel |
 
 #### Admin / Bot Configuration
 
-???+ tldr "Bot Configuration (admin only)"
+???+ tldr "Admin Commands - Setting up the bot"
     | Command | Arguments | Description |
     |---------|-----------|-------------|
-    | `set_prefix` | New prefix | Sets the bot prefix for your guild (default: `;`) |
-    | `set_mod_roles` | Role ID's or mentions | Sets the mod roles for your guild |
-    | `set_logs_channel` | Channel ID or link | Sets the logs channel for your guild |
-    | `sync` | None, "all", or Guild IDs | Syncs the bot's slash commands globally, or to a list of guilds</br>(ex. `;sync` `;sync all` or `;sync 987654321123456789`) |
+    | `setprefix` | New prefix | Sets the bot prefix for your guild (default: `;`) |
+    | `setmodroles` | Role ID's or mentions | Sets the mod roles for your guild |
+    | `setlogschannel` | Channel ID or link | Sets the logs channel for your guild |
+    | `sync` | "guild" (required) | Syncs the bot's slash commands to your guild |
