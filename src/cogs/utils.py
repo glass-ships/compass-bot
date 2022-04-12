@@ -41,10 +41,27 @@ class Utils(commands.Cog):
     @commands.command(aliases=['emojis'])
     async def getallemojis(self, ctx):
         g = self.bot.get_guild(ctx.guild.id)
-        emojis = []
+        emojis_static = []
+        emoji_names_static = []
+        emojis_anim = []
+        emoji_names_anim = []
         for i in g.emojis:
-            emojis.append(i.name)
-        await ctx.send(f"Guild emojis:\n```\n{emojis}\n```")
+            if i.animated == True:
+                emojis_anim.append(i)
+                emoji_names_anim.append(i.name)
+            else:
+                emojis_static.append(i)
+                emoji_names_static.append(i.name)
+
+        emojis = [f"<:{i.name}:{i.id}>" for i in emojis_static]
+        emojis = " ".join(emojis)
+        await ctx.send(f"__**Guild emojis (static):**__\n```\n{emoji_names_static}\n```")
+        await ctx.send(f"{emojis}")
+
+        emojis = [f"<a:{i.name}:{i.id}>" for i in emojis_anim]
+        emojis = " ".join(emojis)
+        await ctx.send(f"__**Guild emojis (animated):**__\n```\n{emoji_names_anim}\n```")
+        await ctx.send(f"{emojis}")
     
     @commands.command(aliases=['guilds'])
     async def getallguilds(self, ctx):
