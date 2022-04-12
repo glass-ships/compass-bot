@@ -8,7 +8,7 @@ Compass is a general Discord bot written in Python, with features intended to si
 
 ### Where can I find a command list? 
 
-[Right here!](Commands/compass_commands.md)
+[Right here!](Commands/general.md)
 
 ### How do I set up Compass in my server?
 
