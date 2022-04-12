@@ -102,7 +102,7 @@ class Listeners(commands.Cog):
             default_channel = None
         
         # put together default data
-        data = {"guild_id":guild.id,"guild_name":guild.name,"mod_roles":[],"chan_announce":default_channel,"chan_bot":default_channel,"chan_logs":default_channel,"prefix":";"}
+        data = {"guild_id":guild.id,"guild_name":guild.name,"mod_roles":[],"chan_bot":default_channel,"chan_logs":default_channel,"prefix":";"}
 
         if self.bot.db.add_guild_table(guild.id, data):
             await channel.send(f"Guild \"{guild.name}\" added to database.")

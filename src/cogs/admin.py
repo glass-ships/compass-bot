@@ -84,20 +84,6 @@ class Admin(commands.Cog):
     
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def setannouncementschannel(self, ctx, channel):
-        # Get channel ID from mention
-        nums = [i for i in channel if i.isdigit()]
-        channel_id = int("".join(nums))
-        chan = get(ctx.guild.text_channels, id=channel_id)
-        if chan:
-            self.bot.db.update_channel_announcements(ctx.guild.id, channel_id)
-            await ctx.send(f"Bot channel set to <#{channel_id}>")
-            return True
-        await ctx.send(f"{channel} is not a valid channel - please try again.")
-        return False    
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
     async def sync(self, ctx: commands.Context, spec: Union[Literal["all"], Literal["guild"]]):
         print("--------------------------------------\nSyncing ships...")
         if spec == "guild":

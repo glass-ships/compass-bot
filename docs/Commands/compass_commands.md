@@ -4,9 +4,9 @@
 ???+ tldr "Slash Commands"
     | Command | Arguments | Description |
     | :--- | :--- | :--- |
-    | `avatar` | None | Get a user's Discord avatar |
-    | `banner` | None | Get a user's Discord banner |
-    | `ping` | None | Returns "Pong!" and the ping latency. |
+    | `avatar` | `None` | Get a user's Discord avatar |
+    | `banner` | `None` | Get a user's Discord banner |
+    | `ping` | `None` | Returns "Pong!" and the ping latency. |
 
 ???+ tldr "Chat Commands"
 
@@ -14,12 +14,14 @@
 
 ???+ tldr "Slash Commands (mod only)"
     | Command | Arguments | Description |
+    | :--- | :--- | :--- |
+    | `purge` | `num`: Number of message to delete | Deletes the specified number of message from the current channel. |
 
 ???+ tldr "Chat Commands (mod only)"
     | Command | Arguments | Description |
     | :---| :--- | :--- |
-    | `purge` | Number of message to delete | Deletes the specified number of message from the current channel. |
     | Reaction: `:mag:` | When a mod reacts to a message with :mag: the messages is flagged and a log is sent to the logs channel |
+    | `moveto` | `channel`: Destination channel<br>`message id`: Message to be moved | Move a message to a specific channel |
 
 #### Admin / Bot Configuration
 

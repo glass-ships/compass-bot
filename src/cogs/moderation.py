@@ -31,11 +31,9 @@ class Moderation(commands.Cog):
         if not await role_check_itx(itx, mod_roles):
             return
         await itx.channel.purge(limit=int(num))
-        response = await itx.response.send_message(f"{num} messages successfully purged!", ephemeral=True)
-        #await asyncio.sleep(2.0)
-        #await response.delete()
+        await itx.response.send_message(f"{num} messages successfully purged!", ephemeral=True)
 
-    @app_commands.command(name="move")
+    @commands.command(name="move")
     async def moveto(self, ctx, channel, msg_id):
         """
         Move a message to specified channel
