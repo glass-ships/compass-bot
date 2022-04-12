@@ -86,7 +86,7 @@ class Listeners(commands.Cog):
                 if channel:
                     await channel.send(content=None, embed=ce)
                 else:
-                    await flagged_message.channel.send(f"Logs channel has not been set! Use `;set_logs_channel <#channel>` to set one.")
+                    await flagged_message.channel.send(f"Logs channel has not been set!\nUse `;set_logs_channel <#channel>` to set one.")
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
