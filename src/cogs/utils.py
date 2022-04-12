@@ -53,15 +53,15 @@ class Utils(commands.Cog):
                 emojis_static.append(i)
                 emoji_names_static.append(i.name)
 
-        emojis = [f"<:{i.name}:{i.id}>" for i in emojis_static]
-        emojis = " ".join(emojis)
         await ctx.send(f"__**Guild emojis (static):**__\n```\n{emoji_names_static}\n```")
-        await ctx.send(f"{emojis}")
+        # emojis = [f"<:{i.name}:{i.id}>" for i in emojis_static]
+        # emojis = " ".join(emojis)
+        # await ctx.send(f"{emojis}")
 
-        emojis = [f"<a:{i.name}:{i.id}>" for i in emojis_anim]
-        emojis = " ".join(emojis)
         await ctx.send(f"__**Guild emojis (animated):**__\n```\n{emoji_names_anim}\n```")
-        await ctx.send(f"{emojis}")
+        # emojis = [f"<a:{i.name}:{i.id}>" for i in emojis_anim]
+        # emojis = " ".join(emojis)
+        # await ctx.send(f"{emojis}")
     
     @commands.command(aliases=['guilds'])
     async def getallguilds(self, ctx):
