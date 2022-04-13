@@ -1,10 +1,13 @@
 ### Imports ###
 
 import discord
+from discord import app_commands
 from discord.ext import commands
-from discord.utils import get
+#from discord.utils import get
 
-from typing import Optional 
+import os
+from pathlib import Path
+from typing import Optional
 
 from helper import * 
 
@@ -34,9 +37,25 @@ class Utils(commands.Cog):
 
     @commands.command(aliases=['whatis'])
     async def getobject(self, ctx, *, obj):
+        """Returns the type of any following arguments (probably a string, but sometimes a discord object)"""
         objects = obj.split(" ")
         for i in objects:
             await ctx.send(f"```Object: {i}\nType: {type(i)}\n```")
+
+    
+    @commands.command(aliases=['guilds'])
+    async def getallguilds(self, ctx):
+        """Get all guilds that Compass is in"""
+        guilds = self.bot.db.get_all_guilds()
+        guildlist = []
+        print("Guilds:")
+        for i in guilds:
+            print(i)
+            g = self.bot.get_guild(i)
+            print(g)
+            guildlist.append(f"Guild: {g} ID: {g.id} Type: {type(g)} ID Type: {type(g.id)}")
+        await ctx.send(f"Compass guilds:\n{guildlist}")
+
 
     @commands.command(aliases=['emojis'])
     async def getallemojis(self, ctx):
@@ -54,23 +73,6 @@ class Utils(commands.Cog):
                 emoji_names_static.append(i.name)
 
         await ctx.send(f"__**Guild emojis (static):**__\n```\n{emoji_names_static}\n```")
-        # emojis = [f"<:{i.name}:{i.id}>" for i in emojis_static]
-        # emojis = " ".join(emojis)
-        # await ctx.send(f"{emojis}")
-
         await ctx.send(f"__**Guild emojis (animated):**__\n```\n{emoji_names_anim}\n```")
-        # emojis = [f"<a:{i.name}:{i.id}>" for i in emojis_anim]
-        # emojis = " ".join(emojis)
-        # await ctx.send(f"{emojis}")
+
     
-    @commands.command(aliases=['guilds'])
-    async def getallguilds(self, ctx):
-        guilds = self.bot.db.get_all_guilds()
-        guildlist = []
-        print("Guilds:")
-        for i in guilds:
-            print(i)
-            g = self.bot.get_guild(i)
-            print(g)
-            guildlist.append(f"Guild: {g} ID: {g.id} Type: {type(g)} ID Type: {type(g.id)}")
-        await ctx.send(f"Compass guilds:\n{guildlist}")

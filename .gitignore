@@ -1,7 +1,7 @@
 discordpy/
 site/
-config.json
-.env
+downloads/
+src/main-test.py
 test.py
 
 **/__pycache__
