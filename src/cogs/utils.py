@@ -3,9 +3,9 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-#from discord.utils import get
+from discord.utils import get
 
-import os
+import os, shutil
 from pathlib import Path
 from typing import Optional
 
@@ -29,6 +29,9 @@ class Utils(commands.Cog):
 
     @commands.command()
     async def get_mod_roles(self, ctx):
+        """
+        Returns a list of guild's mod roles
+        """
         mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
         r = []
         for i in mod_roles:
@@ -36,29 +39,26 @@ class Utils(commands.Cog):
         await ctx.send(f"Mod roles: {r}.")        
 
     @commands.command(aliases=['whatis'])
-    async def getobject(self, ctx, *, obj):
-        """Returns the type of any following arguments (probably a string, but sometimes a discord object)"""
+    async def getobject(self, ctx, obj):
+        """
+        Returns the type of an argument
+        (Probably a string, but sometimes a discord object)
+        """
         objects = obj.split(" ")
         for i in objects:
             await ctx.send(f"```Object: {i}\nType: {type(i)}\n```")
 
-    
-    @commands.command(aliases=['guilds'])
-    async def getallguilds(self, ctx):
-        """Get all guilds that Compass is in"""
-        guilds = self.bot.db.get_all_guilds()
-        guildlist = []
-        print("Guilds:")
-        for i in guilds:
-            print(i)
-            g = self.bot.get_guild(i)
-            print(g)
-            guildlist.append(f"Guild: {g} ID: {g.id} Type: {type(g)} ID Type: {type(g.id)}")
-        await ctx.send(f"Compass guilds:\n{guildlist}")
-
-
     @commands.command(aliases=['emojis'])
     async def getallemojis(self, ctx):
+        """
+        Returns a list of a guild's static and animated emojis
+        (Used for syncing my guild emojis with a cache I have saved elsewhere - Can be safely ignored)
+        """
+        # Check for mod
+        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
+        if not await role_check(ctx, mod_roles):
+            return
+
         g = self.bot.get_guild(ctx.guild.id)
         emojis_static = []
         emoji_names_static = []
@@ -75,4 +75,44 @@ class Utils(commands.Cog):
         await ctx.send(f"__**Guild emojis (static):**__\n```\n{emoji_names_static}\n```")
         await ctx.send(f"__**Guild emojis (animated):**__\n```\n{emoji_names_anim}\n```")
 
-    
+    @commands.command(aliases=['gemojis'])
+    async def downloademojis(self, ctx) -> None:
+        """
+        Downloads a guild's emojis
+        (Used for syncing my guild emojis with a cache I have saved elsewhere - Can be safely ignored)
+        """
+        # Check for mod
+        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
+        if not await role_check(ctx, mod_roles):
+            return
+
+        await ctx.message.delete()
+        fp = f"./downloads/{ctx.guild.name}/emojis"
+        Path(fp).mkdir(parents=True, exist_ok=True)
+        Path(fp, 'png').mkdir(parents=True, exist_ok=True)
+        Path(fp, 'gif').mkdir(parents=True, exist_ok=True)
+        guild = self.bot.get_guild(ctx.guild.id)
+        count = 0
+        for e in guild.emojis:
+            fn = f"gif/{e.name}.gif" if e.animated else f"png/{e.name}.png"
+            await e.save(fp=os.path.join(fp, fn))
+            count += 1
+        await ctx.send(f"{count} emoji's downloaded", delete_after=2.0)
+        return
+
+    @commands.command(aliases=['cfc','rm -rf'])
+    async def clearfilecache(self, ctx):
+        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
+        if not await role_check(ctx, mod_roles):
+            return
+        shutil.rmtree(f"downloads/{ctx.guild.name}/temp")
+        await ctx.message.delete()
+        await ctx.send(f"File cache cleared!", delete_after=2.0)
+
+    # @app_commands.command(name='download', description="Downloads all files in current channel (personal archiving tools - do not use to steal content form others")
+    # async def download(self, itx: discord.Interaction):
+    #     download_dir = 'some/local/path'
+    #     for msg in itx.channel.history():
+    #         if msg.attachments:
+    #             for a in msg.attachments:
+    #                 await a.save(fp=download_dir, filename=a.name)

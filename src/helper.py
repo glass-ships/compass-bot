@@ -3,13 +3,26 @@
 import discord
 from discord.utils import get
 
-import time, re, asyncio, json
+import os
+from pathlib import Path
+from typing import Optional, Union
+
+import time, re, asyncio
 from datetime import datetime
 from dateutil import tz
+
 
 ##### Helper Functions #####
 
 async def role_check(ctx=None, roles=None):
+    """
+    Check if user has required roles
+    Usage:
+        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
+        if not await role_check(ctx, mod_roles):
+            return
+        # rest of your code
+    """
     user_roles = [x.id for x in ctx.author.roles]
     if any(i in user_roles for i in roles):
         return True
@@ -19,6 +32,14 @@ async def role_check(ctx=None, roles=None):
     return False
 
 async def role_check_itx(itx: discord.Interaction=None, roles=None):
+    """
+    Check if user has required roles (for Interactions)
+    Usage:
+        mod_roles = self.bot.db.get_mod_roles(itx.guild_id)
+        if not await role_check_itx(itx, mod_roles):
+            return
+        # rest of your code
+    """
     user_roles = [x.id for x in itx.user.roles]
     if any(i in user_roles for i in roles):
         return True
@@ -43,3 +64,15 @@ def dt_to_epoch(t):
     dt = datetime(int(temp[0]),int(temp[1]), int(temp[2]), int(temp[3]), int(temp[4]), tzinfo=stream_tz)
     et = int(time.mktime(dt.timetuple()))
     return et
+
+# Download attachment from a message
+async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> None:
+    fp = os.path.join("downloads", itx.guild.name, path)
+    fn = attachment.filename
+    Path(fp).mkdir(parents=True, exist_ok=True)
+    await attachment.save(fp=f"{fp}/{fn}")
+    return
+
+# Normalize a downloaded filepath
+def getfile(itx, fp) -> str:
+    return f"downloads/{itx.guild.name}/{fp}"

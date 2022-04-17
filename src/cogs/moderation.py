@@ -1,5 +1,6 @@
 ### Imports ###
 
+from re import T
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -24,51 +25,43 @@ class Moderation(commands.Cog):
     async def on_ready(self):
         print(f"Cog Online: {self.qualified_name}")
 
-    @app_commands.command(name="purge")
-    async def purge(self, itx: discord.Interaction, num: int = 0):
-        """Purges x messages from current channel"""
+    @app_commands.command(name="purge", description="Deletes n messages from current channel")
+    async def purge(self, itx: discord.Interaction, number: int = 0):
         mod_roles = self.bot.db.get_mod_roles(itx.guild_id)
         if not await role_check_itx(itx, mod_roles):
             return
-        await itx.channel.purge(limit=int(num))
-        await itx.response.send_message(f"{num} messages successfully purged!", ephemeral=True)
+        await itx.channel.purge(limit=int(number))
+        await itx.response.send_message(f"{number} messages successfully purged!", ephemeral=True)
 
-    @commands.command(name="move")
-    async def moveto(self, ctx, channel, msg_id):
-        """
-        Move a message to specified channel
-        Example usage:
-        ;moveto <#123456789987654321> 987654321123456789
-        """
+    @app_commands.command(name="moveto", description="Move a message to specified channel")
+    async def moveto(self, itx: discord.Interaction, channel: discord.TextChannel, message_id: str):
+        
+        # Check for mod
+        mod_roles = self.bot.db.get_mod_roles(itx.guild_id)
+        if not await role_check_itx(itx, mod_roles):
+            return
 
-        await ctx.message.delete()
+        await itx.response.defer(ephemeral=True)
 
         # Get message to be moved
-        msg = await ctx.fetch_message(msg_id)
-        msg_content = msg.content
-        msg_attachments = msg.attachments
-        new_msg = msg_content
-        if msg_attachments: 
-            attachments = []
-            for i in msg_attachments:
-                attachments.append(i.url)
-            new_msg += "\n\n" + "\n\n".join(attachments)
+        msg = await itx.channel.fetch_message(int(message_id))
 
-        # Get channel ID from mention
-        nums = [i for i in channel if i.isdigit()]
-        channel_id = int("".join(nums))
-        chan = get(ctx.guild.text_channels, id=channel_id)
+        # Get any attachments
+        files = []
+        if msg.attachments:            
+            for a in msg.attachments:
+                await download(itx, a, 'temp/moved_messages')
+                files.append(
+                    discord.File(getfile(itx, f"temp/moved_messages/{a.filename}"))
+                )
 
-        # Send message to specified channel
-        if chan:
-            await chan.send(f"{msg.author.mention} - your message from <#{msg.channel.id}> has been moved to the appropriate channel:\n\n{new_msg}")
-            await asyncio.sleep(1)
-            await msg.delete()
-            return True
-
-        # Unless invalid channel
-        await ctx.send(f"{channel} is not a valid channel - please try again.")
-        return False
+        # Move the message
+        await channel.send(
+           content = f"──────────────────────────────\n{msg.author.mention} - your message from <#{msg.channel.id}> has been moved to the appropriate channel.\n──────────────────────────────\n__**Original Message**__\n{msg.content}",
+           files = files
+        )
+        await msg.delete()
+        await itx.followup.send(f"Message moved to <#{channel.id}>")
 
     @commands.command(name="temproleremove", aliases=["trr"])
     async def temproleremove(self, ctx, r, t: Optional[int]=30, user: discord.Member=None):
