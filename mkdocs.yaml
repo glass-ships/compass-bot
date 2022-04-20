@@ -17,20 +17,20 @@ theme:
         - navigation.tabs.sticky
     palette:
         scheme: 'slate'
-        primary: 'brown'
+        primary: 'indigo'
         accent: 'cyan'
     font:
         text: 'Roboto'
-        code: 'Fira Mono'
+        #code: 'Fira Mono'
 
 extra:
   social:
-    #- icon: 'fontawesome/solid/house'
-    #  link: 'https://carl.gg'
+    - icon: 'fontawesome/solid/house'
+      link: 'https://glass-ships.com'
     - icon: 'fontawesome/brands/github-alt'
       link: 'https://github.com/glass-ships'
     #- icon: 'fontawesome/brands/twitter'
-    #  link: 'https://twitter.com/Carlgrrr'
+    #  link: 'https://twitter.com/'
 
 markdown_extensions:
   - admonition
