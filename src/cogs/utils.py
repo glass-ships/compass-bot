@@ -11,6 +11,8 @@ from typing import Optional
 
 from helper import * 
 
+logger = get_logger(__name__)
+
 ### Setup Cog
 
 # Startup method
@@ -25,7 +27,7 @@ class Utils(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"Cog Online: {self.qualified_name}")
+        logger.info(f"Cog Online: {self.qualified_name}")
 
     @commands.command()
     async def get_mod_roles(self, ctx):
@@ -44,6 +46,7 @@ class Utils(commands.Cog):
         Returns the type of an argument
         (Probably a string, but sometimes a discord object)
         """
+        logger.info(obj)
         objects = obj.split(" ")
         for i in objects:
             await ctx.send(f"```Object: {i}\nType: {type(i)}\n```")

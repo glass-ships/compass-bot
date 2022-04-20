@@ -1,6 +1,5 @@
-from pymongo import MongoClient
-
 import os
+from pymongo import MongoClient
 
 mongo_url = os.getenv("MONGO_URL")
 
@@ -39,11 +38,6 @@ class serverDB():
         doc = a[0]
         return doc['mod_roles']
 
-    def get_channel_announcements(self, guild_id):
-        a = self.collection.find({"guild_id":guild_id})        
-        doc = a[0]
-        return doc['chan_announce']
-
     def get_channel_bot(self, guild_id):
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
@@ -53,6 +47,16 @@ class serverDB():
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
         return doc['chan_logs']
+
+    def get_channel_vids(self, guild_id):
+        a = self.collection.find({"guild_id":guild_id})        
+        doc = a[0]
+        return doc['chan_vids']
+
+    def get_videos_whitelist(self, guild_id):
+        a = self.collection.find({ "guild_id": guild_id })
+        doc = a[0]
+        return doc['videos_whitelist']
     #endregion
 
     #region Add or Update methods 
@@ -68,16 +72,11 @@ class serverDB():
         """
         filter = { "guild_id": guild_id }
         newval = { "$set": { 'guild_id': new_value } }
-        self.collection.update_one(filter, newval)
+        self.collection.update_one(filter, newval, upsert=True)
 
     def update_guild_name(self, guild_id, new_value):
         filter = { "guild_id": guild_id }
         newval = { "$set": { 'guild_name': new_value } }
-        self.collection.update_one(filter, newval)
-
-    def update_mod_roles(self, guild_id, new_value):
-        filter = { "guild_id": guild_id }
-        newval = { "$set": { 'mod_roles': new_value } }
         self.collection.update_one(filter, newval)
 
     def update_prefix(self, guild_id, new_value):
@@ -85,9 +84,9 @@ class serverDB():
         newval = { "$set": { 'prefix': new_value } }
         self.collection.update_one(filter, newval)
     
-    def update_channel_announcements(self, guild_id, new_value):
+    def update_mod_roles(self, guild_id, new_value):
         filter = { "guild_id": guild_id }
-        newval = { "$set": { 'chan_announce': new_value } }
+        newval = { "$set": { 'mod_roles': new_value } }
         self.collection.update_one(filter, newval)
 
     def update_channel_bot(self, guild_id, new_value):
@@ -99,6 +98,15 @@ class serverDB():
         filter = { "guild_id": guild_id }
         newval = { "$set": { 'chan_logs': new_value } }
         self.collection.update_one(filter, newval)
+
+    def update_channel_vids(self, guild_id, new_value):
+        filter = { "guild_id": guild_id }
+        newval = { "$set": { 'chan_vids': new_value } }
+        self.collection.update_one(filter, newval, upsert=True)
+
+    def add_videos_whitelist(self, guild_id, new_value):
+        filter = { "guild_id": guild_id }
+        self.collection.update_one(filter, {'$push': {'videos_whitelist': new_value}})
     #endregion
 
     #region Remove methods
@@ -116,12 +124,16 @@ class serverDB():
     def remove_roles():
         pass
 
-    def remove_channel_announcements():
-        pass
-
     def remove_channel_bot():
         pass
 
     def remove_channel_logs():
         pass
+
+    def remove_channel_vids():
+        pass
+
+    def remove_videos_whitelist(self, guild_id, channel_id):
+        filter = { "guild_id": guild_id }
+        self.collection.update_one(filter, {'$pull': {'videos_whitelist': channel_id}})
     #endregion

@@ -3,7 +3,7 @@
 import discord
 from discord.utils import get
 
-import os
+import os, sys
 from pathlib import Path
 from typing import Optional, Union
 
@@ -11,6 +11,8 @@ import time, re, asyncio
 from datetime import datetime
 from dateutil import tz
 
+import logging
+#logger = logging.getLogger(__name__)
 
 ##### Helper Functions #####
 
@@ -76,3 +78,14 @@ async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> 
 # Normalize a downloaded filepath
 def getfile(itx, fp) -> str:
     return f"downloads/{itx.guild.name}/{fp}"
+
+def get_logger(name: str) -> logging.Logger:
+    """Get an instance of logger."""
+    logger = logging.getLogger(name)
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter(":%(name)-12s: %(levelname)-6s: %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
+    logger.propagate = False
+    return logger

@@ -1,7 +1,10 @@
 ##### Cog - Listeners #####
+# TODO:
+#   - more robust update-guild method
+
 
 ### Imports ###
-
+#
 import discord
 from discord.ext import commands
 from discord.utils import get
@@ -10,8 +13,11 @@ import time
 
 from helper import * 
 
-### Setup Cog
+import logging
+logger = logging.getLogger(__name__) 
 
+### Setup Cog
+#
 # Startup method
 async def setup(bot):
     await bot.add_cog(Listeners(bot))
@@ -20,12 +26,13 @@ async def setup(bot):
 class Listeners(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        logging.debug("Cog initialized.")
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"Cog Online: {self.qualified_name}")
+        logging.debug(f"Cog Online: {self.qualified_name}")
 
-    @commands.Cog.listener()
+    @commands.Cog.listener(name="error_handler")
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
         """A global error handler cog."""
 
@@ -45,7 +52,42 @@ class Listeners(commands.Cog):
         await ctx.send(message, delete_after=5)
         await ctx.message.delete(delay=5)
 
-    @commands.Cog.listener()
+    @commands.Cog.listener(name="move_to_videos")
+    async def on_message(self, msg: discord.Message):
+        if msg.author.bot:
+            return
+
+        vid_channel = self.bot.db.get_channel_vids(msg.guild.id)
+        
+        if vid_channel == 0:
+            return
+
+        vid_links = ["youtube.com/watch?","youtu.be/","vimeo.com/","dailymotion.com/video","tiktok.com"]
+
+        if any(i in msg.content for i in vid_links):
+            
+            # Get any attachments
+            files = []
+            if msg.attachments:            
+                for a in filter(lambda x: x.size < msg.guild.filesize_limit, msg.attachments):
+                    await download(msg, a, 'temp/moved_messages')
+                    files.append(
+                        discord.File(getfile(msg, f"temp/moved_messages/{a.filename}"))
+                    )
+            if any(a.size >= msg.guild.filesize_limit for a in msg.attachments):
+                newmsg += "`Plus some files too large to resend`"
+
+            # Move the message
+            newmsg = await vid_channel.send(
+                content = f"**{msg.author.name} has uploaded a video. Original Message:**__\n\n> {msg.content}\n\n",
+                files = files
+            )
+            await msg.delete()
+            await msg.channel.send(f"{msg.author.mention} - your message contained a video, and was moved to <#{vid_channel}>.\nMessage link: https://discord.com/channels/{msg.guild.id}/{vid_channel}/{newmsg.id}")
+        else:
+            pass
+
+    @commands.Cog.listener(name="flag_message")
     async def on_reaction_add(self, reaction, user):
         """
         When a mod reacts to any message with the :mag: emoji,
@@ -88,7 +130,7 @@ class Listeners(commands.Cog):
                 else:
                     await flagged_message.channel.send(f"Logs channel has not been set!\nUse `;set_logs_channel <#channel>` to set one.")
 
-    @commands.Cog.listener()
+    @commands.Cog.listener(name="db_add_guild")
     async def on_guild_join(self, guild):
 
         # prep sending notif to Glass Harbor (for logging/debug)
@@ -102,14 +144,14 @@ class Listeners(commands.Cog):
             default_channel = None
         
         # put together default data
-        data = {"guild_id":guild.id,"guild_name":guild.name,"mod_roles":[],"chan_bot":default_channel,"chan_logs":default_channel,"prefix":";"}
+        data = {"guild_id":guild.id,"guild_name":guild.name,"prefix":";","mod_roles":[],"chan_bot":default_channel,"chan_logs":default_channel,"chan_vids":0,"videos_whitelist":[]}
 
         if self.bot.db.add_guild_table(guild.id, data):
             await channel.send(f"Guild \"{guild.name}\" added to database.")
         else:
             await channel.send(f"Guild \"{guild.name}\" already in database.")
 
-    @commands.Cog.listener()
+    @commands.Cog.listener(name="db_remove_guild")
     async def on_guild_remove(self, guild):
 
         # prep sending notif to Glass Harbor (for logging/debug)
@@ -124,6 +166,6 @@ class Listeners(commands.Cog):
         else:
             await channel.send(f"Guild \"{guild.name}\" not found in database.")
 
-    @commands.Cog.listener()
+    @commands.Cog.listener(name="db_update_guild")
     async def on_guild_update(self, oldguild, newguild):
         self.bot.db.update_guild_name(oldguild.id, newguild.name)

@@ -10,6 +10,8 @@ from typing import Optional
 
 from helper import * 
 
+logger = get_logger(__name__)
+
 ### Setup Cog
 
 # Startup method
@@ -23,7 +25,7 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"Cog Online: {self.qualified_name}")
+        logger.info(f"Cog Online: {self.qualified_name}")
 
     @app_commands.command(name="purge", description="Deletes n messages from current channel")
     async def purge(self, itx: discord.Interaction, number: int = 0):
@@ -45,20 +47,18 @@ class Moderation(commands.Cog):
 
         # Get message to be moved
         msg = await itx.channel.fetch_message(int(message_id))
-        newmsg = f"──────────────────────────────\n{msg.author.mention} - your message from <#{msg.channel.id}> has been moved to the appropriate channel.\n──────────────────────────────\n__**Original Message:**__\n\n> {msg.content}\n\n"
+        newmsg = f"──────────────────────────────\n{msg.author.mention} - your message from <#{msg.channel.id}> has been moved to the appropriate channel.\n──────────────────────────────\n__**Original Message:**__\n {msg.content}\n"
 
         # Get any attachments
         files = []
         if msg.attachments:            
-            for a in filter(lambda x: x.size <= 8000000, msg.attachments):
-                #if a.size <= 8000000:
+            for a in filter(lambda x: x.size <= itx.guild.filesize_limit, msg.attachments):
                 await download(itx, a, 'temp/moved_messages')
                 files.append(
                     discord.File(getfile(itx, f"temp/moved_messages/{a.filename}"))
                 )
-        if any(a.size >=8000000 for a in msg.attachments):
+        if any(a.size >= itx.guild.filesize_limit for a in msg.attachments):
             newmsg += f"`Plus some files too large to resend`"
-
 
         # Move the message
         await channel.send(

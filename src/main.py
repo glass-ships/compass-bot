@@ -11,6 +11,8 @@ from discord.utils import get
 from helper import *
 from database import *
 
+logger = get_logger(__name__)
+
 ##########################################################################
 
 ### Connect to database
@@ -18,7 +20,7 @@ from database import *
 mongo_url = os.getenv("MONGO_URL")
 async def get_db():
     bot.db = serverDB(mongo_url)
-    print("Connected to database")
+    logger.info("Connected to database.")
 
 ### Setup prefix (guild-specific or default)
 #
@@ -76,20 +78,22 @@ bot = commands.Bot(
 )
 
 async def startup_tasks():
-    print("\nConnecting to database...")
+    logger.info("Connecting to database...")
     await get_db()
     
-    print("\nStarting cogs...")
+    logger.info("Starting cogs...")
     for f in os.listdir("src/cogs"):
         if f.endswith(".py"):
             await bot.load_extension("cogs." + f[:-3])
 
 @bot.event
 async def on_ready():
-    print(f'\n{bot.user.name} has connected to Discord!')
+    logger.info(f'{bot.user.name} has connected to Discord!')
 
-##########################################################################
-
+### Run bot
+#
 asyncio.run(startup_tasks())
 bot.run(token)
 #asyncio.run(bot.tree.sync())
+
+##########################################################################

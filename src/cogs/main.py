@@ -10,6 +10,8 @@ import os
 from helper import * 
 from database import *
 
+logger = get_logger(__name__)
+
 ### Setup Cog
 
 # Startup method
@@ -24,7 +26,7 @@ class Main(commands.Cog):
         
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"Cog Online: {self.qualified_name}")
+        logger.info(f"Cog Online: {self.qualified_name}")
 
     @app_commands.command(name="ping")
     async def ping(self, interaction: discord.Interaction):

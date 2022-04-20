@@ -8,6 +8,7 @@ from typing import Optional
 
 from helper import * 
 
+logger = get_logger(__name__)
 ### Setup Cog
 
 # Startup method
@@ -21,4 +22,4 @@ class CogName(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f"Cog Online: {self.qualified_name}")
+        logger.info(f"Cog Online: {self.qualified_name}")
