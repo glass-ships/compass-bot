@@ -61,7 +61,7 @@ class Listeners(commands.Cog):
             return
 
         vid_links = ["youtube.com/watch?","youtu.be/","vimeo.com/","dailymotion.com/video","tiktok.com"]
-        newmessage = f"**{message.author.name} has uploaded a video. Original Message:**\n──────────────────────────────\n{message.content}\n"
+        newmessage = f"{message.author.name} has uploaded a video.\n─── **Original Message** ───\n\n{message.content}\n"
         
         if any(i in message.content for i in vid_links):
             files = []
@@ -83,10 +83,9 @@ class Listeners(commands.Cog):
 
             # Delete original and notify author
             await message.delete()
-            await message.channel.send(f"{message.author.mention} - your message contained a video, and was moved to <#{vid_channel}>.\nMessage link: https://discord.com/channels/{message.guild.id}/{vid_channel}/{movedmessage.id}")
+            await message.channel.send(f"{message.author.mention} - your message contained a video, and was moved to <#{vid_channel}>.\n**Link:** \nhttps://discord.com/channels/{message.guild.id}/{vid_channel}/{movedmessage.id}")
 
             return
-        logger.info("Message did not contain video - not moved.")
     
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):

@@ -47,7 +47,7 @@ class Moderation(commands.Cog):
 
         # Get message to be moved
         msg = await itx.channel.fetch_message(int(message_id))
-        newmsg = f"──────────────────────────────\n{msg.author.mention} - your message from <#{msg.channel.id}> has been moved to the appropriate channel.\n──────────────────────────────\n__**Original Message:**__\n {msg.content}\n"
+        newmsg = f"{msg.author.mention} - your message from <#{msg.channel.id}> has been moved to the appropriate channel.\n─── **Original Message** ───\n\n {msg.content}\n"
 
         # Get any attachments
         files = []
