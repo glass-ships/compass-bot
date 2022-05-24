@@ -96,6 +96,19 @@ class Admin(commands.Cog):
         self.bot.db.update_mod_roles(itx.guild_id, roles)
         await itx.response.send_message(f"Mod roles set: {mod_roles}", ephemeral=True)
 
+    @group_set.command(name="memrole")
+    @commands.has_permissions(administrator=True)
+    async def memrole(self, itx: discord.Interaction, role: discord.Role):
+    
+        # if role.startswith("<"):
+        #     r = role[3:-1]
+        #     roles.append(int(r))
+        # else:
+        #     roles.append(int(role))
+
+        self.bot.db.update_mem_role(itx.guild_id, role.id)
+        await itx.response.send_message(f"Mem roles set: {role}", ephemeral=True)
+
     @group_set.command(name="allowvideos")
     @commands.has_permissions(administrator=True)
     async def allowvideos(self, itx: discord.Interaction, channel: discord.TextChannel, switch: Boolean):

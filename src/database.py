@@ -37,6 +37,11 @@ class serverDB():
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
         return doc['mod_roles']
+    
+    def get_mem_role(self, guild_id):
+        a = self.collection.find({"guild_id":guild_id})
+        doc = a[0]
+        return doc['mem_role']
 
     def get_channel_bot(self, guild_id):
         a = self.collection.find({"guild_id":guild_id})        
@@ -87,6 +92,11 @@ class serverDB():
     def update_mod_roles(self, guild_id, new_value):
         filter = { "guild_id": guild_id }
         newval = { "$set": { 'mod_roles': new_value } }
+        self.collection.update_one(filter, newval)
+
+    def update_mem_role(self, guild_id, new_value):
+        filter = { "guild_id": guild_id }
+        newval = { "$set": { 'mem_role': new_value } }
         self.collection.update_one(filter, newval)
 
     def update_channel_bot(self, guild_id, new_value):
