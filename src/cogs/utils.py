@@ -112,6 +112,9 @@ class Utils(commands.Cog):
         await ctx.message.delete()
         await ctx.send(f"File cache cleared!", delete_after=2.0)
 
+    # Purely academic / for personal usage if you want to host your own instance. 
+    # Not intended for scraping servers for content. 
+    #
     # @app_commands.command(name='download', description="Downloads all files in current channel (personal archiving tools - do not use to steal content form others")
     # async def download(self, itx: discord.Interaction):
     #     download_dir = 'some/local/path'

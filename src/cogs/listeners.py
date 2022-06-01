@@ -88,7 +88,7 @@ class Listeners(commands.Cog):
             return
     
     @commands.Cog.listener()
-    async def on_reaction_add(self, reaction, user):
+    async def on_raw_reaction_add(self, reaction, user):
         """
         When a mod reacts to any message with the :mag: emoji,
         Bot will flag the message and send the info to a logs channel
@@ -96,7 +96,7 @@ class Listeners(commands.Cog):
         if str(reaction.emoji) == '🔍':                        
             mod_roles = self.bot.db.get_mod_roles(reaction.message.guild.id)
             roles = [x.id for x in user.roles]
-            if any(mr in roles for mr in mod_roles):
+            if any(r in roles for r in mod_roles):
                 # Remove the reaction           
                 await reaction.message.remove_reaction('🔍', user)
 
