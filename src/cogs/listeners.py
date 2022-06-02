@@ -10,6 +10,7 @@ from discord.ext import commands
 from discord.utils import get
 
 import time
+from datetime import datetime
 
 from helper import * 
 
@@ -88,21 +89,26 @@ class Listeners(commands.Cog):
             return
     
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, reaction, user):
+    async def on_raw_reaction_add(self, payload):# reaction, user):
         """
         When a mod reacts to any message with the :mag: emoji,
         Bot will flag the message and send the info to a logs channel
         """
-        if str(reaction.emoji) == '🔍':                        
-            mod_roles = self.bot.db.get_mod_roles(reaction.message.guild.id)
+        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        reaction = payload.emoji
+        emoji = '🔍'
+        user = payload.member
+        
+        if reaction == emoji:  
+            # Check for mod role                      
+            mod_roles = self.bot.db.get_mod_roles(payload.guild_id)
             roles = [x.id for x in user.roles]
             if any(r in roles for r in mod_roles):
                 # Remove the reaction           
-                await reaction.message.remove_reaction('🔍', user)
+                await message.remove_reaction('🔍', user)
 
                 # Get info
-                flagger = user
-                flagged_message, flagged_user = reaction.message, reaction.message.author
+                flagged_message, flagged_user = message, message.author
                 dt = datetime.now()
                 flagged_time = int(time.mktime(dt.timetuple()))
 
@@ -115,7 +121,7 @@ class Listeners(commands.Cog):
                             value=flagged_message.content,
                             inline=False
                 )           
-                ce.add_field(name="Flagged by:", value=flagger, inline=True)
+                ce.add_field(name="Flagged by:", value=user, inline=True)
                 ce.add_field(name="Message Author:", value=flagged_user, inline=True)
                 ce.add_field(name="Message:", value=f"[Jump to](https://discordapp.com/channels/{flagged_message.guild.id}/{flagged_message.channel.id}/{flagged_message.id})", inline=True)
                 for i in flagged_message.attachments:
