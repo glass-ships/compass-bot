@@ -94,26 +94,17 @@ class Listeners(commands.Cog):
         When a mod reacts to any message with the :mag: emoji,
         Bot will flag the message and send the info to a logs channel
         """
-        
-        logger.info(f"Reaction received\nPayload: {payload}")
-
         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
         reaction = payload.emoji
         emoji = '🔍'
         user = payload.member
         
-        logger.info("Checking for mag reaction...")
-
         if reaction.name == emoji:  
             # Check for mod role      
             
-            logger.info(f"Checking user {user} for mod roles...")
-
             mod_roles = self.bot.db.get_mod_roles(payload.guild_id)
             roles = [x.id for x in user.roles]
             if any(r in roles for r in mod_roles):
-
-                logger.info(f"Flagging message...")
 
                 # Remove the reaction           
                 await message.remove_reaction('🔍', user)
@@ -128,15 +119,16 @@ class Listeners(commands.Cog):
                     title=f"Flagged Message",
                     description=f"A message has been flagged in {flagged_message.channel}"
                 )
-                ce.add_field(name="Message content:",
+                if flagged_message.content:
+                    ce.add_field(name="Message content:",
                             value=flagged_message.content,
                             inline=False
-                )           
+                    )           
                 ce.add_field(name="Flagged by:", value=user, inline=True)
                 ce.add_field(name="Message Author:", value=flagged_user, inline=True)
                 ce.add_field(name="Message:", value=f"[Jump to](https://discordapp.com/channels/{flagged_message.guild.id}/{flagged_message.channel.id}/{flagged_message.id})", inline=True)
                 for i in flagged_message.attachments:
-                    ce.add_field(name="Attachment:", value=f"{i.filename})")
+                    ce.add_field(name="Attachment:", value=f"{i.filename}")
                 ce.add_field(name="Flagged at:", value=f"<t:{flagged_time}:R>")
 
                 # Send embed to logs
