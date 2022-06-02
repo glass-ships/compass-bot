@@ -104,7 +104,7 @@ class Listeners(commands.Cog):
         
         logger.info("Checking for mag reaction...")
 
-        if reaction == emoji:  
+        if reaction.name == emoji:  
             # Check for mod role      
             
             logger.info(f"Checking user {user} for mod roles...")
@@ -114,7 +114,7 @@ class Listeners(commands.Cog):
             if any(r in roles for r in mod_roles):
 
                 logger.info(f"Flagging message...")
-                
+
                 # Remove the reaction           
                 await message.remove_reaction('🔍', user)
 
