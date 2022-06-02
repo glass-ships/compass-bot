@@ -94,16 +94,27 @@ class Listeners(commands.Cog):
         When a mod reacts to any message with the :mag: emoji,
         Bot will flag the message and send the info to a logs channel
         """
+        
+        logger.info(f"Reaction received\nPayload: {payload}")
+
         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
         reaction = payload.emoji
         emoji = '🔍'
         user = payload.member
         
+        logger.info("Checking for mag reaction...")
+
         if reaction == emoji:  
-            # Check for mod role                      
+            # Check for mod role      
+            
+            logger.info(f"Checking user {user} for mod roles...")
+
             mod_roles = self.bot.db.get_mod_roles(payload.guild_id)
             roles = [x.id for x in user.roles]
             if any(r in roles for r in mod_roles):
+
+                logger.info(f"Flagging message...")
+                
                 # Remove the reaction           
                 await message.remove_reaction('🔍', user)
 
