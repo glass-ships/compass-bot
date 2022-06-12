@@ -70,7 +70,7 @@ class CustomHelpCommand(commands.HelpCommand):
 token = os.getenv("DSC_API_TOKEN")
 bot = commands.Bot(
     application_id = 932737557836468297, # main bot
-    #application_id = 535346715297841172, # test bot
+    # application_id = 535346715297841172, # test bot
     help_command=CustomHelpCommand(),
     command_prefix = getprefix,
     description = "A general use and moderation bot in Python.",
@@ -81,19 +81,21 @@ async def startup_tasks():
     logger.info("Connecting to database...")
     await get_db()
     
-    logger.info("Starting cogs...")
+    print("\nStarting cogs...")
     for f in os.listdir("src/cogs"):
         if f.endswith(".py"):
             await bot.load_extension("cogs." + f[:-3])
 
 @bot.event
 async def on_ready():
-    logger.info(f'{bot.user.name} has connected to Discord!')
+    print(f'\n{bot.user.name} has connected to Discord!')
 
 ### Run bot
 #
+logger.info(f"Parent Logger: {logger.parent}")
 asyncio.run(startup_tasks())
 bot.run(token)
 #asyncio.run(bot.tree.sync())
 
 ##########################################################################
+

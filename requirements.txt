@@ -5,6 +5,12 @@ git+https://github.com/Rapptz/discord.py.git
 python-dateutil 
 pytz
 
+# For music commands
+#youtube-dl
+yt-dlp
+git+https://github.com/plamere/spotipy.git@master
+beautifulsoup4
+
 # database stuff
 pymongo
 pymongo[srv]

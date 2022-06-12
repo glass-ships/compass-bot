@@ -7,8 +7,8 @@ from discord.ext import commands
 
 import os
 
-from helper import * 
-from database import *
+from utils.helper import * 
+from utils.database import *
 
 logger = get_logger(__name__)
 
