@@ -1,0 +1,28 @@
+### Imports ###
+
+import discord
+from discord.ext import commands
+from discord.utils import get
+
+from typing import Optional 
+
+from helper import * 
+
+logger = get_logger(__name__)
+
+### Setup Cog
+
+# Startup method
+async def setup(bot):
+    await bot.add_cog(Music(bot))
+
+# Define Class
+class Music(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        logger.info(f"Cog Online: {self.qualified_name}")
+
+    

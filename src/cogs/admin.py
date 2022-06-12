@@ -99,13 +99,6 @@ class Admin(commands.Cog):
     @group_set.command(name="memrole")
     @commands.has_permissions(administrator=True)
     async def memrole(self, itx: discord.Interaction, role: discord.Role):
-    
-        # if role.startswith("<"):
-        #     r = role[3:-1]
-        #     roles.append(int(r))
-        # else:
-        #     roles.append(int(role))
-
         self.bot.db.update_mem_role(itx.guild_id, role.id)
         await itx.response.send_message(f"Mem roles set: {role}", ephemeral=True)
 
@@ -133,50 +126,3 @@ class Admin(commands.Cog):
             return False
         await itx.response.send_message(f"{target.title()} channels unset.")
         return True
-
-def old_set_commands():     
-    # @commands.command()
-    # @commands.has_permissions(administrator=True)
-    # async def setmodroles(self, ctx, *, mod_roles: str):  
-    #     roles_list = mod_roles.split(" ")
-    #     # Strip any <@&> from roles
-    #     roles = []
-    #     for role in roles_list:
-    #         if role.startswith("<"):
-    #             r = role[3:-1]
-    #             roles.append(int(r))
-    #         else:
-    #             roles.append(int(role))   
-
-    #     # Update mod roles in database
-    #     self.bot.db.update_mod_roles(ctx.guild.id, roles)
-    #     await ctx.send(f"Mod roles set: {mod_roles}")
-
-    # @commands.command()
-    # @commands.has_permissions(administrator=True)
-    # async def setlogschannel(self, ctx, channel): 
-    #     # Get channel ID from mention
-    #     nums = [i for i in channel if i.isdigit()]
-    #     channel_id = int("".join(nums))
-    #     chan = get(ctx.guild.text_channels, id=channel_id)
-    #     if chan:
-    #         self.bot.db.update_channel_logs(ctx.guild.id, channel_id)
-    #         await ctx.send(f"Logs channel set to <#{channel_id}>")
-    #         return True
-    #     await ctx.send(f"{channel} is not a valid channel - please try again.")
-    #     return False
-
-    # @commands.command()
-    # @commands.has_permissions(administrator=True)
-    # async def setbotchannel(self, ctx, channel):
-    #     # Get channel ID from mention
-    #     nums = [i for i in channel if i.isdigit()]
-    #     channel_id = int("".join(nums))
-    #     chan = get(ctx.guild.text_channels, id=channel_id)
-    #     if chan:
-    #         self.bot.db.update_channel_bot(ctx.guild.id, channel_id)
-    #         await ctx.send(f"Bot channel set to <#{channel_id}>")
-    #         return True
-    #     await ctx.send(f"{channel} is not a valid channel - please try again.")
-    #     return False
-    pass
