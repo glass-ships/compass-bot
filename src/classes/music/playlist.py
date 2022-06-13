@@ -36,9 +36,6 @@ class Playlist:
         if len(self.playque) == 0:
             return None
 
-        if len(self.playque) == 0:
-            return None
-
         if song_played != "Dummy":
             if len(self.playhistory) > config.MAX_HISTORY_LENGTH:
                 self.playhistory.popleft()

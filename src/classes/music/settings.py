@@ -5,7 +5,7 @@ import discord
 import utils.music_config as config
 
 # dir_path = "src/"
-dir_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 
 class Settings():
@@ -81,7 +81,7 @@ class Settings():
 
     async def format(self):
         embed = discord.Embed(
-            title="Settings", description=self.guild.name, color=config.EMBED_COLOR)
+            title="Settings", description=self.guild.name, color=choice(config.EMBED_COLORS))
 
         embed.set_thumbnail(url=self.guild.icon_url)
         embed.set_footer(

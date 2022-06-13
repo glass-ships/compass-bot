@@ -27,14 +27,6 @@ class Admin(commands.Cog):
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
-    @commands.command(name="set_prefix", aliases=["sp"])
-    @commands.has_permissions(administrator=True)
-    async def _set_prefix(self, ctx, new_prefix):
-        """
-        Changes the bot's prefix for your server
-        """
-        self.bot.db.update_prefix(ctx.guild.id, new_prefix)
-        await ctx.send("Prefix updated!")
 
     @commands.command(name="sync")
     @commands.has_permissions(administrator=True)
@@ -66,6 +58,15 @@ class Admin(commands.Cog):
     
     group_set = app_commands.Group(name="set",description="Group of commands to set bot settings")
     group_unset = app_commands.Group(name="unset",description="Group of commands to configure bot settings")
+    
+    @group_set.command(name="prefix")
+    @commands.has_permissions(administrator=True)
+    async def _set_prefix(self, itx: discord.Interaction, new_prefix: str):
+        """
+        Changes the bot's prefix for your server
+        """
+        self.bot.db.update_prefix(itx.guild_id, new_prefix)
+        await itx.response.send_message(f"Prefix set to `{new_prefix}`")
     
     @group_set.command(name="channel")
     @commands.has_permissions(administrator=True)

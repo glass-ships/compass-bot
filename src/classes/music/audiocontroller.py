@@ -1,16 +1,18 @@
+from email.mime import audio
 import os, discord
+from redis import AuthenticationError
 import yt_dlp, asyncio, aiohttp
 import concurrent.futures
 
 import utils.music_config as config
 import utils.music_utils as utils
 
-from classes.playlist import Playlist
-from classes.songinfo import Song
+from classes.music.playlist import Playlist
+from classes.music.songinfo import Song
 from utils.helper import *
 
 logger = get_logger(__name__)
-ffmpeg = f"{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}/ffmpeg"
+ffmpeg = f"{os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))}/ffmpeg"
 
 class AudioController(object):
     """ 
@@ -65,7 +67,6 @@ class AudioController(object):
         coro = self.play_song(ctx, session, next_song)
         self.bot.loop.create_task(coro)
 
-
     async def play_song(self, ctx, session, song):
         """Plays a song object"""
 
@@ -112,6 +113,8 @@ class AudioController(object):
             after=lambda e: self.next_song(ctx, session, e)
         )
 
+        #await ctx.send(embed=song.info.format_output(config.SONGINFO_NOW_PLAYING))
+
         self.guild.voice_client.source = discord.PCMVolumeTransformer(self.guild.voice_client.source)
         self.guild.voice_client.source.volume = float(self.volume) / 100.0
 
@@ -120,7 +123,7 @@ class AudioController(object):
         for song in list(self.playlist.playque)[:config.MAX_SONG_PRELOAD]:
             asyncio.ensure_future(self.preload(session, song))
 
-    async def process_song(self, *, ctx, session, track):
+    async def process_song(self, ctx, session, track):
         """Adds the track to the playlist instance and plays it, if it is the first song"""
 
         host = utils.identify_url(track)
@@ -128,13 +131,17 @@ class AudioController(object):
 
         if playlist_type != utils.Playlist_Types.Unknown:
 
-            await self.process_playlist(session=session, url=track, playlist_type=playlist_type)
+            await self.process_playlist(ctx, session=session, url=track, playlist_type=playlist_type)
 
             if self.current_song == None:
                 await self.play_song(ctx, session, self.playlist.playque[0])
-                print("Playing {}".format(track))
+                logger.info("Playing {}".format(track))
 
-            song = Song(utils.Origins.Playlist, utils.Sites.Unknown)
+            song = Song(
+                        origin=utils.Origins.Playlist, 
+                        host=utils.Sites.Unknown,
+                        requested_by=ctx.message.author
+                    )
             return song
 
         if host == utils.Sites.Unknown:
@@ -154,6 +161,7 @@ class AudioController(object):
             downloader = yt_dlp.YoutubeDL({'format': 'bestaudio', 'title': True, "cookiefile": config.COOKIE_PATH})
             try:
                 r = downloader.extract_info(track, download=False)
+                print(r)
             except Exception as e:
                 if "ERROR: Sign in to confirm your age" in str(e):
                     return None
@@ -163,11 +171,21 @@ class AudioController(object):
 
         if r.get('thumbnails') is not None:
             thumbnail = r.get('thumbnails')[len(r.get('thumbnails')) - 1]['url']
+            print("Thumbnail: ", thumbnail)
         else:
             thumbnail = None
 
-        song = Song(utils.Origins.Default, host, base_url=r.get('url'), uploader=r.get('uploader'), title=r.get(
-            'title'), duration=r.get('duration'), webpage_url=r.get('webpage_url'), thumbnail=thumbnail)
+        song = Song(
+            origin = utils.Origins.Default,
+            host = host,
+            base_url=r.get('url'),
+            requested_by=ctx.message.author,
+            uploader=r.get('uploader'),
+            title=r.get('title'),
+            duration=r.get('duration'),
+            webpage_url=r.get('webpage_url'),
+            thumbnail=thumbnail
+        )
 
         self.playlist.add(song)
         
@@ -177,7 +195,7 @@ class AudioController(object):
 
         return song
 
-    async def process_playlist(self, session, url, playlist_type):
+    async def process_playlist(self, ctx, session, url, playlist_type):
 
         if playlist_type == utils.Playlist_Types.YouTube_Playlist:
 
@@ -185,7 +203,7 @@ class AudioController(object):
                 listid = url.split('=')[1]
             else:
                 video = url.split('&')[0]
-                await self.process_song(session=session, track=video)
+                await self.process_song(ctx, session=session, track=video)
                 return
 
             options = {
@@ -202,15 +220,24 @@ class AudioController(object):
                     link = "https://www.youtube.com/watch?v={}".format(
                         entry['id'])
 
-                    song = Song(utils.Origins.Playlist,
-                                utils.Sites.YouTube, webpage_url=link)
+                    song = Song(
+                                origin = utils.Origins.Playlist,
+                                host = utils.Sites.YouTube,
+                                webpage_url=link,
+                                requested_by=ctx.message.author
+                            )
 
                     self.playlist.add(song)
 
         if playlist_type == utils.Playlist_Types.Spotify_Playlist:
             links = await utils.get_spotify_playlist(session=session, url=url)
             for link in links:
-                song = Song(utils.Origins.Playlist, utils.Sites.Spotify, webpage_url=link)
+                song = Song(
+                            origin=utils.Origins.Playlist,
+                            host=utils.Sites.Spotify,
+                            requested_by=ctx.message.author,
+                            webpage_url=link
+                        )
                 self.playlist.add(song)
 
         if playlist_type == utils.Playlist_Types.BandCamp_Playlist:
@@ -225,7 +252,12 @@ class AudioController(object):
 
                     link = entry.get('url')
 
-                    song = Song(utils.Origins.Playlist, utils.Sites.Bandcamp, webpage_url=link)
+                    song = Song(
+                                origin=utils.Origins.Playlist,
+                                host=utils.Sites.Bandcamp,
+                                requested_by=ctx.message.author,
+                                webpage_url=link
+                            )
 
                     self.playlist.add(song)
 
@@ -353,7 +385,5 @@ class AudioController(object):
         await self.stop_player()
         await self.guild.voice_client.disconnect(force=True)
 
-
     def clear_queue(self):
         self.playlist.playque.clear()
-

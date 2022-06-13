@@ -1,12 +1,19 @@
 import os
 
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 SPOTIFY_ID: str = os.getenv('SPOTIFY_ID')
 SPOTIFY_SECRET: str = os.getenv('SPOTIFY_SECRET')
 
 BOT_PREFIX = ";"
-EMBED_COLOR = 0x4dd4d0  #replace after'0x' with desired hex code ex. '#ff0188' >> '0xff0188'
-COOKIE_PATH = f"{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}/cookies.txt"
+EMBED_COLORS = [
+    0xA575FF, 
+    0xFF23E9, 
+    0x37F3E4, 
+    0x7E6C6C, 
+    0xEBC280  
+]
+COOKIE_PATH = f"{ROOT_DIR}/cookies.txt"
 SUPPORTED_EXTENSIONS = ('.webm', '.mp4', '.mp3', '.avi', '.wav', '.m4v', '.ogg', '.mov')
 
 GLOBAL_DISABLE_AUTOJOIN_VC = False
@@ -37,14 +44,13 @@ INVALID_INVITE_MESSAGE = "Error: Invalid invitation link"
 ### Track info formatting
 
 INFO_HISTORY_TITLE = "Songs Played:"
-SONGINFO_UPLOADER = "Uploaded by: "
+SONGINFO_UPLOADER = "Song by: "
 SONGINFO_DURATION = "Length: "
 SONGINFO_SECONDS = "s"
 SONGINFO_LIKES = "Likes: "
 SONGINFO_DISLIKES = "Dislikes: "
 SONGINFO_NOW_PLAYING = "Now Playing"
 SONGINFO_QUEUE_ADDED = "Added to queue"
-SONGINFO_SONGINFO = "Song info"
 SONGINFO_ERROR = "Error: Unsupported site or age restricted content. To enable age restricted content check the documentation/wiki."
 SONGINFO_PLAYLIST_QUEUED = "Queued playlist :page_with_curl:"
 SONGINFO_UNKNOWN_DURATION = "Unknown"
