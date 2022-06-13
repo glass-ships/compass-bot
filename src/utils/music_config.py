@@ -1,6 +1,9 @@
 import os
+from pathlib import Path
+path = Path(__file__)
+print("Root path: ", path.parent.parent)
 
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+ROOT_DIR = f"{path.parent.parent}/generated"
 
 SPOTIFY_ID: str = os.getenv('SPOTIFY_ID')
 SPOTIFY_SECRET: str = os.getenv('SPOTIFY_SECRET')
