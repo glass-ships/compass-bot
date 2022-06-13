@@ -1,8 +1,7 @@
-from email.mime import audio
 import os, discord
-from redis import AuthenticationError
-import yt_dlp, asyncio, aiohttp
+import yt_dlp, asyncio
 import concurrent.futures
+#from redis import AuthenticationError
 
 import utils.music_config as config
 import utils.music_utils as utils
@@ -103,6 +102,13 @@ class AudioController(object):
         self.current_song = song
 
         self.playlist.playhistory.append(self.current_song)
+
+        if ~ discord.opus.is_loaded():
+            try: 
+                discord.opus.load_opus('libopus.so.0')
+                logger.info("Opus successfully loaded")
+            except Exception as e:
+                logger.info("Something went wrong: {}".format(e))
 
         self.guild.voice_client.play(
             discord.FFmpegPCMAudio(

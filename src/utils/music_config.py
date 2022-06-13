@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 path = Path(__file__)
-print("Root path: ", path.parent.parent)
 
 ROOT_DIR = f"{path.parent.parent}/generated"
 
@@ -21,7 +20,7 @@ SUPPORTED_EXTENSIONS = ('.webm', '.mp4', '.mp3', '.avi', '.wav', '.m4v', '.ogg',
 
 GLOBAL_DISABLE_AUTOJOIN_VC = False
 MAX_SONG_PRELOAD = 10  #maximum of 25
-VC_TIMEOUT = 300 #seconds
+VC_TIMEOUT = 120 #seconds
 VC_TIMOUT_DEFAULT = True  #default template setting for VC timeout true= yes, timeout false= no timeout
 ALLOW_VC_TIMEOUT_EDIT = True  #allow or disallow editing the vc_timeout guild setting
 
