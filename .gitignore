@@ -5,3 +5,4 @@ src/main-test.py
 test.py
 
 **/__pycache__
+.cache

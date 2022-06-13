@@ -7,9 +7,10 @@ import utils.music_utils as utils
 
 from classes.playlist import Playlist
 from classes.songinfo import Song
+from utils.helper import *
 
+logger = get_logger(__name__)
 ffmpeg = f"{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}/ffmpeg"
-session = aiohttp.ClientSession(headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'})
 
 class AudioController(object):
     """ 
@@ -54,20 +55,18 @@ class AudioController(object):
             history_string += "\n" + trackname
         return history_string
 
-    def next_song(self, error):
+    def next_song(self, ctx, session, error):
         """Invoked after a song is finished. Plays the next song if there is one."""
 
         next_song = self.playlist.next(self.current_song)
 
         self.current_song = None
 
-        if next_song is None:
-            return
-
-        coro = self.play_song(next_song)
+        coro = self.play_song(ctx, session, next_song)
         self.bot.loop.create_task(coro)
 
-    async def play_song(self, song):
+
+    async def play_song(self, ctx, session, song):
         """Plays a song object"""
 
         if self.playlist.loop != True: #let timer run thouh if looping
@@ -110,7 +109,7 @@ class AudioController(object):
                 source = song.base_url,
                 before_options = '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
                 ), 
-            after=lambda e: self.next_song(e)
+            after=lambda e: self.next_song(ctx, session, e)
         )
 
         self.guild.voice_client.source = discord.PCMVolumeTransformer(self.guild.voice_client.source)
@@ -119,24 +118,23 @@ class AudioController(object):
         self.playlist.playque.popleft()
 
         for song in list(self.playlist.playque)[:config.MAX_SONG_PRELOAD]:
-            asyncio.ensure_future(self.preload(song))
+            asyncio.ensure_future(self.preload(session, song))
 
-    async def process_song(self, track):
+    async def process_song(self, *, ctx, session, track):
         """Adds the track to the playlist instance and plays it, if it is the first song"""
 
         host = utils.identify_url(track)
-        is_playlist = utils.identify_playlist(track)
+        playlist_type = utils.identify_playlist(track)
 
-        if is_playlist != utils.Playlist_Types.Unknown:
+        if playlist_type != utils.Playlist_Types.Unknown:
 
-            await self.process_playlist(is_playlist, track)
+            await self.process_playlist(session=session, url=track, playlist_type=playlist_type)
 
             if self.current_song == None:
-                await self.play_song(self.playlist.playque[0])
+                await self.play_song(ctx, session, self.playlist.playque[0])
                 print("Playing {}".format(track))
 
-            song = Song(utils.Origins.Playlist,
-                        utils.Sites.Unknown)
+            song = Song(utils.Origins.Playlist, utils.Sites.Unknown)
             return song
 
         if host == utils.Sites.Unknown:
@@ -153,24 +151,18 @@ class AudioController(object):
             track = track.split("&list=")[0]
 
         try:
-            downloader = yt_dlp.YoutubeDL(
-                {'format': 'bestaudio', 'title': True, "cookiefile": config.COOKIE_PATH})
-
+            downloader = yt_dlp.YoutubeDL({'format': 'bestaudio', 'title': True, "cookiefile": config.COOKIE_PATH})
             try:
-                r = downloader.extract_info(
-                    track, download=False)
+                r = downloader.extract_info(track, download=False)
             except Exception as e:
                 if "ERROR: Sign in to confirm your age" in str(e):
                     return None
         except:
-            downloader = yt_dlp.YoutubeDL(
-                {'title': True, "cookiefile": config.COOKIE_PATH})
-            r = downloader.extract_info(
-                track, download=False)
+            downloader = yt_dlp.YoutubeDL({'title': True, "cookiefile": config.COOKIE_PATH})
+            r = downloader.extract_info(track, download=False)
 
         if r.get('thumbnails') is not None:
-            thumbnail = r.get('thumbnails')[len(
-                r.get('thumbnails')) - 1]['url']
+            thumbnail = r.get('thumbnails')[len(r.get('thumbnails')) - 1]['url']
         else:
             thumbnail = None
 
@@ -178,13 +170,14 @@ class AudioController(object):
             'title'), duration=r.get('duration'), webpage_url=r.get('webpage_url'), thumbnail=thumbnail)
 
         self.playlist.add(song)
+        
         if self.current_song == None:
-            print("Playing {}".format(track))
-            await self.play_song(song)
+            logger.info("Playing {}".format(track))
+            await self.play_song(ctx, session, song)
 
         return song
 
-    async def process_playlist(self, playlist_type, url):
+    async def process_playlist(self, session, url, playlist_type):
 
         if playlist_type == utils.Playlist_Types.YouTube_Playlist:
 
@@ -192,7 +185,7 @@ class AudioController(object):
                 listid = url.split('=')[1]
             else:
                 video = url.split('&')[0]
-                await self.process_song(video)
+                await self.process_song(session=session, track=video)
                 return
 
             options = {
@@ -215,10 +208,9 @@ class AudioController(object):
                     self.playlist.add(song)
 
         if playlist_type == utils.Playlist_Types.Spotify_Playlist:
-            links = await utils.get_spotify_playlist(session, url)
+            links = await utils.get_spotify_playlist(session=session, url=url)
             for link in links:
-                song = Song(utils.Origins.Playlist,
-                            utils.Sites.Spotify, webpage_url=link)
+                song = Song(utils.Origins.Playlist, utils.Sites.Spotify, webpage_url=link)
                 self.playlist.add(song)
 
         if playlist_type == utils.Playlist_Types.BandCamp_Playlist:
@@ -233,15 +225,14 @@ class AudioController(object):
 
                     link = entry.get('url')
 
-                    song = Song(utils.Origins.Playlist,
-                                utils.Sites.Bandcamp, webpage_url=link)
+                    song = Song(utils.Origins.Playlist, utils.Sites.Bandcamp, webpage_url=link)
 
                     self.playlist.add(song)
 
         for song in list(self.playlist.playque)[:config.MAX_SONG_PRELOAD]:
-            asyncio.ensure_future(self.preload(song))
+            asyncio.ensure_future(self.preload(session, song))
 
-    async def preload(self, song):
+    async def preload(self, session, song):
 
         if song.info.title != None:
             return
@@ -308,7 +299,7 @@ class AudioController(object):
         self.clear_queue()
         self.guild.voice_client.stop()
 
-    async def prev_song(self):
+    async def prev_song(ctx, session, self):
         """Loads the last song from the history into the queue and starts it"""
 
         self.timer.cancel()
@@ -324,7 +315,7 @@ class AudioController(object):
             if prev_song == "Dummy":
                 self.playlist.next(self.current_song)
                 return None
-            await self.play_song(prev_song)
+            await self.play_song(ctx, session, prev_song)
         else:
             self.guild.voice_client.stop()
 

@@ -53,8 +53,13 @@ class YTDLSource(discord.PCMVolumeTransformer):
 def is_connected(ctx):
     voice_client = ctx.message.guild.voice_client
     return voice_client and voice_client.is_connected()
+    
+client = commands.Bot(
+    application_id = 535346715297841172, # test bot
+    command_prefix = ";",
+    intents = discord.Intents.all()
+)
 
-client = commands.Bot(command_prefix='?')
 
 status = ['Jamming out to music!', 'Vibin\'', 'Listenin to bangers']
 queue = []
@@ -196,4 +201,5 @@ async def view(ctx):
 async def change_status():
     await client.change_presence(activity=discord.Game(choice(status)))
 
-client.run('token')
+import os
+client.run(os.getenv("DSC_API_TOKEN"))

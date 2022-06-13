@@ -48,7 +48,7 @@ class Listeners(commands.Cog):
         else:
             message = f"Oh no! Something went wrong while running the command!\n```\n{error}\n```"
 
-        await ctx.send(message, delete_after=5)
+        await ctx.send(message, delete_after=60)
         await ctx.message.delete(delay=5)
 
     # Move videos 

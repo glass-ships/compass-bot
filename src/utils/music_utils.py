@@ -20,11 +20,8 @@ guild_to_settings = {}
 
 url_regex = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
+#session = aiohttp.ClientSession(headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'})
 
-#async def get_session():
-#    return aiohttp.ClientSession(headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'})
-#session = get_session()
-#print(f"Session: {session}")
 
 try:
     sp_api = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
@@ -32,6 +29,8 @@ try:
     api = True
 except:
     api = False
+
+logger.info(f"Spotify api user level connection:{api}")
 
 
 class Timer:
@@ -208,24 +207,22 @@ async def play_check(ctx):
 
 
 async def convert_spotify(session, url):
-    async with session as s:
-        logger.info(f"Session: {s} - parsing Spotify link: {url}")
+    logger.info(f"Session: {session} - parsing Spotify link: {url}")
 
-        if re.search(url_regex, url):
-            result = url_regex.search(url)
+    if re.search(url_regex, url):
+        result = url_regex.search(url)
 
-            if "?si=" in url:
-                url = result.group(0) + "&nd=1"
-                logger.info(f"Parsed url: {url}")
+        if "?si=" in url:
+            url = result.group(0) + "&nd=1"
+            logger.info(f"Parsed url: {url}")
 
-        logger.info("Awaiting response...")
-        response = await s.get(url)
-        logger.error(f"Something went wrong: {e}")
+    logger.info("Awaiting response...")
 
-        try:
+    try:
+        async with session.get(url) as response:
             page = await response.text()
             
-            logger.info(f"Got response: {page}")
+            logger.info(f"Parsing response")
 
             soup = BeautifulSoup(page, 'html.parser')
 
@@ -233,10 +230,11 @@ async def convert_spotify(session, url):
             title = title.string
             title = title.replace('- song by', '')
             title = title.replace('| Spotify', '')
-        except Exception as e:
-            logger.error(f"Something went wrong: {e}")
-            return e
-        return title
+    except Exception as e:
+        logger.error(f"Something went wrong: {e}")
+        return e
+    return title
+
 
 async def get_spotify_playlist(session, url):
     """Return Spotify_Playlist class"""
@@ -304,6 +302,4 @@ async def get_spotify_playlist(session, url):
     title = title.string
 
     return links
-
-
 
