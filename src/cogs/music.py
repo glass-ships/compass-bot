@@ -74,7 +74,6 @@ class Music(commands.Cog):
             if audiocontroller.current_song != None:
                 await ctx.send(embed=audiocontroller.current_song.info.format_output(config.SONGINFO_NOW_PLAYING))
             
-
     @commands.command(name='loop', description=config.HELP_LOOP_LONG, help=config.HELP_LOOP_SHORT, aliases=['l', 'repeat'])
     async def _loop(self, ctx):
 
