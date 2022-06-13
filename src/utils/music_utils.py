@@ -7,7 +7,9 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
 import utils.music_config as config
+from utils.helper import *
 
+logger = get_logger(__name__)
 #####
 
 # A dictionary that remembers which guild belongs to which audiocontroller
@@ -18,8 +20,11 @@ guild_to_settings = {}
 
 url_regex = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
-session = aiohttp.ClientSession(headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'})
 
+#async def get_session():
+#    return aiohttp.ClientSession(headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'})
+#session = get_session()
+#print(f"Session: {session}")
 
 try:
     sp_api = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
@@ -202,28 +207,38 @@ async def play_check(ctx):
             return False
 
 
-async def convert_spotify(url):
+async def convert_spotify(session, url):
+    async with session as s:
+        logger.info(f"Session: {s} - parsing Spotify link: {url}")
 
-    if re.search(url_regex, url):
-        result = url_regex.search(url)
+        if re.search(url_regex, url):
+            result = url_regex.search(url)
 
-        if "?si=" in url:
-            url = result.group(0) + "&nd=1"
+            if "?si=" in url:
+                url = result.group(0) + "&nd=1"
+                logger.info(f"Parsed url: {url}")
 
-    async with session.get(url) as response:
+        logger.info("Awaiting response...")
+        response = await s.get(url)
+        logger.error(f"Something went wrong: {e}")
 
-        page = await response.text()
-        soup = BeautifulSoup(page, 'html.parser')
+        try:
+            page = await response.text()
+            
+            logger.info(f"Got response: {page}")
 
-        title = soup.find('title')
-        title = title.string
-        title = title.replace('- song by', '')
-        title = title.replace('| Spotify', '')
-        
+            soup = BeautifulSoup(page, 'html.parser')
+
+            title = soup.find('title')
+            title = title.string
+            title = title.replace('- song by', '')
+            title = title.replace('| Spotify', '')
+        except Exception as e:
+            logger.error(f"Something went wrong: {e}")
+            return e
         return title
 
-
-async def get_spotify_playlist(url):
+async def get_spotify_playlist(session, url):
     """Return Spotify_Playlist class"""
 
     code = url.split('/')[4].split('?')[0]
@@ -249,7 +264,7 @@ async def get_spotify_playlist(url):
                 return links
             except:
                 if config.SPOTIFY_ID != "" or config.SPOTIFY_SECRET != "":
-                    print("ERROR: Check spotify CLIENT_ID and SECRET")
+                    logger.error("ERROR: Check spotify CLIENT_ID and SECRET")
 
         if "open.spotify.com/playlist" in url:
             try:
@@ -271,7 +286,7 @@ async def get_spotify_playlist(url):
 
             except:
                 if config.SPOTIFY_ID != "" or config.SPOTIFY_SECRET != "":
-                    print("ERROR: Check spotify CLIENT_ID and SECRET")
+                    logger.error("ERROR: Check spotify CLIENT_ID and SECRET")
 
     async with session.get(url + "&nd=1") as response:
          page = await response.text()

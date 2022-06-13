@@ -6,18 +6,19 @@ SPOTIFY_SECRET: str = os.getenv('SPOTIFY_SECRET')
 
 BOT_PREFIX = ";"
 EMBED_COLOR = 0x4dd4d0  #replace after'0x' with desired hex code ex. '#ff0188' >> '0xff0188'
-COOKIE_PATH = "/config/cookies/cookies.txt"
+COOKIE_PATH = f"{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}/cookies.txt"
 SUPPORTED_EXTENSIONS = ('.webm', '.mp4', '.mp3', '.avi', '.wav', '.m4v', '.ogg', '.mov')
 
 GLOBAL_DISABLE_AUTOJOIN_VC = False
-MAX_SONG_PRELOAD = 25  #maximum of 25
-VC_TIMEOUT = 600 #seconds
+MAX_SONG_PRELOAD = 10  #maximum of 25
+VC_TIMEOUT = 300 #seconds
 VC_TIMOUT_DEFAULT = True  #default template setting for VC timeout true= yes, timeout false= no timeout
 ALLOW_VC_TIMEOUT_EDIT = True  #allow or disallow editing the vc_timeout guild setting
 
+MAX_HISTORY_LENGTH = 10
+MAX_TRACKNAME_HISTORY_LENGTH = 15
 #STARTUP_MESSAGE = "Starting Bot..."
 #STARTUP_COMPLETE_MESSAGE = "Startup Complete"
-
 #ADD_MESSAGE= "To add this bot to your own Server, click [here]" #brackets will be the link text
 
 
@@ -33,15 +34,11 @@ DEFAULT_CHANNEL_JOIN_FAILED = "Error: Could not join the default voice channel"
 INVALID_INVITE_MESSAGE = "Error: Invalid invitation link"
 
 
-
 ### Track info formatting
 
 INFO_HISTORY_TITLE = "Songs Played:"
-MAX_HISTORY_LENGTH = 10
-MAX_TRACKNAME_HISTORY_LENGTH = 15
-
-SONGINFO_UPLOADER = "Uploader: "
-SONGINFO_DURATION = "Duration: "
+SONGINFO_UPLOADER = "Uploaded by: "
+SONGINFO_DURATION = "Length: "
 SONGINFO_SECONDS = "s"
 SONGINFO_LIKES = "Likes: "
 SONGINFO_DISLIKES = "Dislikes: "
@@ -61,10 +58,8 @@ HELP_CONNECT_SHORT = "Connect bot to voicechannel"
 HELP_CONNECT_LONG = "Connects the bot to the voice channel you are currently in"
 HELP_DISCONNECT_SHORT = "Disonnect bot from voicechannel"
 HELP_DISCONNECT_LONG = "Disconnect the bot from the voice channel and stop audio."
-
 HELP_SETTINGS_SHORT = "View and set bot settings"
 HELP_SETTINGS_LONG = "View and set bot settings in the server. Usage: {}settings setting_name value".format(BOT_PREFIX)
-
 HELP_HISTORY_SHORT = "Show history of songs"
 HELP_HISTORY_LONG = "Shows the " + str(MAX_TRACKNAME_HISTORY_LENGTH) + " last played songs."
 HELP_PAUSE_SHORT = "Pause Music"

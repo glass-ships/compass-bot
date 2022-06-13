@@ -1,7 +1,5 @@
-import discord
-
-import yt_dlp
-import asyncio
+import os, discord
+import yt_dlp, asyncio, aiohttp
 import concurrent.futures
 
 import utils.music_config as config
@@ -10,6 +8,8 @@ import utils.music_utils as utils
 from classes.playlist import Playlist
 from classes.songinfo import Song
 
+ffmpeg = f"{os.path.dirname(os.path.dirname(os.path.realpath(__file__)))}/ffmpeg"
+session = aiohttp.ClientSession(headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'})
 
 class AudioController(object):
     """ 
@@ -76,7 +76,7 @@ class AudioController(object):
 
         if song.info.title == None:
             if song.host == utils.Sites.Spotify:
-                conversion = self.search_youtube(await utils.convert_spotify(song.info.webpage_url))
+                conversion = self.search_youtube(await utils.convert_spotify(session, song.info.webpage_url))
                 song.info.webpage_url = conversion
 
             try:
@@ -104,11 +104,16 @@ class AudioController(object):
 
         self.playlist.playhistory.append(self.current_song)
 
-        self.guild.voice_client.play(discord.FFmpegPCMAudio(
-            song.base_url, before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'), after=lambda e: self.next_song(e))
+        self.guild.voice_client.play(
+            discord.FFmpegPCMAudio(
+                executable = ffmpeg,
+                source = song.base_url,
+                before_options = '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
+                ), 
+            after=lambda e: self.next_song(e)
+        )
 
-        self.guild.voice_client.source = discord.PCMVolumeTransformer(
-            self.guild.voice_client.source)
+        self.guild.voice_client.source = discord.PCMVolumeTransformer(self.guild.voice_client.source)
         self.guild.voice_client.source.volume = float(self.volume) / 100.0
 
         self.playlist.playque.popleft()
@@ -141,7 +146,7 @@ class AudioController(object):
             track = self.search_youtube(track)
 
         if host == utils.Sites.Spotify:
-            title = await utils.convert_spotify(track)
+            title = await utils.convert_spotify(session, track)
             track = self.search_youtube(title)
 
         if host == utils.Sites.YouTube:
@@ -210,7 +215,7 @@ class AudioController(object):
                     self.playlist.add(song)
 
         if playlist_type == utils.Playlist_Types.Spotify_Playlist:
-            links = await utils.get_spotify_playlist(url)
+            links = await utils.get_spotify_playlist(session, url)
             for link in links:
                 song = Song(utils.Origins.Playlist,
                             utils.Sites.Spotify, webpage_url=link)
@@ -261,7 +266,7 @@ class AudioController(object):
             song.info.thumbnail = r.get('thumbnails')[0]['url']
 
         if song.host == utils.Sites.Spotify:
-            song.info.title = await utils.convert_spotify(song.info.webpage_url)
+            song.info.title = await utils.convert_spotify(session, song.info.webpage_url)
 
         loop = asyncio.get_event_loop()
         executor = concurrent.futures.ThreadPoolExecutor(

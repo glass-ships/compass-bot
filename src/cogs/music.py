@@ -1,16 +1,15 @@
 ### Imports ###
 
-from distutils.command.config import config
 import discord
 from discord.ext import commands
 from discord.utils import get
+#from distutils.command.config import config
 
 from utils.helper import * 
 import utils.music_config as config
 import utils.music_utils as utils
 
-from typing import Optional 
-import yt_dlp
+import aiohttp, yt_dlp
 
 logger = get_logger(__name__)
 
@@ -19,11 +18,12 @@ logger = get_logger(__name__)
 # Startup method
 async def setup(bot):
     await bot.add_cog(Music(bot))
+    
 
 # Define Class
 class Music(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot = bot      
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -69,7 +69,7 @@ class Music(commands.Cog):
         elif song.origin == utils.Origins.Playlist:
             await ctx.send(config.SONGINFO_PLAYLIST_QUEUED)
 
-    @commands.command(name='loop', description=config.HELP_LOOP_LONG, help=config.HELP_LOOP_SHORT, aliases=['l'])
+    @commands.command(name='loop', description=config.HELP_LOOP_LONG, help=config.HELP_LOOP_SHORT, aliases=['l', 'repeat'])
     async def _loop(self, ctx):
 
         current_guild = utils.get_guild(self.bot, ctx.message)
@@ -126,8 +126,7 @@ class Music(commands.Cog):
         current_guild.voice_client.pause()
         await ctx.send("Playback Paused :pause_button:")
 
-    @commands.command(name='queue', description=config.HELP_QUEUE_LONG, help=config.HELP_QUEUE_SHORT,
-                      aliases=['playlist', 'q'])
+    @commands.command(name='queue', description=config.HELP_QUEUE_LONG, help=config.HELP_QUEUE_SHORT,aliases=['playlist', 'q'])
     async def _queue(self, ctx):
         current_guild = utils.get_guild(self.bot, ctx.message)
 
