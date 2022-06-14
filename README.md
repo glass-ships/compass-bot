@@ -8,6 +8,10 @@ If you have any questions, suggestions, or feedback, please feel free to create 
 
 For guided instructions on creating a Discord bot in C# or Python, see [Fatcatnine's Thinbotnine repository](https://gitlab.com/fatcatnine/thinbotnine) (soon TM)
 
+#### Dependencies
+- Python >= 3.8
+- libopus0
+
 ### Contents
 
 A few boring files:

@@ -79,8 +79,7 @@ class AudioController(object):
                 song.info.webpage_url = conversion
 
             try:
-                downloader = yt_dlp.YoutubeDL(
-                    {'format': 'bestaudio', 'title': True, "cookiefile": config.COOKIE_PATH})
+                downloader = yt_dlp.YoutubeDL({'format': 'bestaudio', 'title': True, "cookiefile": config.COOKIE_PATH})
                 r = downloader.extract_info(
                     song.info.webpage_url, download=False)
             except:
@@ -126,8 +125,9 @@ class AudioController(object):
 
         self.playlist.playque.popleft()
 
+        loop = asyncio.get_event_loop()
         for song in list(self.playlist.playque)[:config.MAX_SONG_PRELOAD]:
-            asyncio.ensure_future(self.preload(session, song))
+            loop.run_until_complete(asyncio.ensure_future(self.preload(session, song)))
 
     async def process_song(self, ctx, session, track):
         """Adds the track to the playlist instance and plays it, if it is the first song"""
@@ -167,7 +167,6 @@ class AudioController(object):
             downloader = yt_dlp.YoutubeDL({'format': 'bestaudio', 'title': True, "cookiefile": config.COOKIE_PATH})
             try:
                 r = downloader.extract_info(track, download=False)
-                print(r)
             except Exception as e:
                 if "ERROR: Sign in to confirm your age" in str(e):
                     return None
@@ -215,6 +214,11 @@ class AudioController(object):
             options = {
                 'format': 'bestaudio/best',
                 'extract_flat': True,
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
                 "cookiefile": config.COOKIE_PATH
             }
 
@@ -248,8 +252,10 @@ class AudioController(object):
 
         if playlist_type == utils.Playlist_Types.BandCamp_Playlist:
             options = {
-                'format': 'bestaudio/best',
-                'extract_flat': True
+            'format': 'bestaudio/best',
+            'default_search': 'auto',
+            'noplaylist': True,
+            "cookiefile": config.COOKIE_PATH
             }
             with yt_dlp.YoutubeDL(options) as ydl:
                 r = ydl.extract_info(url, download=False)
