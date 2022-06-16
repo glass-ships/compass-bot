@@ -66,7 +66,10 @@ class Moderation(commands.Cog):
         await msg.delete()
         await itx.followup.send(f"Message moved to <#{channel.id}>")
 
-    @app_commands.command(name="remove_role", description="Remove role from a user with optional duration")
+    async def _add_role():
+        pass
+
+    @app_commands.command(name="removerole", description="Remove role from a user with optional duration")
     @app_commands.rename(dur="duration")#, role="Role", user="User")
     async def _role_remove(self, itx: discord.interactions, role: discord.Role, user: discord.Member, dur: Optional[int]):
 
@@ -74,6 +77,8 @@ class Moderation(commands.Cog):
         mod_roles = self.bot.db.get_mod_roles(itx.guild_id)
         if not await role_check_itx(itx, mod_roles):
             return
+
+        await itx.response.defer()
 
         role = get(itx.guild.roles, id=role.id)    
         if not user:
@@ -83,13 +88,13 @@ class Moderation(commands.Cog):
         roles = [x.id for x in bonked.roles]
         if role.id in roles:
             await bonked.remove_roles(role)
-            await itx.response.send_message(f"<@{bonked.id}> has had the \"{role.name}\" role temporarily removed.")
+            await itx.followup.send(f"<@{bonked.id}> has had the \"{role.name}\" role removed{' for '+str(dur)+' sec' if dur else ''}.")
             if dur:
                 await asyncio.sleep(dur)
                 await bonked.add_roles(role)
-                await itx.response.send_message(f"<@{bonked.id}> has had the \"{role.name}\" role added back.")
+                await itx.followup.send(f"<@{bonked.id}> has had the \"{role.name}\" role added back.")
         else:
-            await itx.response.send_message("Cannot remove role - user doesn't have it!")
+            await itx.followup.send("Cannot remove role - user doesn't have it!")
 
     @commands.command(name="checkinactive", aliases=['ci'])
     async def _check_user_activity(self, ctx):
