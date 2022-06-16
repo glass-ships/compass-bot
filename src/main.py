@@ -27,7 +27,6 @@ async def connect_to_db():
     bot.db = serverDB(mongo_url)
     logger.info("Connected to database.")
 
-
 # Setup prefix (guild-specific or default)
 async def getprefix(bot, ctx):
     if not ctx.guild:
@@ -37,7 +36,6 @@ async def getprefix(bot, ctx):
         bot.db.update_prefix(DEFAULT_PREFIX)
         prefix = DEFAULT_PREFIX
     return commands.when_mentioned_or(prefix)(bot,ctx)
-
 
 # Custom help commands
 class CustomHelpCommand(commands.HelpCommand):
@@ -70,6 +68,7 @@ class CustomHelpCommand(commands.HelpCommand):
     async def send_command_help(self, command):
         return await super().send_command_help(command)
 
+# Setup music functionality
 async def config_music(guild):
 
     guild_settings[guild] = Settings(guild)
@@ -92,7 +91,7 @@ async def config_music(guild):
             try:
                 await guild_audiocontroller[guild].register_voice_channel(guild.voice_channels[0])
             except Exception as e:
-                print(e)
+                logger.error(e)
 
         else:
             for vc in vc_channels:
@@ -100,7 +99,7 @@ async def config_music(guild):
                     try:
                         await guild_audiocontroller[guild].register_voice_channel(vc_channels[vc_channels.index(vc)])
                     except Exception as e:
-                        print(e)
+                        logger.error(e)
 
 ### Setup Discord bot
 
@@ -118,7 +117,7 @@ async def startup_tasks():
     logger.info("Connecting to database...")
     await connect_to_db()
     
-    print("\nStarting cogs...")
+    logger.info("Starting cogs...")
     for f in os.listdir("src/cogs"):
         if f.endswith(".py"):
             await bot.load_extension("cogs." + f[:-3])
@@ -128,7 +127,7 @@ async def startup_tasks():
 async def on_ready():
     for guild in bot.guilds:
         await config_music(guild)
-    print(f'\n{bot.user.name} has connected to Discord!')
+    logger.info(f'{bot.user.name} has connected to Discord!')
 
 ##########################################################################
 

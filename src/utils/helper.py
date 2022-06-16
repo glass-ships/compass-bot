@@ -96,7 +96,7 @@ def get_logger(name: str) -> logging.Logger:
     """Get an instance of logger."""
     logger = logging.getLogger(name)
     handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter(":%(levelname)s:%(name)-12s: %(message)s")
+    formatter = logging.Formatter("|%(levelname)s|%(name)s|%(message)s|")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)

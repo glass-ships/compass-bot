@@ -4,7 +4,7 @@ from collections import deque
 import utils.music_config as config
 
 
-class Playlist:
+class Queue:
     """Stores the youtube links of songs to be played and already played and offers basic operation on the queues"""
 
     def __init__(self):

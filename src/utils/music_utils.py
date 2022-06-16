@@ -78,7 +78,7 @@ def get_url(content):
         return None
 
 
-def identify_url(url):
+def identify_host(url):
     if url is None:
         return Sites.Unknown
 
