@@ -16,6 +16,19 @@ import logging
 
 ##### Helper Functions #####
 
+def get_guild(bot, command):
+    """
+    Gets the guild a command belongs to (for VC commands). 
+    Useful, if the command was sent via pm.
+    """
+    if command.guild is not None:
+        return command.guild
+    for guild in bot.guilds:
+        for channel in guild.voice_channels:
+            if command.author in channel.members:
+                return guild
+    return None
+
 async def role_check(ctx=None, roles=None):
     """
     Check if user has required roles
@@ -48,15 +61,14 @@ async def role_check_itx(itx: discord.Interaction=None, roles=None):
     await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
     return False
 
-# Assert datetime format
 def check_time_format(t):
+    """Assert datetime format  """
     pattern = r"\d{4}-\d{1,2}-\d{1,2}\s\d{1,2}:\d{2}\s[a-zA-Z]{2}\s[a-zA-Z]{3}"
     match = re.match(pattern, t)
-    check = bool(match)
-    return check
+    return bool(match)
 
-# Convert datetime to epoch time (assumes format "YYYY-MM-DD HH:MM AM/PM TZ")
 def dt_to_epoch(t):
+    """Convert datetime to epoch time. Assumes format 'YYYY-MM-DD HH:MM AM/PM TZ'"""
     msg_split = t.split()
     temp = []
     temp.extend(msg_split[0].split('-'))
@@ -67,16 +79,17 @@ def dt_to_epoch(t):
     et = int(time.mktime(dt.timetuple()))
     return et
 
-# Download attachment from a message
 async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> None:
+    """Download an attachment from a message"""
+
     fp = os.path.join("downloads", itx.guild.name, path)
     fn = attachment.filename
     Path(fp).mkdir(parents=True, exist_ok=True)
     await attachment.save(fp=f"{fp}/{fn}")
     return
 
-# Normalize a downloaded filepath
-def getfile(itx, fp) -> str:
+def getfilepath(itx, fp) -> str:
+    """Normalize a downloaded filepath"""
     return f"downloads/{itx.guild.name}/{fp}"
 
 def get_logger(name: str) -> logging.Logger:

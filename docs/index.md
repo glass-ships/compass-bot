@@ -12,7 +12,7 @@ Compass is a general Discord bot written in Python, with features intended to si
 
 ### How do I set up Compass in my server?
 
-Setting up Compass is pretty simple - just change the bot's prefix if you want, set a logs channel, and any mod roles you want to be able to use mod-only commands.
+Setting up Compass is pretty simple - just a few quick commands and you're on your way!
 
 Check out the [Configuration page](Configuration/setup.md) for more info.
 

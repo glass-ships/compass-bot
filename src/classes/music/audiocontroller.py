@@ -30,10 +30,17 @@ class AudioController(object):
         self.current_song = None
         self.guild = guild
 
-        sett = utils.guild_to_settings[guild]
+        sett = utils.guild_settings[guild]
         self._volume = sett.get('default_volume')
 
         self.timer = utils.Timer(self.timeout_handler)
+
+        if ~ discord.opus.is_loaded():
+            try: 
+                discord.opus.load_opus('libopus.so.0')
+                logger.info("Opus successfully loaded")
+            except Exception as e:
+                logger.info("Something went wrong: {}".format(e))
 
     @property
     def volume(self):
@@ -102,13 +109,6 @@ class AudioController(object):
 
         self.playlist.playhistory.append(self.current_song)
 
-        if ~ discord.opus.is_loaded():
-            try: 
-                discord.opus.load_opus('libopus.so.0')
-                logger.info("Opus successfully loaded")
-            except Exception as e:
-                logger.info("Something went wrong: {}".format(e))
-
         self.guild.voice_client.play(
             discord.FFmpegPCMAudio(
                 executable = ffmpeg,
@@ -127,7 +127,7 @@ class AudioController(object):
 
         loop = asyncio.get_event_loop()
         for song in list(self.playlist.playque)[:config.MAX_SONG_PRELOAD]:
-            loop.run_until_complete(asyncio.ensure_future(self.preload(session, song)))
+            await asyncio.ensure_future(self.preload(session, song))
 
     async def process_song(self, ctx, session, track):
         """Adds the track to the playlist instance and plays it, if it is the first song"""
@@ -274,7 +274,7 @@ class AudioController(object):
                     self.playlist.add(song)
 
         for song in list(self.playlist.playque)[:config.MAX_SONG_PRELOAD]:
-            asyncio.ensure_future(self.preload(session, song))
+            await asyncio.ensure_future(self.preload(session, song))
 
     async def preload(self, session, song):
 
@@ -369,7 +369,7 @@ class AudioController(object):
             await self.udisconnect()
             return
 
-        sett = utils.guild_to_settings[self.guild]
+        sett = utils.guild_settings[self.guild]
 
         if sett.get('vc_timeout') == False:
             self.timer = utils.Timer(self.timeout_handler)  # restart timer

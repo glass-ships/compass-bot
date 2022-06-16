@@ -72,10 +72,10 @@ class CustomHelpCommand(commands.HelpCommand):
 
 async def config_music(guild):
 
-    guild_to_settings[guild] = Settings(guild)
-    guild_to_audiocontroller[guild] = AudioController(bot, guild)
+    guild_settings[guild] = Settings(guild)
+    guild_audiocontroller[guild] = AudioController(bot, guild)
 
-    sett = guild_to_settings[guild]
+    sett = guild_settings[guild]
 
     try:
         await guild.me.edit(nick=sett.get('default_nickname'))
@@ -90,7 +90,7 @@ async def config_music(guild):
     if sett.get('vc_timeout') == False:
         if sett.get('start_voice_channel') == None:
             try:
-                await guild_to_audiocontroller[guild].register_voice_channel(guild.voice_channels[0])
+                await guild_audiocontroller[guild].register_voice_channel(guild.voice_channels[0])
             except Exception as e:
                 print(e)
 
@@ -98,7 +98,7 @@ async def config_music(guild):
             for vc in vc_channels:
                 if vc.id == sett.get('start_voice_channel'):
                     try:
-                        await guild_to_audiocontroller[guild].register_voice_channel(vc_channels[vc_channels.index(vc)])
+                        await guild_audiocontroller[guild].register_voice_channel(vc_channels[vc_channels.index(vc)])
                     except Exception as e:
                         print(e)
 

@@ -70,7 +70,7 @@ class Listeners(commands.Cog):
                 for a in filter(lambda x: x.size < message.guild.filesize_limit, message.attachments):
                     await download(message, a, 'temp/moved_messages')
                     files.append(
-                        discord.File(getfile(message, f"temp/moved_messages/{a.filename}"))
+                        discord.File(getfilepath(message, f"temp/moved_messages/{a.filename}"))
                     )
             if any(a.size >= message.guild.filesize_limit for a in message.attachments):
                 newmessage += "`Plus some files too large to resend`"

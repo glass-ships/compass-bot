@@ -12,16 +12,10 @@ from utils.helper import *
 logger = get_logger(__name__)
 #####
 
-# A dictionary that remembers which guild belongs to which audiocontroller
-guild_to_audiocontroller = {}
-
-# A dictionary that remembers which settings belongs to which guild
-guild_to_settings = {}
+guild_audiocontroller = {}
+guild_settings = {}
 
 url_regex = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
-
-#session = aiohttp.ClientSession(headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'})
-
 
 try:
     sp_api = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
@@ -69,18 +63,7 @@ class Origins(Enum):
     Playlist = "Playlist"
 
 
-# Helper methods for links
-
-def get_guild(bot, command):
-    """Gets the guild a command belongs to. Useful, if the command was sent via pm."""
-    if command.guild is not None:
-        return command.guild
-    for guild in bot.guilds:
-        for channel in guild.voice_channels:
-            if command.author in channel.members:
-                return guild
-    return None
-
+# Helper methods for parsing links
 
 def get_url(content):
 
@@ -176,6 +159,7 @@ async def connect_to_channel(guild, dest_channel_name, ctx, switch=False, defaul
 
 
 async def is_connected(ctx):
+    """Checks whether bot is connected to a VC"""
     try:
         voice_channel = ctx.guild.voice_client.channel
         return voice_channel
@@ -184,29 +168,31 @@ async def is_connected(ctx):
 
 
 async def play_check(ctx):
+    """Checks that user is in a VC, and command was sent in appropriate channel"""
 
-    sett = guild_to_settings[ctx.guild]
+    settings = guild_settings[ctx.guild]
+    cmd_channel = settings.get('command_channel')
+    vc_rule = settings.get('user_must_be_in_vc')
 
-    cm_channel = sett.get('command_channel')
-    vc_rule = sett.get('user_must_be_in_vc')
-
-    if cm_channel != None:
-        if cm_channel != ctx.message.channel.id:
+    if cmd_channel != None:
+        if cmd_channel != ctx.message.channel.id:
             await ctx.send(config.WRONG_CHANNEL_MESSAGE)
             return False
 
-    if vc_rule == True:
-        author_voice = ctx.message.author.voice
-        bot_vc = ctx.guild.voice_client.channel
-        if author_voice == None:
-            await ctx.send(config.USER_NOT_IN_VC_MESSAGE)
-            return False
-        elif ctx.message.author.voice.channel != bot_vc:
-            await ctx.send(config.USER_NOT_IN_VC_MESSAGE)
-            return False
+    #if vc_rule == True:
+    author_voice = ctx.message.author.voice
+    bot_vc = ctx.guild.voice_client.channel
+    if author_voice == None:
+        await ctx.send(config.USER_NOT_IN_VC_MESSAGE)
+        return False
+    elif ctx.message.author.voice.channel != bot_vc:
+        await ctx.send(config.USER_NOT_IN_VC_MESSAGE)
+        return False
 
 
 async def convert_spotify(session, url):
+    """Parses a spotify link for song info"""
+
     logger.info(f"Session: {session} - parsing Spotify link: {url}")
 
     if re.search(url_regex, url):
@@ -237,7 +223,10 @@ async def convert_spotify(session, url):
 
 
 async def get_spotify_playlist(session, url):
-    """Return Spotify_Playlist class"""
+    """
+    Parses a Spotify playlist link
+    Returns: Spotify_Playlist class
+    """
 
     code = url.split('/')[4].split('?')[0]
 

@@ -1,0 +1,13 @@
+Music commands
+- songinfo
+- play
+- queue
+- skip
+- loop
+- shuffle
+- move
+- pause
+- resume
+- stop
+- clear
+- prev

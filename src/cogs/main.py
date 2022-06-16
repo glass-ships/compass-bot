@@ -29,12 +29,12 @@ class Main(commands.Cog):
         logger.info(f"Cog Online: {self.qualified_name}")
 
     @app_commands.command(name="ping")
-    async def ping(self, interaction: discord.Interaction):
+    async def _ping(self, interaction: discord.Interaction):
         """Responds with "pong" and the ping latency"""
         await interaction.response.send_message(f"Pong! Latency: {round(self.bot.latency, 2)} ms", ephemeral=True)
 
     @app_commands.command(name="avatar")
-    async def avatar(self, itx: discord.Interaction, *, user: discord.Member=None):
+    async def _avatar(self, itx: discord.Interaction, *, user: discord.Member=None):
         """Returns a user's Discord avatar"""
         u = user or itx.user
         mem = await itx.guild.fetch_member(u.id)
@@ -44,7 +44,7 @@ class Main(commands.Cog):
         await itx.response.send_message(embed=embed)
 
     @app_commands.command(name="banner")
-    async def banner(self, itx: discord.Interaction, *, user: discord.Member=None):
+    async def _banner(self, itx: discord.Interaction, *, user: discord.Member=None):
         """Returns a user's Discord banner"""
         u = user or itx.user
         mem = await self.bot.fetch_user(u.id)

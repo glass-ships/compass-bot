@@ -19,24 +19,20 @@ COOKIE_PATH = f"{ROOT_DIR}/cookies.txt"
 SUPPORTED_EXTENSIONS = ('.webm', '.mp4', '.mp3', '.avi', '.wav', '.m4v', '.ogg', '.mov')
 
 GLOBAL_DISABLE_AUTOJOIN_VC = False
-MAX_SONG_PRELOAD = 10  #maximum of 25
+MAX_SONG_PRELOAD = 5  #maximum of 25
 VC_TIMEOUT = 120 #seconds
 VC_TIMOUT_DEFAULT = True  #default template setting for VC timeout true= yes, timeout false= no timeout
 ALLOW_VC_TIMEOUT_EDIT = True  #allow or disallow editing the vc_timeout guild setting
 
 MAX_HISTORY_LENGTH = 10
 MAX_TRACKNAME_HISTORY_LENGTH = 15
-#STARTUP_MESSAGE = "Starting Bot..."
-#STARTUP_COMPLETE_MESSAGE = "Startup Complete"
-#ADD_MESSAGE= "To add this bot to your own Server, click [here]" #brackets will be the link text
-
 
 ### Error messages
 
 NO_GUILD_MESSAGE = 'Error: Please join a voice channel or enter the command in guild chat'
 USER_NOT_IN_VC_MESSAGE = "Error: Please join the active voice channel to use commands"
-WRONG_CHANNEL_MESSAGE = "Error: Please use configured command channel"
-NOT_CONNECTED_MESSAGE = "Error: Bot not connected to any voice channel"
+WRONG_CHANNEL_MESSAGE = "Error: Please use the correct command channel"
+NOT_CONNECTED_MESSAGE = "Error: Compass is not connected to any voice channel"
 ALREADY_CONNECTED_MESSAGE = "Error: Already connected to a voice channel"
 CHANNEL_NOT_FOUND_MESSAGE = "Error: Could not find channel"
 DEFAULT_CHANNEL_JOIN_FAILED = "Error: Could not join the default voice channel"
@@ -54,7 +50,7 @@ SONGINFO_DISLIKES = "Dislikes: "
 SONGINFO_NOW_PLAYING = "Now Playing"
 SONGINFO_QUEUE_ADDED = "Added to queue"
 SONGINFO_ERROR = "Error: Unsupported site or age restricted content. To enable age restricted content check the documentation/wiki."
-SONGINFO_PLAYLIST_QUEUED = "Queued playlist :page_with_curl:"
+SONGINFO_PLAYLIST_QUEUED = "Queued playlist <a:catChillin:979459462551191593>"
 SONGINFO_UNKNOWN_DURATION = "Unknown"
 
 
