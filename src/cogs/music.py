@@ -81,7 +81,7 @@ class Music(commands.Cog):
             if audiocontroller.current_song != None and len(audiocontroller.queue.playque) != 0:
                 await ctx.send(embed=song.info.format_output(config.SONGINFO_QUEUE_ADDED, pos=current_queue+1))
         elif song.origin == utils.Origins.Playlist:
-            await ctx.send(embed=discord.Embed(description=f"{config.SONGINFO_PLAYLIST_QUEUED}", color=choice(config.EMBED_COLORS)))
+            await ctx.send(embed=discord.Embed(description=f"{config.SONGINFO_PLAYLIST_QUEUED}", color=choice(config.EMBED_COLORS)))    
 
     @commands.command(name='songinfo', description=config.HELP_SONGINFO, aliases=["np", 'nowplaying', 'song'])
     async def _songinfo(self, ctx):

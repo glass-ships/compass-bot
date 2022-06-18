@@ -16,13 +16,9 @@ from utils.database import *
 from utils.music_utils import *
 
 logger = get_logger(__name__)
-
 DEFAULT_PREFIX = ';' 
-
-token = os.getenv("DSC_API_TOKEN")
-
+token = os.getenv("DSC_DEV_TOKEN")
 mongo_url = os.getenv("MONGO_URL")
-
 
 # Connect to database
 async def connect_to_db():
@@ -38,7 +34,6 @@ async def getprefix(bot, ctx):
         bot.db.update_prefix(DEFAULT_PREFIX)
         prefix = DEFAULT_PREFIX
     return commands.when_mentioned_or(prefix)(bot,ctx)
-
 
 # Setup music functionality
 async def config_music(guild):
@@ -83,7 +78,6 @@ bot = commands.Bot(
     description = "A general use and moderation bot in Python.",
     intents = discord.Intents.all()
 )
-
 
 async def startup_tasks():
     logger.info("Connecting to database...")

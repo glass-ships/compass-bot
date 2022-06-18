@@ -105,8 +105,7 @@ class Utils(commands.Cog):
         
         repo_path = f"{cog_path.parent.parent.parent}/discord-stuff"
         if not Path(repo_path).exists:
-            # clone the repo
-            pass
+            Repo.clone_from("https://gitlab.com/glass-ships/discord-stuff.", repo_path)
         else:
             pass
 
