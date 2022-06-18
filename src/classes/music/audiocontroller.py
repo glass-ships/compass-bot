@@ -298,8 +298,10 @@ class AudioController(object):
         next_song = self.queue.next(self.current_song)
 
         self.current_song = None
-
-        coro = self.play_song(ctx, next_song)
+        try:
+            coro = self.play_song(ctx, next_song)
+        except Exception as e:
+            logging.error(f"Error: Couldn't play the next song:\n{e}")
         
         self.bot.loop.create_task(coro)
 
