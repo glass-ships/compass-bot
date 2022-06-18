@@ -75,7 +75,8 @@ bot = commands.Bot(
     application_id = 535346715297841172, # test bot
     help_command=CustomHelpCommand(),
     command_prefix = ',',# getprefix,
-    description = "A general use and moderation bot in Python.",
+    pm_help = True,
+    description = "A general use, moderation, and music bot in Python.",
     intents = discord.Intents.all()
 )
 

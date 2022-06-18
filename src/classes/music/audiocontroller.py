@@ -110,11 +110,11 @@ class AudioController(object):
 
         self.guild.voice_client.play(
             discord.FFmpegPCMAudio(
-                executable = ffmpeg,
+                #executable = ffmpeg,
                 source = song.base_url,
                 before_options = '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
                 ), 
-            after=lambda e: self.next_song(ctx, e)
+            after=lambda e: self._next_song(ctx, e)
         )
 
         await ctx.send(embed=song.info.format_output(config.SONGINFO_NOW_PLAYING))
@@ -289,7 +289,7 @@ class AudioController(object):
             max_workers=config.MAX_SONG_PRELOAD)
         await asyncio.wait(fs={loop.run_in_executor(executor, down, song)}, return_when=asyncio.ALL_COMPLETED)
 
-    def next_song(self, ctx, error):
+    def _next_song(self, ctx, error):
         """Invoked after a song is finished. Plays the next song if there is one."""
 
         #if error:
