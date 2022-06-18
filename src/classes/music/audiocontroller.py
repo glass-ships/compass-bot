@@ -11,7 +11,6 @@ from utils.helper import *
 
 logger = get_logger(__name__)
 
-ffmpeg = f"{os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))}/ffmpeg"
 ytdl_options = {
             'format': 'bestaudio/best',
             'default_search': 'auto',
@@ -110,7 +109,6 @@ class AudioController(object):
 
         self.guild.voice_client.play(
             discord.FFmpegPCMAudio(
-                #executable = ffmpeg,
                 source = song.base_url,
                 before_options = '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
                 ), 
