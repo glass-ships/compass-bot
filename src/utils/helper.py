@@ -99,6 +99,7 @@ def get_logger(name: str) -> logging.Logger:
     formatter = logging.Formatter("|%(levelname)s|%(name)s|%(message)s|")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
+    #logger.setLevel(logging.DEBUG)
     logger.propagate = False
     return logger

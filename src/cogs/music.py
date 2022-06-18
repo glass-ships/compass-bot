@@ -170,8 +170,8 @@ class Music(commands.Cog):
 
         current_guild.voice_client.stop()
 
-        await asyncio.sleep(1.0)        
-        await ctx.send(embed=audiocontroller.current_song.info.format_output(config.SONGINFO_NOW_PLAYING))
+        #await asyncio.sleep(1.0)        
+        #await ctx.send(embed=audiocontroller.current_song.info.format_output(config.SONGINFO_NOW_PLAYING))
 
     @commands.command(name='prev', description=config.HELP_PREV, aliases=['back'])
     async def _prev(self, ctx):

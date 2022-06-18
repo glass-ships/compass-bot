@@ -5,7 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.utils import get
 
-import os, shutil
+import os, shutil, subprocess
 from pathlib import Path
 from git import Repo
 
@@ -30,6 +30,18 @@ class Utils(commands.Cog):
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
+    def _get_emojis(self, guild):
+        emojis = {
+            'anim': [],
+            'static': []
+        }
+        for i in guild.emojis:
+            if i.animated == True:
+                emojis['anim'].append(i.name)
+            else:
+                emojis['static'].append(i.name)
+        return emojis['static'], emojis['anim']
+
     @commands.command(name="get_mod_roles", description="Get a list of guild's mod roles", aliases=['modroles'])
     async def _get_mod_roles(self, ctx):
         mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
@@ -45,27 +57,15 @@ class Utils(commands.Cog):
             await ctx.send(f"```Object: {i}\nType: {type(i)}\n```")
 
     @commands.command(name="getemojis", description="Get a list of guild's emojis (Used in Glass Harbor - can be safely ignored)", aliases=['emojis'])
-    async def _get_guild_emojis(self, ctx):
+    async def _get_emojis(self, ctx):
         # Check for mod
         mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
         if not await role_check(ctx, mod_roles):
             return
 
-        g = self.bot.get_guild(ctx.guild.id)
-        emojis_static = []
-        emoji_names_static = []
-        emojis_anim = []
-        emoji_names_anim = []
-        for i in g.emojis:
-            if i.animated == True:
-                emojis_anim.append(i)
-                emoji_names_anim.append(i.name)
-            else:
-                emojis_static.append(i)
-                emoji_names_static.append(i.name)
-
-        await ctx.send(f"__**Guild emojis (static):**__\n```\n{emoji_names_static}\n```")
-        await ctx.send(f"__**Guild emojis (animated):**__\n```\n{emoji_names_anim}\n```")
+        emojis_static, emojis_anim = self._get_emojis(self.bot.get_guild(ctx.guild.id))
+        await ctx.send(f"__**Guild emojis (static):**__\n```\n{emojis_static}\n```")
+        await ctx.send(f"__**Guild emojis (animated):**__\n```\n{emojis_anim}\n```")
 
     @commands.command(name="download_emojis", description="Downloads a guild's emojis (Used in Glass Harbor - can be safely ignored)", aliases=['dlemojis', 'dle'])
     async def _download_emojis(self, ctx) -> None:
@@ -103,11 +103,22 @@ class Utils(commands.Cog):
             await ctx.send(embed=discord.Embed(description=f"Oops! This command can only be used in the Glass Harbor Discord server."))
             return
         
-        repo_path = f"{cog_path.parent.parent.parent}/discord-stuff"
-        if not Path(repo_path).exists:
-            Repo.clone_from("https://gitlab.com/glass-ships/discord-stuff.", repo_path)
+        repo_url = f"https://glass-ships:{os.getenv('GITLAB_TOKEN')}@gitlab.com/glass-ships/discord-stuff.git"
+        repo_path = f"{cog_path.parent.parent.parent.parent}"
+        print(repo_path)
+        if not Path(f"{repo_path}/discord-stuff").is_dir():
+            subprocess.call(['git', 'clone', repo_url, f"{repo_path}/discord-stuff"])
         else:
-            pass
+            logger.debug("Repo already exists")
+
+        emojis_static, emojis_anim = self._get_emojis(self.bot.get_guild(ctx.guild.id))
+
+        # make lists out of the png/ and gif/ folders
+        # compare the lists
+        # if in server but not in folder, "guild.delete_emoji()""
+        # if in folder but not in server, "guild.add_emoji()""
+        # maybe return a nice message
+        pass
 
     # Purely academic / for personal usage if you want to host your own instance. 
     # Not intended for scraping servers for content. 
