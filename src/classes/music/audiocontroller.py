@@ -82,8 +82,11 @@ class AudioController(object):
 
         if song.info.title == None:
             if song.host == utils.Sites.Spotify:
-                conversion = self.search_youtube(await utils.convert_spotify(self.session, song.info.webpage_url))
-                song.info.webpage_url = conversion
+                try:
+                    conversion = self.search_youtube(await utils.convert_spotify(self.session, song.info.webpage_url))
+                    song.info.webpage_url = conversion
+                except Exception as e:
+                    logger.error(f"Error: couldn't convert Spotify link: \n{e}")
 
             try:
                 downloader = yt_dlp.YoutubeDL({'format': 'bestaudio', 'title': True, "cookiefile": config.COOKIE_PATH})
