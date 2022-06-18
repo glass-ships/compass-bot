@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-apt install -y libopus0
+apt install -y  libffi-dev libnacl-dev libopus0
 
 pip install --upgrade pip
 pip install -r requirements.txt

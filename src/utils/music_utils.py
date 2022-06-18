@@ -17,13 +17,13 @@ guild_settings = {}
 
 url_regex = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
+# Connect to Spotify API
 try:
     sp_api = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
         client_id=config.SPOTIFY_ID, client_secret=config.SPOTIFY_SECRET))
     api = True
 except:
     api = False
-
 logger.info(f"Spotify api user level connection:{api}")
 
 
@@ -39,7 +39,6 @@ class Timer:
     def cancel(self):
         self._task.cancel()
 
-
 class Sites(Enum):
     Spotify = "Spotify"
     Spotify_Playlist = "Spotify Playlist"
@@ -50,13 +49,11 @@ class Sites(Enum):
     Custom = "Custom"
     Unknown = "Unknown"
 
-
 class Playlist_Types(Enum):
     Spotify_Playlist = "Spotify Playlist"
     YouTube_Playlist = "YouTube Playlist"
     BandCamp_Playlist = "BandCamp Playlist"
     Unknown = "Unknown"
-
 
 class Origins(Enum):
     Default = "Default"
@@ -65,8 +62,7 @@ class Origins(Enum):
 
 # Helper methods for parsing links
 
-def get_url(content):
-
+def clean_url(content):
     regex = re.compile(
         "http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
@@ -76,7 +72,6 @@ def get_url(content):
         return url
     else:
         return None
-
 
 def identify_host(url):
     if url is None:
@@ -106,7 +101,6 @@ def identify_host(url):
     # If no match
     return Sites.Unknown
 
-
 def identify_playlist(url):
     if url is None:
         return Sites.Unknown
@@ -122,14 +116,12 @@ def identify_playlist(url):
 
     return Playlist_Types.Unknown
 
-
 def clean_sclink(track):
     if track.startswith("https://m."):
         track = track.replace("https://m.", "https://")
     if track.startswith("http://m."):
         track = track.replace("http://m.", "https://")
     return track
-
 
 async def connect_to_channel(guild, dest_channel_name, ctx, switch=False, default=True):
     """Connects the bot to the specified voice channel.
@@ -157,7 +149,6 @@ async def connect_to_channel(guild, dest_channel_name, ctx, switch=False, defaul
     else:
         await ctx.send(config.CHANNEL_NOT_FOUND_MESSAGE + str(dest_channel_name))
 
-
 async def is_connected(ctx):
     """Checks whether bot is connected to a VC"""
     try:
@@ -165,7 +156,6 @@ async def is_connected(ctx):
         return voice_channel
     except:
         return None
-
 
 async def play_check(ctx):
     """Checks that user is in a VC, and command was sent in appropriate channel"""
@@ -188,7 +178,6 @@ async def play_check(ctx):
     elif ctx.message.author.voice.channel != bot_vc:
         await ctx.send(config.USER_NOT_IN_VC_MESSAGE)
         return False
-
 
 async def convert_spotify(session, url):
     """Parses a spotify link for song info"""
@@ -220,7 +209,6 @@ async def convert_spotify(session, url):
         logger.error(f"Something went wrong: {e}")
         return e
     return title
-
 
 async def get_spotify_playlist(session, url):
     """
@@ -291,4 +279,3 @@ async def get_spotify_playlist(session, url):
     title = title.string
 
     return links
-

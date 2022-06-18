@@ -4,16 +4,17 @@ git+https://github.com/Rapptz/discord.py.git
 # For commands
 python-dateutil 
 pytz
+GitPython
+
+# database stuff
+pymongo
+pymongo[srv]
 
 # For music commands
 yt-dlp
 git+https://github.com/plamere/spotipy.git@master
 beautifulsoup4
 pynacl
-
-# database stuff
-pymongo
-pymongo[srv]
 
 # For documentation
 mkdocs

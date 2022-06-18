@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
-path = Path(__file__)
 
+path = Path(__file__)
+ABSOLUTE_PATH = '' # DO NOT MODIFY
 ROOT_DIR = f"{path.parent.parent}/generated"
 
 SPOTIFY_ID: str = os.getenv('SPOTIFY_ID')
@@ -15,8 +16,9 @@ EMBED_COLORS = [
     0x7E6C6C, 
     0xEBC280  
 ]
-COOKIE_PATH = f"{ROOT_DIR}/cookies.txt"
 SUPPORTED_EXTENSIONS = ('.webm', '.mp4', '.mp3', '.avi', '.wav', '.m4v', '.ogg', '.mov')
+
+COOKIE_PATH = f"{ROOT_DIR}/cookies.txt"
 
 GLOBAL_DISABLE_AUTOJOIN_VC = False
 MAX_SONG_PRELOAD = 5  #maximum of 25
@@ -56,45 +58,24 @@ SONGINFO_UNKNOWN_DURATION = "Unknown"
 
 ### Help messages
 
-HELP_ADDBOT_SHORT = "Add Bot to another server"
-HELP_ADDBOT_LONG = "Gives you the link for adding this bot to another server of yours."
-HELP_CONNECT_SHORT = "Connect bot to voicechannel"
-HELP_CONNECT_LONG = "Connects the bot to the voice channel you are currently in"
-HELP_DISCONNECT_SHORT = "Disonnect bot from voicechannel"
-HELP_DISCONNECT_LONG = "Disconnect the bot from the voice channel and stop audio."
-HELP_SETTINGS_SHORT = "View and set bot settings"
-HELP_SETTINGS_LONG = "View and set bot settings in the server. Usage: {}settings setting_name value".format(BOT_PREFIX)
-HELP_HISTORY_SHORT = "Show history of songs"
-HELP_HISTORY_LONG = "Shows the " + str(MAX_TRACKNAME_HISTORY_LENGTH) + " last played songs."
-HELP_PAUSE_SHORT = "Pause Music"
-HELP_PAUSE_LONG = "Pauses the AudioPlayer. Playback can be continued with the resume command."
+HELP_CHANGECHANNEL = "Move the bot to your voice channel."
+HELP_CLEAR = "Clear the queue and skips the current song."
+HELP_CONNECT = "Connect the bot to your voice channel."
+HELP_DISCONNECT = "Disconnect bot from voice channel."
+HELP_HISTORY = "Show the last " + str(MAX_TRACKNAME_HISTORY_LENGTH) + " songs played."
+HELP_LOOP = "Loop the currently playing song and locks the queue. Toggle on/off."
+HELP_MOVE = 'Move a track in the queue.'
+HELP_PAUSE = "Pause playback (continue with `resume`)."
+HELP_PLAY = "Play a song or playlist (keyword search or supported link)"
+HELP_PREV = "Play the previous song again."
+HELP_QUEUE = "Show the current song queue."
+HELP_REMOVE = 'Remove the song at the given index.'
+HELP_RESUME = "Resume playback."
+HELP_SHUFFLE = "Shuffle the queue (irreversible!)"
+HELP_SKIP = "Skip the current song"
+HELP_SKIPTO = "Skips to the specified position in the queue"
+HELP_SONGINFO = "Show info about current Song"
+HELP_STOP = "Stop playback and clear the queue"
+HELP_VOL = "Change the volume (0-100%)"
 HELP_VOL_SHORT = "Change volume %"
-HELP_VOL_LONG = "Changes the volume of the AudioPlayer. Argument specifies the % to which the volume should be set."
-HELP_PREV_SHORT = "Go back one Song"
-HELP_PREV_LONG = "Plays the previous song again."
-HELP_RESUME_SHORT = "Resume Music"
-HELP_RESUME_LONG = "Resumes the AudioPlayer."
-HELP_SKIP_SHORT = "Skip a song"
-HELP_SKIP_LONG = "Skips the currently playing song and goes to the next item in the queue."
-HELP_SONGINFO_SHORT = "Info about current Song"
-HELP_SONGINFO_LONG = "Shows details about the song currently being played and posts a link to the song."
-HELP_STOP_SHORT = "Stop Music"
-HELP_STOP_LONG = "Stops the AudioPlayer and clears the songqueue"
-HELP_MOVE_LONG = f"{BOT_PREFIX}move [position] [new position]"
-HELP_MOVE_SHORT = 'Moves a track in the queue'
-HELP_YT_SHORT = "Play a supported link or search on youtube"
-HELP_YT_LONG = ("$p [link/video title/key words/playlist-link/soundcloud link/spotify link/bandcamp link/twitter link]")
-HELP_PING_SHORT = "Pong"
-HELP_PING_LONG = "Test bot response status"
-HELP_CLEAR_SHORT = "Clear the queue."
-HELP_CLEAR_LONG = "Clears the queue and skips the current song."
-HELP_LOOP_SHORT = "Loops the currently playing song, toggle on/off."
-HELP_LOOP_LONG = "Loops the currently playing song and locks the queue. Use the command again to disable loop."
-HELP_QUEUE_SHORT = "Shows the songs in queue."
-HELP_QUEUE_LONG = "Shows the number of songs in queue, up to 10."
-HELP_SHUFFLE_SHORT = "Shuffle the queue"
-HELP_SHUFFLE_LONG = "Randomly sort the songs in the current queue"
-HELP_CHANGECHANNEL_SHORT = "Change the bot channel"
-HELP_CHANGECHANNEL_LONG = "Change the bot channel to the VC you are in"
 
-ABSOLUTE_PATH = '' # DO NOT MODIFY

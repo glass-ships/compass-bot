@@ -1,8 +1,9 @@
-import datetime
-
 import discord
-import utils.music_config as config
+
+import datetime
 from random import choice
+
+import utils.music_config as config
 
 footers = [
     '☆꧁✬◦°˚°◦. -- .◦°˚°◦✬꧂☆',
@@ -29,12 +30,12 @@ class Song():
             self.thumbnail = thumbnail
             self.output = ""
 
-        def format_output(self, playtype):
+        def format_output(self, playtype, *, pos: int = None):
 
             if playtype == config.SONGINFO_QUEUE_ADDED:
-                embed = discord.Embed(title="Queued ",description="")
+                embed = discord.Embed(description=f"<a:_musicNote:987548355339104266> Song queued: {pos}. [{self.title}]({self.webpage_url})", color=choice(config.EMBED_COLORS))
             else:    
-                embed = discord.Embed(title="Now Playing", description="<a:music:986166508843569172> [{}]({})".format(self.title, self.webpage_url), color=choice(config.EMBED_COLORS))
+                embed = discord.Embed(title="Now Playing", description=f"<a:_music:986744613572341772> [{self.title}]({self.webpage_url})", color=choice(config.EMBED_COLORS))
 
                 if self.thumbnail is not None:
                     embed.set_thumbnail(url=self.thumbnail)
@@ -46,27 +47,14 @@ class Song():
                     )
 
                 if self.duration is not None:
-                    embed.add_field(
-                        name=config.SONGINFO_DURATION,
-                        value="`{}`".format(str(datetime.timedelta(seconds=self.duration))),
-                        inline=True
-                    )
+                    embed.add_field(name=config.SONGINFO_DURATION, value=f"`{str(datetime.timedelta(seconds=self.duration))}`", inline=True)
                 else:
-                    embed.add_field(
-                        name=config.SONGINFO_DURATION,
-                        value=f"`{config.SONGINFO_UNKNOWN_DURATION}`",
-                        inline=True
-                    )
+                    embed.add_field(name=config.SONGINFO_DURATION, value=f"`{config.SONGINFO_UNKNOWN_DURATION}`", inline=True)
 
-                embed.add_field(
-                    name="Requested by:",
-                    value=self.requested_by.mention,
-                    inline=True
-                )
+                embed.add_field(name="Requested by:", value=self.requested_by.mention, inline=True)
 
                 embed.set_footer(
                     text=choice(footers),
-                    icon_url=self.requested_by.avatar.url
-                )
+                    icon_url=self.requested_by.avatar.url)
 
             return embed

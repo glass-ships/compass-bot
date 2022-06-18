@@ -114,7 +114,7 @@ class AudioController(object):
             after=lambda e: self.next_song(ctx, e)
         )
 
-        #await ctx.send(embed=song.info.format_output(config.SONGINFO_NOW_PLAYING))
+        await ctx.send(embed=song.info.format_output(config.SONGINFO_NOW_PLAYING))
 
         self.guild.voice_client.source = discord.PCMVolumeTransformer(self.guild.voice_client.source)
         self.guild.voice_client.source.volume = float(self.volume) / 100.0
@@ -148,9 +148,8 @@ class AudioController(object):
                     )
             return song
 
-
         if host == utils.Sites.Unknown:
-            if utils.get_url(track) is not None:
+            if utils.clean_url(track) is not None:
                 return None
 
             track = self.search_youtube(track)
@@ -341,7 +340,7 @@ class AudioController(object):
         """Searches youtube for the video title and returns the first results video link"""
 
         # if title is already a link
-        if utils.get_url(title) is not None:
+        if utils.clean_url(title) is not None:
             return title
 
         with yt_dlp.YoutubeDL(ytdl_options) as ydl:
