@@ -115,3 +115,7 @@ class Moderation(commands.Cog):
         member_role = ctx.guild.get_role(member_role_id)
         for user in member_role.members:
             pass
+
+    @app_commands.command(name='nolfg', description="Give a user `Access - No LFG` and dm the user")
+    async def _no_lfg(self, ctx, duration: str, reason: str ):
+        pass
