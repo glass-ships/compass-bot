@@ -35,10 +35,8 @@ class Destiny(commands.Cog):
         if not await role_check(ctx, mod_roles):
             return
         
-        #vet = get(ctx.guild.roles, id=594462694103318530)
-        #mem = get(ctx.guild.roles, id=594462177553809438)
-        vet = get(ctx.guild.roles, id=408812277836283908)
-        mem = get(ctx.guild.roles, id=428800694439641091)
+        vet = get(ctx.guild.roles, id=594462694103318530)
+        mem = get(ctx.guild.roles, id=594462177553809438)
         
         vets = []
         mems = []
