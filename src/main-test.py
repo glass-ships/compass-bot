@@ -16,7 +16,7 @@ from utils.music_utils import *
 logger = get_logger(__name__)
 DEFAULT_PREFIX = ';' 
 token = os.getenv("DSC_DEV_TOKEN")#"DSC_API_TOKEN")
-mongo_url = os.getenv("MONGO_DEV_URL")#"MONGO_URL")
+mongo_url = os.getenv("MONGO_URL")
 
 # Connect to database
 async def _connect_to_db():
