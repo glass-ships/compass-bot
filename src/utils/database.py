@@ -4,13 +4,13 @@ from pymongo import MongoClient
 mongo_url = os.getenv("MONGO_URL")
 
 class serverDB():
-    def __init__(self, mongo_url):
+    def __init__(self, mongo_url, dev: bool = False):
         
         # Connect to MongoDB client
         cluster = MongoClient(mongo_url)
 
         # Connect to bot database
-        db = cluster['4D-Bot']
+        db = cluster['4D-Bot'] if dev else cluster['compass-bot']
 
         # Get table with all the useful stuff
         self.collection = db['server-info']

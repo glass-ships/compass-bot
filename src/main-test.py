@@ -20,7 +20,7 @@ mongo_url = os.getenv("MONGO_DEV_URL")#"MONGO_URL")
 
 # Connect to database
 async def _connect_to_db():
-    bot.db = serverDB(mongo_url)
+    bot.db = serverDB(mongo_url, dev=True)
     logger.info("Connected to database.")
 
 async def _prune_db():
