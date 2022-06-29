@@ -58,6 +58,11 @@ class serverDB():
         doc = a[0]
         return doc['chan_vids']
 
+    def get_channel_music(self, guild_id):
+        a = self.collection.find({"guild_id":guild_id})        
+        doc = a[0]
+        return doc['chan_music']
+
     def get_videos_whitelist(self, guild_id):
         a = self.collection.find({ "guild_id": guild_id })
         doc = a[0]
@@ -114,7 +119,7 @@ class serverDB():
         newval = { "$set": { 'chan_logs': new_value } }
         self.collection.update_one(filter, newval)
 
-    def update_channel_logs(self, guild_id, new_value):
+    def update_channel_music(self, guild_id, new_value):
         filter = { "guild_id": guild_id }
         newval = { "$set": { 'chan_music': new_value } }
         self.collection.update_one(filter, newval)

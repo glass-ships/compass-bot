@@ -20,8 +20,9 @@ async def setup(bot):
 
 # Define Class
 class Admin(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot_):
+        global bot
+        bot = bot_
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -33,20 +34,20 @@ class Admin(commands.Cog):
     async def _sync(self, ctx: commands.Context, spec: Union[Literal["all"], Literal["guild"]]):
         logger.info("Syncing ships...")
         if spec == "guild":
-            fmt = await self.bot.tree.sync()
-            g = self.bot.get_guild(ctx.guild.id)
-            await self.bot.tree.sync(guild=g)
-            self.bot.tree.copy_global_to(guild=g)
+            fmt = await bot.tree.sync()
+            g = bot.get_guild(ctx.guild.id)
+            await bot.tree.sync(guild=g)
+            bot.tree.copy_global_to(guild=g)
             await ctx.send(f"Synced {len(fmt)} commands to guild.")
             logger.info("Ships synced!")
             return
         elif spec == "all":
-            fmt1 = await self.bot.tree.sync()
+            fmt1 = await bot.tree.sync()
             fmt2 = 0
-            guilds = self.bot.db.get_all_guilds()
+            guilds = bot.db.get_all_guilds()
             for guild in guilds:
-                g = self.bot.get_guild(guild)
-                await self.bot.tree.sync(guild=g)
+                g = bot.get_guild(guild)
+                await bot.tree.sync(guild=g)
                 fmt2 += 1
             await ctx.send(f"Bot tree synced: {len(fmt1)} commands to {fmt2} of {len(guilds)} guilds.")
             logger.info("Ships synced!")
@@ -66,7 +67,7 @@ class Admin(commands.Cog):
         """
         Changes the bot's prefix for your server
         """
-        self.bot.db.update_prefix(itx.guild_id, new_prefix)
+        bot.db.update_prefix(itx.guild_id, new_prefix)
         await itx.response.send_message(f"Prefix set to `{new_prefix}`")
 
     @group_set.command(name="mod_roles")
@@ -80,19 +81,19 @@ class Admin(commands.Cog):
                 roles.append(int(role[3:-1]))
             else:
                 roles.append(int(role))
-        self.bot.db.update_mod_roles(itx.guild_id, roles)
+        bot.db.update_mod_roles(itx.guild_id, roles)
         await itx.response.send_message(f"Mod roles set: {mod_roles}", ephemeral=True)
 
     @group_set.command(name="member_role")
     @commands.has_permissions(administrator=True)
     async def _member_role(self, itx: discord.Interaction, role: discord.Role):
-        self.bot.db.update_mem_role(itx.guild_id, role.id)
+        bot.db.update_mem_role(itx.guild_id, role.id)
         await itx.response.send_message(f"Member role set: {role}", ephemeral=True)
 
     @group_set.command(name="dj_role")
     @commands.has_permissions(administrator=True)
     async def _dj_role(self, itx: discord.Interaction, role: discord.Role):
-        self.bot.db.update_dj_role(itx.guild_id, role.id)
+        bot.db.update_dj_role(itx.guild_id, role.id)
         await itx.response.send_message(f"Member role set: {role}", ephemeral=True)
 
     @group_set.command(name="channel")
@@ -101,11 +102,13 @@ class Admin(commands.Cog):
     @app_commands.autocomplete()
     async def _channel(self, itx: discord.Interaction, option: str, channel: discord.TextChannel):  
         if option == "logs":
-            self.bot.db.update_channel_logs(itx.guild_id, channel.id)
+            bot.db.update_channel_logs(itx.guild_id, channel.id)
         elif option == "bot":
-            self.bot.db.update_channel_bot(itx.guild_id, channel.id)
+            bot.db.update_channel_bot(itx.guild_id, channel.id)
         elif option == "videos":
-            self.bot.db.update_channel_vids(itx.guild_id, channel.id)
+            bot.db.update_channel_vids(itx.guild_id, channel.id)
+        elif option == "music":
+            bot.db.update_channel_music(itx.guild_id, channel.id)
         else:
             return False
         await itx.response.send_message(f"{option.title()} channels set to <#{channel.id}>.")
@@ -121,13 +124,13 @@ class Admin(commands.Cog):
     @app_commands.autocomplete(option=_channel_autocomplete)
     async def _channel(self, itx: discord.Interaction, option: str):  
         if option == "logs":
-            self.bot.db.update_channel_logs(itx.guild_id, 0)
+            bot.db.update_channel_logs(itx.guild_id, 0)
         elif option == "bot":
-            self.bot.db.update_channel_bot(itx.guild_id, 0)
+            bot.db.update_channel_bot(itx.guild_id, 0)
         elif option == "videos":
-            self.bot.db.update_channel_vids(itx.guild_id, 0)
+            bot.db.update_channel_vids(itx.guild_id, 0)
         elif option == "music":
-            self.bot.db.update_channel_music(itx.guild_id, 0)
+            bot.db.update_channel_music(itx.guild_id, 0)
         else:
             await itx.response.send_message("Error: Unknown argument. Valid targets: logs, bot, music, videos")
             return False
@@ -142,10 +145,10 @@ class Admin(commands.Cog):
     @app_commands.describe(channel="Which channel to allow/disallow videos in", switch="Boolean: True to allow videos")
     async def _allowvideos(self, itx: discord.Interaction, channel: discord.TextChannel, switch: Boolean):
         if switch == True:
-            self.bot.db.add_videos_whitelist(itx.guild_id, channel.id)
+            bot.db.add_videos_whitelist(itx.guild_id, channel.id)
             await itx.response.send_message(f"Videos allowed in <#{channel.id}>.")
         elif switch == False:
-            self.bot.db.remove_videos_whitelist(itx.guild_id, channel.id)
+            bot.db.remove_videos_whitelist(itx.guild_id, channel.id)
             await itx.response.send_message(f"Videos not allowed in <#{channel.id}>.")
 
 
@@ -157,7 +160,7 @@ class Admin(commands.Cog):
     async def _reload(self, itx: discord.Interaction, module : str):
         """Reloads a module."""
         try:
-            await self.bot.reload_extension(f"cogs.{module}")
+            await bot.reload_extension(f"cogs.{module}")
         except Exception as e:
             await itx.response.send_message(f"\nError: \n```{e}```")
         else:
