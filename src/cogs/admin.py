@@ -56,39 +56,19 @@ class Admin(commands.Cog):
             logger.warning("Error syncing ships! (Bad argument)")
             return
     
+
     group_set = app_commands.Group(name="set",description="Group of commands to set bot settings")
     group_unset = app_commands.Group(name="unset",description="Group of commands to configure bot settings")
     
     @group_set.command(name="prefix")
     @commands.has_permissions(administrator=True)
-    async def _set_prefix(self, itx: discord.Interaction, new_prefix: str):
+    async def _prefix(self, itx: discord.Interaction, new_prefix: str):
         """
         Changes the bot's prefix for your server
         """
         self.bot.db.update_prefix(itx.guild_id, new_prefix)
         await itx.response.send_message(f"Prefix set to `{new_prefix}`")
-    
-    @group_set.command(name="channel")
-    @commands.has_permissions(administrator=True)
-    @app_commands.describe(option='What to specify a channel for',channel='Which channel to send to')
-    @app_commands.autocomplete()
-    async def _channel(self, itx: discord.Interaction, option: str, channel: discord.TextChannel):  
-        if option == "logs":
-            self.bot.db.update_channel_logs(itx.guild_id, channel.id)
-        elif option == "bot":
-            self.bot.db.update_channel_bot(itx.guild_id, channel.id)
-        elif option == "videos":
-            self.bot.db.update_channel_vids(itx.guild_id, channel.id)
-        else:
-            return False
-        await itx.response.send_message(f"{option.title()} channels set to <#{channel.id}>.")
-        return True
 
-    @_channel.autocomplete('option')
-    async def _channel_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-        options = ['logs', 'bot', 'videos']
-        return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
-    
     @group_set.command(name="mod_roles")
     @commands.has_permissions(administrator=True)
     @app_commands.describe(mod_roles="List of mod roles (ID or mention)")
@@ -105,10 +85,37 @@ class Admin(commands.Cog):
 
     @group_set.command(name="member_role")
     @commands.has_permissions(administrator=True)
-    async def member_role(self, itx: discord.Interaction, role: discord.Role):
+    async def _member_role(self, itx: discord.Interaction, role: discord.Role):
         self.bot.db.update_mem_role(itx.guild_id, role.id)
         await itx.response.send_message(f"Member role set: {role}", ephemeral=True)
-      
+
+    @group_set.command(name="dj_role")
+    @commands.has_permissions(administrator=True)
+    async def _dj_role(self, itx: discord.Interaction, role: discord.Role):
+        self.bot.db.update_dj_role(itx.guild_id, role.id)
+        await itx.response.send_message(f"Member role set: {role}", ephemeral=True)
+
+    @group_set.command(name="channel")
+    @commands.has_permissions(administrator=True)
+    @app_commands.describe(option='What to specify a channel for', channel='Which channel to send to')
+    @app_commands.autocomplete()
+    async def _channel(self, itx: discord.Interaction, option: str, channel: discord.TextChannel):  
+        if option == "logs":
+            self.bot.db.update_channel_logs(itx.guild_id, channel.id)
+        elif option == "bot":
+            self.bot.db.update_channel_bot(itx.guild_id, channel.id)
+        elif option == "videos":
+            self.bot.db.update_channel_vids(itx.guild_id, channel.id)
+        else:
+            return False
+        await itx.response.send_message(f"{option.title()} channels set to <#{channel.id}>.")
+        return True
+
+    @_channel.autocomplete('option')
+    async def _channel_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+        options = ['logs', 'bot', 'music', 'videos']
+        return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
+    
     @group_unset.command(name="channel")
     @commands.has_permissions(administrator=True)
     @app_commands.autocomplete(option=_channel_autocomplete)
@@ -119,11 +126,14 @@ class Admin(commands.Cog):
             self.bot.db.update_channel_bot(itx.guild_id, 0)
         elif option == "videos":
             self.bot.db.update_channel_vids(itx.guild_id, 0)
+        elif option == "music":
+            self.bot.db.update_channel_music(itx.guild_id, 0)
         else:
-            await itx.response.send_message("Error: Unknown argument. Valid targets: logs, bot, videos")
+            await itx.response.send_message("Error: Unknown argument. Valid targets: logs, bot, music, videos")
             return False
-        await itx.response.send_message(f"{option.title()} channels unset.")
+        await itx.response.send_message(f"{option.title()} channel unset.")
         return True
+
 
     #####
 
@@ -138,7 +148,7 @@ class Admin(commands.Cog):
             self.bot.db.remove_videos_whitelist(itx.guild_id, channel.id)
             await itx.response.send_message(f"Videos not allowed in <#{channel.id}>.")
 
-    #####
+
     #####
     
     @app_commands.command(name='reload')
@@ -155,9 +165,6 @@ class Admin(commands.Cog):
 
     @_reload.autocomplete('module')
     async def _reload_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-        options = ['admin', 'listeners', 'main', 'moderation', 'music', 'utils']
+        options = ['admin', 'destiny', 'listeners', 'main', 'moderation', 'music', 'utils']
         return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
-        
-    @commands.command(name='test')
-    async def _test(self, ctx: commands.Context):
-        await ctx.send(f"Test 1!")
+

@@ -4,12 +4,10 @@ import concurrent.futures
 
 import utils.music_config as config
 import utils.music_utils as utils
-#from utils.music_utils import Timer, Sites, Playlist_Types, Origins
 
-from utils.helper import *
 from classes.music.queue import Queue
 from classes.music.songinfo import Song
-from classes.music.misc import *
+from utils.helper import *
 
 logger = get_logger(__name__)
 
@@ -46,7 +44,7 @@ class AudioController(object):
         self.guild = guild
 
         sett = utils.guild_settings[guild]
-        self.timer = Timer(self.timeout_handler)
+        self.timer = utils.Timer(self.timeout_handler)
         self._volume = sett.get('default_volume')
         
         self.session = aiohttp.ClientSession()
@@ -79,10 +77,10 @@ class AudioController(object):
 
         if self.queue.loop != True: #let timer run thouh if looping
             self.timer.cancel()
-            self.timer = Timer(self.timeout_handler)
+            self.timer = utils.Timer(self.timeout_handler)
 
         if song.info.title == None:
-            if song.host == Sites.Spotify:
+            if song.host == utils.Sites.Spotify:
                 try:
                     conversion = self.search_youtube(await utils.convert_spotify(self.session, song.info.webpage_url))
                     song.info.webpage_url = conversion
@@ -136,7 +134,7 @@ class AudioController(object):
         playlist_type = utils.identify_playlist(track)
 
         # If input is a playlist
-        if playlist_type != Playlist_Types.Unknown:
+        if playlist_type != utils.Playlist_Types.Unknown:
 
             await self.process_playlist(ctx, url=track, playlist_type=playlist_type)
 
@@ -145,23 +143,23 @@ class AudioController(object):
                 logger.info("Playing {}".format(track))
 
             song = Song(
-                        origin=Origins.Playlist, 
-                        host=Sites.Unknown,
+                        origin=utils.Origins.Playlist, 
+                        host=utils.Sites.Unknown,
                         requested_by=ctx.message.author
                     )
             return song
 
-        if host == Sites.Unknown:
+        if host == utils.Sites.Unknown:
             if utils.clean_url(track) is not None:
                 return None
 
             track = self.search_youtube(track)
 
-        if host == Sites.Spotify:
+        if host == utils.Sites.Spotify:
             title = await utils.convert_spotify(self.session, track)
             track = self.search_youtube(title)
 
-        if host == Sites.YouTube:
+        if host == utils.Sites.YouTube:
             track = track.split("&list=")[0]
 
         try:
@@ -178,7 +176,7 @@ class AudioController(object):
         thumbnail = r.get('thumbnails')[len(r.get('thumbnails')) - 1]['url'] if r.get('thumbnails') is not None else None
 
         song = Song(
-            origin = Origins.Default,
+            origin = utils.Origins.Default,
             host = host,
             base_url=r.get('url'),
             requested_by=ctx.message.author,
@@ -199,7 +197,7 @@ class AudioController(object):
 
     async def process_playlist(self, ctx, url, playlist_type):
 
-        if playlist_type == Playlist_Types.YouTube_Playlist:
+        if playlist_type == utils.Playlist_Types.YouTube_Playlist:
 
             if ("playlist?list=" in url):
                 listid = url.split('=')[1]
@@ -217,26 +215,26 @@ class AudioController(object):
                         entry['id'])
 
                     song = Song(
-                                origin = Origins.Playlist,
-                                host = Sites.YouTube,
+                                origin = utils.Origins.Playlist,
+                                host = utils.Sites.YouTube,
                                 webpage_url=link,
                                 requested_by=ctx.message.author
                             )
 
                     self.queue.add(song)
 
-        if playlist_type == Playlist_Types.Spotify_Playlist:
+        if playlist_type == utils.Playlist_Types.Spotify_Playlist:
             links = await utils.get_spotify_playlist(session=self.session, url=url)
             for link in links:
                 song = Song(
-                            origin=Origins.Playlist,
-                            host=Sites.Spotify,
+                            origin=utils.Origins.Playlist,
+                            host=utils.Sites.Spotify,
                             requested_by=ctx.message.author,
                             webpage_url=link
                         )
                 self.queue.add(song)
 
-        if playlist_type == Playlist_Types.BandCamp_Playlist:
+        if playlist_type == utils.Playlist_Types.BandCamp_Playlist:
             
             with yt_dlp.YoutubeDL(ytdl_options) as ydl:
                 r = ydl.extract_info(url, download=False)
@@ -246,8 +244,8 @@ class AudioController(object):
                     link = entry.get('url')
 
                     song = Song(
-                                origin=Origins.Playlist,
-                                host=Sites.Bandcamp,
+                                origin=utils.Origins.Playlist,
+                                host=utils.Sites.Bandcamp,
                                 requested_by=ctx.message.author,
                                 webpage_url=link
                             )
@@ -264,7 +262,7 @@ class AudioController(object):
 
         def down(song):
 
-            if song.host == Sites.Spotify:
+            if song.host == utils.Sites.Spotify:
                 song.info.webpage_url = self.search_youtube(song.info.title)
 
             if song.info.webpage_url == None:
@@ -281,7 +279,7 @@ class AudioController(object):
             song.info.webpage_url = r.get('webpage_url')
             song.info.thumbnail = r.get('thumbnails')[0]['url']
 
-        if song.host == Sites.Spotify:
+        if song.host == utils.Sites.Spotify:
             song.info.title = await utils.convert_spotify(self.session, song.info.webpage_url)
 
         loop = asyncio.get_event_loop()
@@ -309,7 +307,7 @@ class AudioController(object):
         """Loads the last song from the history into the queue and starts it"""
 
         self.timer.cancel()
-        self.timer = Timer(self.timeout_handler)
+        self.timer = utils.Timer(self.timeout_handler)
 
         if len(self.queue.playhistory) == 0:
             return
@@ -376,14 +374,14 @@ class AudioController(object):
         sett = utils.guild_settings[self.guild]
 
         if sett.get('vc_timeout') == False:
-            self.timer = Timer(self.timeout_handler)  # restart timer
+            self.timer = utils.Timer(self.timeout_handler)  # restart timer
             return
 
         if self.guild.voice_client.is_playing():
-            self.timer = Timer(self.timeout_handler)  # restart timer
+            self.timer = utils.Timer(self.timeout_handler)  # restart timer
             return
 
-        self.timer = Timer(self.timeout_handler)
+        self.timer = utils.Timer(self.timeout_handler)
         await self.udisconnect()
 
     async def uconnect(self, ctx):

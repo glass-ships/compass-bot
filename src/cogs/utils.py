@@ -14,6 +14,25 @@ from utils.helper import *
 logger = get_logger(__name__)
 cog_path = Path(__file__)
 
+async def _mod_check_ctx(ctx):
+    mod_roles = bot.db.get_mod_roles(ctx.guild.id)
+    user_roles = [x.id for x in ctx.author.roles]
+    if any(i in user_roles for i in mod_roles):
+        return True
+    await ctx.send("You do not have permission to use this command.", delete_after=5.0)
+    await asyncio.sleep(3)
+    await ctx.message.delete()
+    return False
+async def _mod_check_itx(itx: discord.Interaction):
+    mod_roles = bot.db.get_mod_roles(itx.guild_id)
+    user_roles = [x.id for x in itx.user.roles]
+    if any(i in user_roles for i in mod_roles):
+        return True
+    await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
+    return False
+has_mod_ctx = commands.check(_mod_check_ctx)
+has_mod_itx = app_commands.check(_mod_check_itx)
+
 ### Setup Cog
 
 # Startup method
@@ -22,29 +41,25 @@ async def setup(bot):
 
 # Define Class
 class Utils(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot_):
+        global bot
+        bot = bot_
+        #self.bot = bot
         self.name = self.qualified_name
 
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
-    def _get_emojis(self, guild):
-        emojis = {
-            'anim': [],
-            'static': []
-        }
-        for i in guild.emojis:
-            if i.animated == True:
-                emojis['anim'].append(i.name)
-            else:
-                emojis['static'].append(i.name)
-        return emojis['static'], emojis['anim']
+    @has_mod_itx
+    @app_commands.command(name='test')
+    async def _test(self, ctx):
+        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
+        await ctx.send(f"Mod roles: {mod_roles}")
 
     @commands.command(name="get_mod_roles", description="Get a list of guild's mod roles", aliases=['modroles'])
     async def _get_mod_roles(self, ctx):
-        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
+        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
         r = []
         for i in mod_roles:
             r.append(f"<@&{i}>")
@@ -59,18 +74,18 @@ class Utils(commands.Cog):
     @commands.command(name="getemojis", description="Get a list of guild's emojis (Used in Glass Harbor - can be safely ignored)", aliases=['emojis'])
     async def _get_emojis(self, ctx):
         # Check for mod
-        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
+        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
         if not await role_check(ctx, mod_roles):
             return
 
-        emojis_static, emojis_anim = self._get_emojis(self.bot.get_guild(ctx.guild.id))
+        emojis_static, emojis_anim = get_emojis(bot.get_guild(ctx.guild.id))
         await ctx.send(f"__**Guild emojis (static):**__\n```\n{emojis_static}\n```")
         await ctx.send(f"__**Guild emojis (animated):**__\n```\n{emojis_anim}\n```")
 
     @commands.command(name="download_emojis", description="Downloads a guild's emojis (Used in Glass Harbor - can be safely ignored)", aliases=['dlemojis', 'dle'])
     async def _download_emojis(self, ctx) -> None:
         # Check for mod
-        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
+        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
         if not await role_check(ctx, mod_roles):
             return
 
@@ -79,7 +94,7 @@ class Utils(commands.Cog):
         Path(fp).mkdir(parents=True, exist_ok=True)
         Path(fp, 'png').mkdir(parents=True, exist_ok=True)
         Path(fp, 'gif').mkdir(parents=True, exist_ok=True)
-        guild = self.bot.get_guild(ctx.guild.id)
+        guild = bot.get_guild(ctx.guild.id)
         count = 0
         for e in guild.emojis:
             fn = f"gif/{e.name}.gif" if e.animated else f"png/{e.name}.png"
@@ -90,7 +105,7 @@ class Utils(commands.Cog):
 
     @commands.command(name='clearfilecache', aliases=['cfc','rm -rf'])
     async def _clear_file_cache(self, ctx):
-        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
+        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
         if not await role_check(ctx, mod_roles):
             return
         shutil.rmtree(f"downloads/{ctx.guild.name}/temp")
@@ -111,7 +126,7 @@ class Utils(commands.Cog):
         else:
             logger.debug("Repo already exists")
 
-        emojis_static, emojis_anim = self._get_emojis(self.bot.get_guild(ctx.guild.id))
+        emojis_static, emojis_anim = get_emojis(bot.get_guild(ctx.guild.id))
 
         # make lists out of the png/ and gif/ folders
         # compare the lists

@@ -99,6 +99,11 @@ class serverDB():
         newval = { "$set": { 'mem_role': new_value } }
         self.collection.update_one(filter, newval)
 
+    def update_dj_role(self, guild_id, new_value):
+        filter = { "guild_id": guild_id }
+        newval = { "$set": { 'dj_role': new_value } }
+        self.collection.update_one(filter, newval)
+
     def update_channel_bot(self, guild_id, new_value):
         filter = { "guild_id": guild_id }
         newval = { "$set": { 'chan_bot': new_value } }
@@ -107,6 +112,11 @@ class serverDB():
     def update_channel_logs(self, guild_id, new_value):
         filter = { "guild_id": guild_id }
         newval = { "$set": { 'chan_logs': new_value } }
+        self.collection.update_one(filter, newval)
+
+    def update_channel_logs(self, guild_id, new_value):
+        filter = { "guild_id": guild_id }
+        newval = { "$set": { 'chan_music': new_value } }
         self.collection.update_one(filter, newval)
 
     def update_channel_vids(self, guild_id, new_value):
@@ -125,25 +135,31 @@ class serverDB():
         result = self.collection.find_one_and_delete( filter )
         return result
 
-    def remove_guild_id():
+    def drop_guild_id():
         pass
 
-    def remove_guild_name():
+    def drop_guild_name():
         pass
 
-    def remove_roles():
+    def drop_roles():
         pass
 
-    def remove_channel_bot():
+    def drop_channel_bot():
         pass
 
-    def remove_channel_logs():
+    def drop_channel_logs():
         pass
 
-    def remove_channel_vids():
+    def drop_channel_music():
         pass
 
-    def remove_videos_whitelist(self, guild_id, channel_id):
+    def drop_lfg():
+        pass
+
+    def drop_channel_vids():
+        pass
+
+    def drop_videos_whitelist(self, guild_id, channel_id):
         filter = { "guild_id": guild_id }
         self.collection.update_one(filter, {'$pull': {'videos_whitelist': channel_id}})
     #endregion

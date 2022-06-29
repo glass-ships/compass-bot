@@ -1,7 +1,4 @@
 ##### Cog - Listeners #####
-# TODO:
-#   - more robust update-guild method
-
 
 ### Imports ###
 #
@@ -34,7 +31,6 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
         """A global error handler cog."""
-
         if isinstance(error, commands.CommandNotFound):
             return  # Return because we don't want to show an error for every command not found
         elif isinstance(error, commands.CommandOnCooldown):
@@ -45,15 +41,17 @@ class Listeners(commands.Cog):
             message = f"Missing a required argument: {error.param}"
         elif isinstance(error, commands.UserInputError):
             message = "Something about your input was wrong, please check your input and try again!"
+        elif isinstance(error, commands.CheckFailure):
+            pass # message = f"{dir(error)}\n\n{error.__context__}"
         else:
             message = f"Oh no! Something went wrong while running the command!\n```\n{error}\n```"
 
         await ctx.send(message, delete_after=60)
         await ctx.message.delete(delay=5)
 
-    # Move videos 
     @commands.Cog.listener()
     async def on_message(self, message):
+        """Move videos"""
         if message.author.bot:
             return
 
@@ -141,36 +139,45 @@ class Listeners(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-
         # prep sending notif to Glass Harbor (for logging/debug)
         glass_guild = self.bot.get_guild(393995277713014785)
         chan_id = self.bot.db.get_channel_logs(glass_guild.id)
         channel = get(glass_guild.text_channels, id=chan_id)
 
         if guild.system_channel:
-            default_channel = guild.system_channel.id
+            default_channel = guild.system_channel.id or None
         else:
             default_channel = None
         
         # put together default data
-        data = {"guild_id":guild.id,"guild_name":guild.name,"prefix":";","mod_roles":[],"chan_bot":default_channel,"chan_logs":default_channel,"chan_vids":0,"videos_whitelist":[]}
+        data = {
+            "guild_id": guild.id,
+            "guild_name": guild.name,
+            "prefix": ";",
+            "mod_roles": [],
+            "mem_role": 0,
+            "dj_role": 0,
+            "chan_bot": default_channel,
+            "chan_logs": default_channel,
+            "chan_music": 0,
+            "chan_vids": 0,
+            "videos_whitelist": [],
+            "lfg_sessions": [],
+        }
 
         if self.bot.db.add_guild_table(guild.id, data):
-            await channel.send(f"Guild \"{guild.name}\" added to database.")
+            await channel.send(discord.Embed(description=f"Guild \"{guild.name}\" added to database."))
         else:
-            await channel.send(f"Guild \"{guild.name}\" already in database.")
+            await channel.send(discord.Embed(description=f"Guild \"{guild.name}\" already in database."))
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-
         # prep sending notif to Glass Harbor (for logging/debug)
         glass_guild = self.bot.get_guild(393995277713014785)
         chan_id = self.bot.db.get_channel_logs(glass_guild.id)
         channel = get(glass_guild.text_channels, id=chan_id)
 
-        guild_id = guild.id
-
-        if self.bot.db.drop_guild_table(guild_id):
+        if self.bot.db.drop_guild_table(guild.id):
             await channel.send(f"Guild \"{guild.name}\" removed from database.")
         else:
             await channel.send(f"Guild \"{guild.name}\" not found in database.")

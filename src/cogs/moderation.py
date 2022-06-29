@@ -74,9 +74,7 @@ class Moderation(commands.Cog):
     async def _role_remove(self, itx: discord.interactions, role: discord.Role, user: discord.Member, dur: Optional[int]):
 
         # Check for mod
-        mod_roles = self.bot.db.get_mod_roles(itx.guild_id)
-        if not await role_check_itx(itx, mod_roles):
-            return
+        assert await role_check_itx(itx, self.bot.db.get_mod_roles(itx.guild_id))
 
         await itx.response.defer()
 

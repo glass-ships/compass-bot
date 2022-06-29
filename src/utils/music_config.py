@@ -22,15 +22,15 @@ COOKIE_PATH = f"{ROOT_DIR}/cookies.txt"
 
 GLOBAL_DISABLE_AUTOJOIN_VC = False
 MAX_SONG_PRELOAD = 5  #maximum of 25
-VC_TIMEOUT = 120 #seconds
+VC_TIMEOUT = 60 #seconds
 VC_TIMOUT_DEFAULT = True  #default template setting for VC timeout true= yes, timeout false= no timeout
 ALLOW_VC_TIMEOUT_EDIT = True  #allow or disallow editing the vc_timeout guild setting
 
 MAX_HISTORY_LENGTH = 10
 MAX_TRACKNAME_HISTORY_LENGTH = 15
 
-### Error messages
 
+### Error messages
 NO_GUILD_MESSAGE = 'Error: Please join a voice channel or enter the command in guild chat'
 USER_NOT_IN_VC_MESSAGE = "Error: Please join the active voice channel to use commands"
 WRONG_CHANNEL_MESSAGE = "Error: Please use the correct command channel"
@@ -42,7 +42,6 @@ INVALID_INVITE_MESSAGE = "Error: Invalid invitation link"
 
 
 ### Track info formatting
-
 INFO_HISTORY_TITLE = "Songs Played:"
 SONGINFO_UPLOADER = "Song by: "
 SONGINFO_DURATION = "Length: "
@@ -57,7 +56,6 @@ SONGINFO_UNKNOWN_DURATION = "Unknown"
 
 
 ### Help messages
-
 HELP_CHANGECHANNEL = "Move the bot to your voice channel."
 HELP_CLEAR = "Clear the queue and skips the current song."
 HELP_CONNECT = "Connect the bot to your voice channel."
@@ -78,4 +76,3 @@ HELP_SONGINFO = "Show info about current Song"
 HELP_STOP = "Stop playback and clear the queue"
 HELP_VOL = "Change the volume (0-100%)"
 HELP_VOL_SHORT = "Change volume %"
-

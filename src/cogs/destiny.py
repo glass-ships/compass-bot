@@ -22,7 +22,10 @@ class Destiny(commands.Cog):
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
-
+    @commands.command(name='lfg')
+    async def _lfg(self, ctx):
+        pass
+    
     #@app_commands.command(name='nolfg', description="Give a user `Access - No LFG` and dm the user")
     #async def _no_lfg(self, ctx, duration: str, reason: str ):
     #    pass

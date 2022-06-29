@@ -1,64 +1,28 @@
 import re
-from enum import Enum
-import asyncio, aiohttp
 from bs4 import BeautifulSoup
-
 import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
 
-import utils.music_config as config
+from classes.music.misc import *
 from utils.helper import *
+import utils.music_config as config
 
 logger = get_logger(__name__)
-#####
+
 
 guild_audiocontroller = {}
 guild_settings = {}
 
-url_regex = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
-
 # Connect to Spotify API
 try:
-    sp_api = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
-        client_id=config.SPOTIFY_ID, client_secret=config.SPOTIFY_SECRET))
+    sp_api = spotipy.Spotify(
+        auth_manager=spotipy.oauth2.SpotifyClientCredentials(
+            client_id=config.SPOTIFY_ID,
+            client_secret=config.SPOTIFY_SECRET)
+        )
     api = True
 except:
     api = False
 logger.info(f"Spotify api user level connection:{api}")
-
-
-class Timer:
-    def __init__(self, callback):
-        self._callback = callback
-        self._task = asyncio.create_task(self._job())
-
-    async def _job(self):
-        await asyncio.sleep(config.VC_TIMEOUT)
-        await self._callback()
-
-    def cancel(self):
-        self._task.cancel()
-
-class Sites(Enum):
-    Spotify = "Spotify"
-    Spotify_Playlist = "Spotify Playlist"
-    YouTube = "YouTube"
-    Twitter = "Twitter"
-    SoundCloud = "SoundCloud"
-    Bandcamp = "Bandcamp"
-    Custom = "Custom"
-    Unknown = "Unknown"
-
-class Playlist_Types(Enum):
-    Spotify_Playlist = "Spotify Playlist"
-    YouTube_Playlist = "YouTube Playlist"
-    BandCamp_Playlist = "BandCamp Playlist"
-    Unknown = "Unknown"
-
-class Origins(Enum):
-    Default = "Default"
-    Playlist = "Playlist"
-
 
 # Helper methods for parsing links
 
