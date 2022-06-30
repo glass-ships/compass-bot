@@ -15,10 +15,10 @@ from utils.music_utils import *
 
 logger = get_logger(__name__)
 DEFAULT_PREFIX = ';' 
-token = os.getenv("DSC_DEV_TOKEN")#"DSC_API_TOKEN")
+token = os.getenv("DSC_API_TOKEN")
 mongo_url = os.getenv("MONGO_URL")
 
-# Connect to database
+
 async def _connect_to_db():
     bot.db = serverDB(mongo_url, dev=True)
     logger.info("Connected to database.")
@@ -29,8 +29,8 @@ async def _prune_db():
     db_guilds = bot.db.get_all_guilds()
     bot_guilds = [i for i in bot.guilds]
 
-    #print(f"Bot guilds: {bot.guilds}")
-    #print(f"DB Guilds: {db_guilds}")
+    # print(f"Bot guilds: {bot.guilds}")
+    # print(f"DB Guilds: {db_guilds}")
 
     for guild_id in db_guilds:
         if guild_id not in bot_guilds:
@@ -42,8 +42,8 @@ async def _patch_db():
     db_guilds = bot.db.get_all_guilds()
     bot_guilds = [i for i in bot.guilds]
 
-    #print(f"Bot guilds: {bot.guilds}")
-    #print(f"DB Guilds: {db_guilds}")
+    # print(f"Bot guilds: {bot.guilds}")
+    # print(f"DB Guilds: {db_guilds}")
 
     for guild in bot_guilds:
         default_channel = guild.system_channel.id if guild.system_channel else None
@@ -51,9 +51,8 @@ async def _patch_db():
             data = {"guild_id": guild.id, "guild_name": guild.name, "prefix": ";", "mod_roles": [], "mem_role": 0, "dj_role": 0, "chan_bot": default_channel, "chan_logs": default_channel, "chan_music": 0, "chan_vids": 0, "videos_whitelist": [], "lfg_sessions": []}
             bot.db.add_guild_table(guild.id, data)
 
-
-# Setup prefix (guild-specific or default)
 async def _get_prefix(bot, ctx):
+    """Setup prefix (guild-specific or default)"""
     if not ctx.guild:
         return commands.when_mentioned_or(DEFAULT_PREFIX)(bot,ctx)
     prefix = bot.db.get_prefix(ctx.guild.id)
@@ -62,9 +61,8 @@ async def _get_prefix(bot, ctx):
         prefix = DEFAULT_PREFIX
     return commands.when_mentioned_or(prefix)(bot,ctx)
 
-# Setup music functionality
 async def _config_music(guild):
-
+    """Configure music settings for each guild"""
     guild_settings[guild] = Settings(guild)
     guild_audiocontroller[guild] = AudioController(bot, guild)
 
@@ -101,7 +99,7 @@ bot = commands.Bot(
     #application_id = 932737557836468297, # main bot
     application_id = 535346715297841172, # test bot
     help_command=CustomHelpCommand(),
-    command_prefix = ',',# _get_prefix,
+    command_prefix = ',',#_get_prefix,
     pm_help = True,
     description = "A general use, moderation, and music bot in Python.",
     intents = discord.Intents.all()
@@ -121,7 +119,6 @@ async def _startup_tasks():
 async def on_ready():
     await _prune_db()
     await _patch_db()
-
     for guild in bot.guilds:
         await _config_music(guild)
     logger.info(f'{bot.user.name} has connected to Discord!')
