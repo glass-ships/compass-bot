@@ -21,12 +21,24 @@ async def setup(bot):
 
 # Define Class
 class Moderation(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot_):
+        global bot
+        bot = bot_
 
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
+
+    ##### Chat Commands #####
+    @app_commands.command()
+    async def _send(self, itx: discord.Interaction, message: str, *, channel: discord.TextChannel):
+        pass
+
+    @app_commands.command()
+    async def _send_embed(self, itx: discord.Interaction, *, title: str, description: str):
+        pass
+
+    ##### Slash Commands ######
 
     @app_commands.command(name="purge", description="Deletes n messages from current channel")
     async def _purge(self, itx: discord.Interaction, number: int = 0):

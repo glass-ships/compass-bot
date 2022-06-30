@@ -27,7 +27,7 @@ async def _prune_db():
     logger.info("Pruning unused database entries...")
 
     db_guilds = bot.db.get_all_guilds()
-    bot_guilds = [i for i in bot.guilds]
+    bot_guilds = [i.id for i in bot.guilds]
 
     # print(f"Bot guilds: {bot.guilds}")
     # print(f"DB Guilds: {db_guilds}")

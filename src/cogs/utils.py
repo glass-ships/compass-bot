@@ -51,12 +51,6 @@ class Utils(commands.Cog):
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
-    @has_mod_itx
-    @app_commands.command(name='test')
-    async def _test(self, ctx):
-        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
-        await ctx.send(f"Mod roles: {mod_roles}")
-
     @commands.command(name="get_mod_roles", description="Get a list of guild's mod roles", aliases=['modroles'])
     async def _get_mod_roles(self, ctx):
         mod_roles = bot.db.get_mod_roles(ctx.guild.id)
@@ -82,13 +76,9 @@ class Utils(commands.Cog):
         await ctx.send(f"__**Guild emojis (static):**__\n```\n{emojis_static}\n```")
         await ctx.send(f"__**Guild emojis (animated):**__\n```\n{emojis_anim}\n```")
 
+    @has_mod_ctx
     @commands.command(name="download_emojis", description="Downloads a guild's emojis (Used in Glass Harbor - can be safely ignored)", aliases=['dlemojis', 'dle'])
     async def _download_emojis(self, ctx) -> None:
-        # Check for mod
-        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
-        if not await role_check(ctx, mod_roles):
-            return
-
         await ctx.message.delete()
         fp = f"./downloads/{ctx.guild.name}/emojis"
         Path(fp).mkdir(parents=True, exist_ok=True)
@@ -128,12 +118,16 @@ class Utils(commands.Cog):
 
         emojis_static, emojis_anim = get_emojis(bot.get_guild(ctx.guild.id))
 
-        # make lists out of the png/ and gif/ folders
-        # compare the lists
+        remote_static = os.listdir(f"{repo_path}/discord-stuff/_emojis/png")
+        remote_anim = os.listdir(f"{repo_path}/discord-stuff/_emojis/gif")
+
+        print(f"Remote static emojis: {remote_static}")
+        print(f"Remote animated emojis: {remote_anim}")
+
         # if in server but not in folder, "guild.delete_emoji()""
         # if in folder but not in server, "guild.add_emoji()""
         # maybe return a nice message
-        pass
+        
 
     # Purely academic / for personal usage if you want to host your own instance. 
     # Not intended for scraping servers for content. 
