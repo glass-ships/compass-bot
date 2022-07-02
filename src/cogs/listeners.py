@@ -21,8 +21,9 @@ async def setup(bot):
 
 # Define Class
 class Listeners(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot_):
+        global bot 
+        bot = bot_
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -55,7 +56,7 @@ class Listeners(commands.Cog):
         if message.author.bot:
             return
 
-        vid_channel = self.bot.db.get_channel_vids(message.guild.id)
+        vid_channel = bot.db.get_channel_vids(message.guild.id)
         if vid_channel == 0:
             return
 
@@ -74,7 +75,7 @@ class Listeners(commands.Cog):
                 newmessage += "`Plus some files too large to resend`"
 
             # Move the message
-            chan = await self.bot.fetch_channel(vid_channel)
+            chan = await bot.fetch_channel(vid_channel)
             movedmessage = await chan.send(
                 content = newmessage,
                 files = files
@@ -92,7 +93,7 @@ class Listeners(commands.Cog):
         When a mod reacts to any message with the :mag: emoji,
         Bot will flag the message and send the info to a logs channel
         """
-        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+        message = await bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
         reaction = payload.emoji
         emoji = '🔍'
         user = payload.member
@@ -100,7 +101,7 @@ class Listeners(commands.Cog):
         if reaction.name == emoji:  
             # Check for mod role      
             
-            mod_roles = self.bot.db.get_mod_roles(payload.guild_id)
+            mod_roles = bot.db.get_mod_roles(payload.guild_id)
             roles = [x.id for x in user.roles]
             if any(r in roles for r in mod_roles):
 
@@ -130,7 +131,7 @@ class Listeners(commands.Cog):
                 ce.add_field(name="Flagged at:", value=f"<t:{flagged_time}:R>")
 
                 # Send embed to logs
-                channel_id = self.bot.db.get_channel_logs(flagged_message.guild.id)
+                channel_id = bot.db.get_channel_logs(flagged_message.guild.id)
                 channel = get(flagged_message.guild.text_channels, id=channel_id)
                 if channel:
                     await channel.send(content=None, embed=ce)
@@ -140,8 +141,8 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         # prep sending notif to Glass Harbor (for logging/debug)
-        glass_guild = self.bot.get_guild(393995277713014785)
-        chan_id = self.bot.db.get_channel_logs(glass_guild.id)
+        glass_guild = bot.get_guild(393995277713014785)
+        chan_id = bot.db.get_channel_logs(glass_guild.id)
         channel = get(glass_guild.text_channels, id=chan_id)
 
         if guild.system_channel:
@@ -165,7 +166,7 @@ class Listeners(commands.Cog):
             "lfg_sessions": [],
         }
 
-        if self.bot.db.add_guild_table(guild.id, data):
+        if bot.db.add_guild_table(guild.id, data):
             await channel.send(discord.Embed(description=f"Guild \"{guild.name}\" added to database."))
         else:
             await channel.send(discord.Embed(description=f"Guild \"{guild.name}\" already in database."))
@@ -173,15 +174,15 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         # prep sending notif to Glass Harbor (for logging/debug)
-        glass_guild = self.bot.get_guild(393995277713014785)
-        chan_id = self.bot.db.get_channel_logs(glass_guild.id)
+        glass_guild = bot.get_guild(393995277713014785)
+        chan_id = bot.db.get_channel_logs(glass_guild.id)
         channel = get(glass_guild.text_channels, id=chan_id)
 
-        if self.bot.db.drop_guild_table(guild.id):
+        if bot.db.drop_guild_table(guild.id):
             await channel.send(f"Guild \"{guild.name}\" removed from database.")
         else:
             await channel.send(f"Guild \"{guild.name}\" not found in database.")
 
     @commands.Cog.listener()
     async def on_guild_update(self, oldguild, newguild):
-        self.bot.db.update_guild_name(oldguild.id, newguild.name)
+        bot.db.update_guild_name(oldguild.id, newguild.name)
