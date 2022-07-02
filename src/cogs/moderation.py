@@ -42,7 +42,7 @@ class Moderation(commands.Cog):
 
     @app_commands.command(name="purge", description="Deletes n messages from current channel")
     async def _purge(self, itx: discord.Interaction, number: int = 0):
-        mod_roles = self.bot.db.get_mod_roles(itx.guild_id)
+        mod_roles = bot.db.get_mod_roles(itx.guild_id)
         if not await role_check_itx(itx, mod_roles):
             return
         await itx.channel.purge(limit=int(number))
@@ -52,7 +52,7 @@ class Moderation(commands.Cog):
     async def _move_message(self, itx: discord.Interaction, channel: Union[discord.TextChannel, discord.Thread], message_id: str):
         
         # Check for mod
-        mod_roles = self.bot.db.get_mod_roles(itx.guild_id)
+        mod_roles = bot.db.get_mod_roles(itx.guild_id)
         if not await role_check_itx(itx, mod_roles):
             return
 
@@ -86,7 +86,7 @@ class Moderation(commands.Cog):
     async def _role_remove(self, itx: discord.interactions, role: discord.Role, user: discord.Member, dur: Optional[int]):
 
         # Check for mod
-        assert await role_check_itx(itx, self.bot.db.get_mod_roles(itx.guild_id))
+        assert await role_check_itx(itx, bot.db.get_mod_roles(itx.guild_id))
 
         await itx.response.defer()
 
@@ -112,7 +112,7 @@ class Moderation(commands.Cog):
         
         # Check for mod
         logger.info("Checking for mod role...")
-        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
+        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
         if not await role_check(ctx, mod_roles):
             return
         
@@ -121,7 +121,7 @@ class Moderation(commands.Cog):
 
         logger.info("Checking for inactive users...")
 
-        member_role_id = self.bot.db.get_mem_role(ctx.guild.id)
+        member_role_id = bot.db.get_mem_role(ctx.guild.id)
         member_role = ctx.guild.get_role(member_role_id)
         for user in member_role.members:
             pass
