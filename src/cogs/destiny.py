@@ -80,15 +80,12 @@ class Destiny(commands.Cog):
             }
                 
         lfg = bot.db.get_lfg(guild_id=guild.id, lfg_id=payload.message_id)
-        if lfg == None:
-            embed = discord.Embed(
-                title="Inactive Post",
-                description="This post is more than 60 minutes old and has expired."
-            )
-            await channel.send(embed=embed, delete_after=10.0)
-            return
 
         if payload.emoji.name == emojis['join']:
+            if lfg == None:
+                embed = discord.Embed(title="Inactive Post", description="This post is more than 60 minutes old and has expired.")
+                await channel.send(embed=embed, delete_after=10.0)
+                return
             if user.id == lfg['leader']:
                 return
             if len(lfg['joined'])+1 == lfg['num_players']:
@@ -102,6 +99,10 @@ class Destiny(commands.Cog):
                 delete_after=10.0
             )
         elif payload.emoji.name == emojis['leave']:
+            if lfg == None:
+                embed = discord.Embed(title="Inactive Post", description="This post is more than 60 minutes old and has expired.")
+                await channel.send(embed=embed, delete_after=10.0)
+                return
             if user.id == lfg['leader']:
                 return
             if len(lfg['joined'])-1 < lfg['num_players']:
@@ -115,6 +116,10 @@ class Destiny(commands.Cog):
                 delete_after=10.0
             )
         elif payload.emoji.name == emojis['book']:
+            if lfg == None:
+                embed = discord.Embed(title="Inactive Post", description="This post is more than 60 minutes old and has expired.")
+                await channel.send(embed=embed, delete_after=10.0)
+                return
             embed = discord.Embed(
                 title=f"{message.author.name}'s LFG",
                 color=choice(config.EMBED_COLORS),
