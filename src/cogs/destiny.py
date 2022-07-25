@@ -69,9 +69,7 @@ class Destiny(commands.Cog):
         lfg_channel = bot.db.get_channel_lfg(guild.id)
         if lfg_channel == 0 or message.channel.id != lfg_channel:
             return
-        
-        await message.remove_reaction(payload.emoji, user)
-                 
+                         
         emojis = {
             'join':'_plus',
             'leave':'_minus',
@@ -82,6 +80,7 @@ class Destiny(commands.Cog):
         lfg = bot.db.get_lfg(guild_id=guild.id, lfg_id=payload.message_id)
 
         if payload.emoji.name == emojis['join']:
+            await message.remove_reaction(payload.emoji, user)
             if lfg == None:
                 embed = discord.Embed(title="Inactive Post", description="This post is more than 60 minutes old and has expired.")
                 await channel.send(embed=embed, delete_after=10.0)
@@ -99,6 +98,7 @@ class Destiny(commands.Cog):
                 delete_after=10.0
             )
         elif payload.emoji.name == emojis['leave']:
+            await message.remove_reaction(payload.emoji, user)
             if lfg == None:
                 embed = discord.Embed(title="Inactive Post", description="This post is more than 60 minutes old and has expired.")
                 await channel.send(embed=embed, delete_after=10.0)
@@ -116,6 +116,7 @@ class Destiny(commands.Cog):
                 delete_after=10.0
             )
         elif payload.emoji.name == emojis['book']:
+            await message.remove_reaction(payload.emoji, user)
             if lfg == None:
                 embed = discord.Embed(title="Inactive Post", description="This post is more than 60 minutes old and has expired.")
                 await channel.send(embed=embed, delete_after=10.0)
