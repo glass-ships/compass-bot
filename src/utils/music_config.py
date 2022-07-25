@@ -5,8 +5,6 @@ path = Path(__file__)
 ABSOLUTE_PATH = '' # DO NOT MODIFY
 ROOT_DIR = f"{path.parent.parent}/generated"
 
-SPOTIFY_ID: str = os.getenv('SPOTIFY_ID')
-SPOTIFY_SECRET: str = os.getenv('SPOTIFY_SECRET')
 
 BOT_PREFIX = ";"
 EMBED_COLORS = [
@@ -16,6 +14,11 @@ EMBED_COLORS = [
     0x7E6C6C, 
     0xEBC280  
 ]
+
+#### Music config 
+
+SPOTIFY_ID: str = os.getenv('SPOTIFY_ID')
+SPOTIFY_SECRET: str = os.getenv('SPOTIFY_SECRET')
 SUPPORTED_EXTENSIONS = ('.webm', '.mp4', '.mp3', '.avi', '.wav', '.m4v', '.ogg', '.mov')
 
 COOKIE_PATH = f"{ROOT_DIR}/cookies.txt"
@@ -29,7 +32,6 @@ ALLOW_VC_TIMEOUT_EDIT = True  #allow or disallow editing the vc_timeout guild se
 MAX_HISTORY_LENGTH = 10
 MAX_TRACKNAME_HISTORY_LENGTH = 15
 
-
 ### Error messages
 NO_GUILD_MESSAGE = 'Error: Please join a voice channel or enter the command in guild chat'
 USER_NOT_IN_VC_MESSAGE = "Error: Please join the active voice channel to use commands"
@@ -39,7 +41,6 @@ ALREADY_CONNECTED_MESSAGE = "Error: Already connected to a voice channel"
 CHANNEL_NOT_FOUND_MESSAGE = "Error: Could not find channel"
 DEFAULT_CHANNEL_JOIN_FAILED = "Error: Could not join the default voice channel"
 INVALID_INVITE_MESSAGE = "Error: Invalid invitation link"
-
 
 ### Track info formatting
 INFO_HISTORY_TITLE = "Songs Played:"
@@ -53,7 +54,6 @@ SONGINFO_QUEUE_ADDED = "Added to queue"
 SONGINFO_ERROR = "Error: Unsupported site or age restricted content. To enable age restricted content check the documentation/wiki."
 SONGINFO_PLAYLIST_QUEUED = "Queued playlist <a:catChillin:979459462551191593>"
 SONGINFO_UNKNOWN_DURATION = "Unknown"
-
 
 ### Help messages
 HELP_CHANGECHANNEL = "Move the bot to your voice channel."

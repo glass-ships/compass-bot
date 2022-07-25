@@ -15,7 +15,7 @@ from utils.music_utils import *
 
 logger = get_logger(__name__)
 DEFAULT_PREFIX = ';' 
-token = os.getenv("DSC_API_TOKEN")
+token = os.getenv("DSC_DEV_TOKEN")
 mongo_url = os.getenv("MONGO_URL")
 
 
@@ -29,9 +29,6 @@ async def _prune_db():
     db_guilds = bot.db.get_all_guilds()
     bot_guilds = [i for i in bot.guilds]
 
-    # print(f"Bot guilds: {bot.guilds}")
-    # print(f"DB Guilds: {db_guilds}")
-
     for guild_id in db_guilds:
         if guild_id not in bot_guilds:
             bot.db.drop_guild_table(guild_id)
@@ -42,13 +39,10 @@ async def _patch_db():
     db_guilds = bot.db.get_all_guilds()
     bot_guilds = [i for i in bot.guilds]
 
-    # print(f"Bot guilds: {bot.guilds}")
-    # print(f"DB Guilds: {db_guilds}")
-
     for guild in bot_guilds:
         default_channel = guild.system_channel.id if guild.system_channel else None
         if guild.id not in db_guilds:
-            data = {"guild_id": guild.id, "guild_name": guild.name, "prefix": ";", "mod_roles": [], "mem_role": 0, "dj_role": 0, "chan_bot": default_channel, "chan_logs": default_channel, "chan_music": 0, "chan_vids": 0, "videos_whitelist": [], "lfg_sessions": []}
+            data = {"guild_id": guild.id,"guild_name": guild.name,"prefix": ";","mod_roles": [],"mem_role": 0,"dj_role": 0,"chan_bot": default_channel,"chan_logs": default_channel,"chan_lfg": 0,"chan_music": 0,"chan_vids": 0,"videos_whitelist": [],"lfg": {},}
             bot.db.add_guild_table(guild.id, data)
 
 async def _get_prefix(bot, ctx):
@@ -117,8 +111,8 @@ async def _startup_tasks():
 
 @bot.event
 async def on_ready():
-    await _prune_db()
-    await _patch_db()
+    #await _prune_db()
+    #await _patch_db()
     for guild in bot.guilds:
         await _config_music(guild)
     logger.info(f'{bot.user.name} has connected to Discord!')

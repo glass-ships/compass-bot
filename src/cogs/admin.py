@@ -109,14 +109,16 @@ class Admin(commands.Cog):
             bot.db.update_channel_vids(itx.guild_id, channel.id)
         elif option == "music":
             bot.db.update_channel_music(itx.guild_id, channel.id)
+        elif option == "lfg":
+            bot.db.update_channel_lfg(itx.guild_id, channel.id)
         else:
             return False
-        await itx.response.send_message(f"{option.title()} channels set to <#{channel.id}>.")
+        await itx.response.send_message(f"{option.title()} channel set to <#{channel.id}>.")
         return True
 
     @_channel.autocomplete('option')
     async def _channel_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-        options = ['logs', 'bot', 'music', 'videos']
+        options = ['logs', 'bot', 'music', 'videos', 'lfg']
         return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
     
     @group_unset.command(name="channel")

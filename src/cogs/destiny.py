@@ -1,9 +1,8 @@
 ### Imports ###
 
-#import discord
-#from discord.utils import get
 from discord.ext import commands
-
+from random import choice
+import utils.music_config as config
 from utils.helper import * 
 
 logger = get_logger(__name__)
@@ -15,52 +14,114 @@ async def setup(bot):
 
 # Define Class
 class Destiny(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot_):
+        global bot
+        bot = bot_
 
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
-    @commands.command(name='lfg')
-    async def _lfg(self, ctx):
-        pass
-    
-    #@app_commands.command(name='nolfg', description="Give a user `Access - No LFG` and dm the user")
-    #async def _no_lfg(self, ctx, duration: str, reason: str ):
-    #    pass
-
-    @commands.command(name='checkvets')
-    async def _check_veterans(self, ctx):
-        # Check for mod
-        logger.info("Checking for mod role...")
-        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
-        if not await role_check(ctx, mod_roles):
+    # LFM Create
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author.bot:
             return
         
-        vet = get(ctx.guild.roles, id=594462694103318530)
-        mem = get(ctx.guild.roles, id=594462177553809438)
+        lfg_channel = bot.db.get_channel_lfg(message.guild.id)
+        if lfg_channel == 0 or message.channel.id != lfg_channel:
+            return
         
-        vets = []
-        mems = []
-        both = []
-        for user in ctx.guild.members:
-            if vet in user.roles and mem not in user.roles:
-                vets.append(user.mention)
-            if mem in user.roles and vet not in user.roles:
-                mems.append(user.mention)
-            if vet in user.roles and mem in user.roles:
-                both.append(user.mention)
-               
-        for m in mems:
-            if m in vets:
-                both.append(m)
-        
+        msg = message.content
+        lfm_format = r'[Ll][Ff]\d[Mm]'
+        search = re.search(lfm_format, msg)
+        if search is None:
+            return
+
+        num_players = int(search.group()[2])
+        bot.db.add_lfg(guild_id=message.guild.id, lfg_id=message.id, user_id=message.author.id, num_players=num_players)
+
+        await message.add_reaction('<:_plus:1000298488908746792>')
+        await message.add_reaction('<:_minus:1000298486643830855>')
+        await message.add_reaction('📖')
+
         embed = discord.Embed(
-            title="Members and Veterans",
-            description=f"""
-                - Members with Veteran ({len(both)}): {both}\n\n
-                - Veterans not in the clan ({len(vets)}): {vets}
-            """
+            title="LFG session created!",
+            color=choice(config.EMBED_COLORS),
+	        description="React with 📖 to see your active roster.\n\n**Note:** Please do not edit your post, as our bot will automatically react with 🇫 when session is full.",
         )
-        await ctx.send(embed=embed)
+        embed.set_footer(text=f"Fireteam Leader: {message.author.nick}", icon_url=message.author.avatar.url)
+        await message.channel.send(embed=embed, delete_after=7.0)
+        await asyncio.sleep(3600)
+        bot.db.drop_lfg(message.guild.id, message.id)
+
+    # LFM Update (Join/Leave/Check)
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        if payload.member.bot:
+            return
+            
+        guild = bot.get_guild(payload.guild_id)
+        channel = bot.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        user = payload.member
+        
+        lfg_channel = bot.db.get_channel_lfg(guild.id)
+        if lfg_channel == 0 or message.channel.id != lfg_channel:
+            return
+
+        await message.remove_reaction(payload.emoji, user)
+                 
+        emojis = {
+            'join':'_plus',
+            'leave':'_minus',
+            'book':'📖',
+            'full':'🇫'
+            }
+                
+        lfg = bot.db.get_lfg(guild_id=guild.id, lfg_id=payload.message_id)
+
+        if payload.emoji.name == emojis['join']:
+            if len(lfg['joined'])+1 == lfg['num_players']:
+                await message.add_reaction(emojis['full'])
+            bot.db.update_lfg_join(guild_id=guild.id, lfg_id=payload.message_id, user_id=payload.user_id)
+            embed = discord.Embed()
+            embed.add_field(name=f'{user.nick or user.name} has joined your LFG', value=f'To view your roster, react to [your post]({message.jump_url}) with the {emojis["book"]} emoji.')
+            await channel.send(
+                content=f'{message.author.mention}',
+                embed=embed,
+                delete_after=10.0
+            )
+        elif payload.emoji.name == emojis['leave']:
+            if len(lfg['joined'])-1 < lfg['num_players']:
+                await message.remove_reaction(emojis['full'], guild.get_member(bot.user.id))
+            bot.db.update_lfg_leave(guild_id=guild.id, lfg_id=payload.message_id, user_id=payload.user_id)
+            embed = discord.Embed()
+            embed.add_field(name=f'{user.nick or user.name} has left your LFG', value=f'To view your roster, react to [your post]({message.jump_url}) with the {emojis["book"]} emoji.')
+            await channel.send(
+                content=f'{message.author.mention}',
+                embed=embed,
+                delete_after=10.0
+            )
+        elif payload.emoji.name == emojis['book']:
+            embed = discord.Embed(
+                title=f"{message.author.name}'s LFG",
+                color=choice(config.EMBED_COLORS),
+            )
+            embed.set_thumbnail(url=message.author.avatar.url)
+            
+            fireteam = ''
+            fireteam += f"<@{lfg['leader']}>\n"
+            for i in lfg['joined']:
+                fireteam += f"<@{i}>\n"
+            embed.add_field(name="Fireteam", value=fireteam)
+            
+            if len(lfg['standby']) > 0:
+                standby = ''
+                for i in lfg['standby']:
+                    standby += f"<@{i}>\n"
+                embed.add_field(name='Standby', value=standby)
+
+            embed.set_footer(text=f"Requested by: {user.nick or user.name}")
+            await bot.get_channel(payload.channel_id).send(embed=embed, delete_after=10.0)
+

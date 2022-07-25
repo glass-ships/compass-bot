@@ -57,7 +57,7 @@ class Listeners(commands.Cog):
             return
 
         vid_channel = bot.db.get_channel_vids(message.guild.id)
-        if vid_channel == 0:
+        if vid_channel == 0 or message.channel.id != vid_channel:
             return
 
         vid_links = ["youtube.com/watch?","youtu.be/","vimeo.com/","dailymotion.com/video","tiktok.com"]
@@ -163,7 +163,7 @@ class Listeners(commands.Cog):
             "chan_music": 0,
             "chan_vids": 0,
             "videos_whitelist": [],
-            "lfg_sessions": [],
+            "lfg": {},
         }
 
         if bot.db.add_guild_table(guild.id, data):
