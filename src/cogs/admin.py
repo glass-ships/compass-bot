@@ -133,6 +133,8 @@ class Admin(commands.Cog):
             bot.db.update_channel_vids(itx.guild_id, 0)
         elif option == "music":
             bot.db.update_channel_music(itx.guild_id, 0)
+        elif option == "lfg":
+            bot.db.update_channel_lfg(itx.guild_id, 0)
         else:
             await itx.response.send_message("Error: Unknown argument. Valid targets: logs, bot, music, videos")
             return False

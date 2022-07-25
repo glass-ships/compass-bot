@@ -60,7 +60,7 @@ class Destiny(commands.Cog):
     async def on_raw_reaction_add(self, payload):
         if payload.member.bot:
             return
-            
+
         guild = bot.get_guild(payload.guild_id)
         channel = bot.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
@@ -69,7 +69,7 @@ class Destiny(commands.Cog):
         lfg_channel = bot.db.get_channel_lfg(guild.id)
         if lfg_channel == 0 or message.channel.id != lfg_channel:
             return
-
+        
         await message.remove_reaction(payload.emoji, user)
                  
         emojis = {
@@ -80,6 +80,8 @@ class Destiny(commands.Cog):
             }
                 
         lfg = bot.db.get_lfg(guild_id=guild.id, lfg_id=payload.message_id)
+        if user.id == lfg['leader']:
+            return
 
         if payload.emoji.name == emojis['join']:
             if len(lfg['joined'])+1 == lfg['num_players']:
