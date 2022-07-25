@@ -73,7 +73,11 @@ class serverDB():
         a = self.collection.find({"guild_id":guild_id})
         doc = a[0]
         lfg = doc['lfg']
-        return lfg[str(lfg_id)]
+        try:
+            result = lfg[str(lfg_id)]
+        except:
+            result = None
+        return result
 
     def get_videos_whitelist(self, guild_id):
         a = self.collection.find({"guild_id":guild_id})
