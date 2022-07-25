@@ -80,10 +80,10 @@ class Destiny(commands.Cog):
             }
                 
         lfg = bot.db.get_lfg(guild_id=guild.id, lfg_id=payload.message_id)
-        if user.id == lfg['leader']:
-            return
-
+        
         if payload.emoji.name == emojis['join']:
+            if user.id == lfg['leader']:
+                return
             if len(lfg['joined'])+1 == lfg['num_players']:
                 await message.add_reaction(emojis['full'])
             bot.db.update_lfg_join(guild_id=guild.id, lfg_id=payload.message_id, user_id=payload.user_id)
@@ -95,6 +95,8 @@ class Destiny(commands.Cog):
                 delete_after=10.0
             )
         elif payload.emoji.name == emojis['leave']:
+            if user.id == lfg['leader']:
+                return
             if len(lfg['joined'])-1 < lfg['num_players']:
                 await message.remove_reaction(emojis['full'], guild.get_member(bot.user.id))
             bot.db.update_lfg_leave(guild_id=guild.id, lfg_id=payload.message_id, user_id=payload.user_id)
