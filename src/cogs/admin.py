@@ -53,7 +53,7 @@ class Admin(commands.Cog):
             logger.info("Ships synced!")
             return
         else:
-            await ctx.send("Unexpected argument.\nExample usage: `;sync guilds 123456789987654321 987654321123456789`\nType `;help` for more info.")
+            await ctx.send("Unexpected argument.\nExample usage: `;sync guild`\nType `;help` for more info.")
             logger.warning("Error syncing ships! (Bad argument)")
             return
     

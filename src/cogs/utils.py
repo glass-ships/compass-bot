@@ -44,30 +44,29 @@ class Utils(commands.Cog):
     def __init__(self, bot_):
         global bot
         bot = bot_
-        #self.bot = bot
         self.name = self.qualified_name
 
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
-    @commands.command(name="get_mod_roles", description="Get a list of guild's mod roles", aliases=['modroles'])
-    async def _get_mod_roles(self, ctx):
-        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
-        r = []
-        for i in mod_roles:
-            r.append(f"<@&{i}>")
-        await ctx.send(embed=discord.Embed(description=f"Mod roles: {r}."))
 
-    @commands.command(name="getobject", description="Returns the type of an argument", aliases=['whatis'])
-    async def _get_object_type(self, ctx, obj):
-        objects = obj.split(" ")
-        for i in objects:
-            await ctx.send(f"```Object: {i}\nType: {type(i)}\n```")
+    @commands.command(name="test")
+    async def _test(self, ctx, arg: str):
+        thing = arg - 3
+        return thing
+
+    @commands.command(name='clearfilecache', aliases=['cfc','rm -rf'])
+    async def _clear_file_cache(self, ctx, option: str):
+        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
+        if not await role_check(ctx, mod_roles):
+            return
+        shutil.rmtree(f"downloads/{ctx.guild.name}/temp")
+        await ctx.message.delete()
+        await ctx.send(f"File cache cleared!", delete_after=2.0)
 
     @commands.command(name="getemojis", description="Get a list of guild's emojis (Used in Glass Harbor - can be safely ignored)", aliases=['emojis'])
     async def _get_emojis(self, ctx):
-        # Check for mod
         mod_roles = bot.db.get_mod_roles(ctx.guild.id)
         if not await role_check(ctx, mod_roles):
             return
@@ -93,17 +92,8 @@ class Utils(commands.Cog):
         await ctx.send(f"{count} emoji's downloaded", delete_after=2.0)
         return
 
-    @commands.command(name='clearfilecache', aliases=['cfc','rm -rf'])
-    async def _clear_file_cache(self, ctx):
-        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
-        if not await role_check(ctx, mod_roles):
-            return
-        shutil.rmtree(f"downloads/{ctx.guild.name}/temp")
-        await ctx.message.delete()
-        await ctx.send(f"File cache cleared!", delete_after=2.0)
-
     @commands.command(name='syncemojis', description="Clone glass' discord repo and sync Glass Harbor emojis")
-    async def _sync_emoji(self, ctx):
+    async def _sync_emojis(self, ctx):
         if ctx.guild.id != 393995277713014785:
             await ctx.send(embed=discord.Embed(description=f"Oops! This command can only be used in the Glass Harbor Discord server."))
             return
@@ -116,7 +106,7 @@ class Utils(commands.Cog):
         else:
             logger.debug("Repo already exists")
 
-        emojis_static, emojis_anim = get_emojis(bot.get_guild(ctx.guild.id))
+        local_static, local_anim = get_emojis(bot.get_guild(ctx.guild.id))
 
         remote_static = os.listdir(f"{repo_path}/discord-stuff/_emojis/png")
         remote_anim = os.listdir(f"{repo_path}/discord-stuff/_emojis/gif")
@@ -124,17 +114,23 @@ class Utils(commands.Cog):
         print(f"Remote static emojis: {remote_static}")
         print(f"Remote animated emojis: {remote_anim}")
 
+        print(f"Local static emojis: {local_static}")
+        print(f"Local animated emojis: {local_anim}")
+
         # if in server but not in folder, "guild.delete_emoji()""
         # if in folder but not in server, "guild.add_emoji()""
         # maybe return a nice message
-        
 
     # Purely academic / for personal usage if you want to host your own instance. 
     # Not intended for scraping servers for content. 
-    # @app_commands.command(name='download', description="Downloads all files in current channel (personal archiving tool - do not use to steal content from others")
-    # async def download(self, itx: discord.Interaction):
-    #     download_dir = 'some/local/path'
-    #     for msg in itx.channel.history():
-    #         if msg.attachments:
-    #             for a in msg.attachments:
-    #                 await a.save(fp=download_dir, filename=a.name)
+    @app_commands.command(name='download', description="Downloads all files in current channel (personal archiving tool - do not use to steal content from others")
+    async def download(self, itx: discord.Interaction):
+        download_dir = f"./downloads/{itx.guild.name}/{itx.channel.name}"
+        count = 0
+        await itx.response.defer(ephemeral=True)
+        for msg in itx.channel.history():
+            if msg.attachments:
+                for a in msg.attachments:
+                    await a.save(fp=download_dir, filename=a.name)
+                    count += 1
+        await itx.followup.send(f"Success: Downloaded {count} items.")

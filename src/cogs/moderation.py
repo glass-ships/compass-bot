@@ -30,6 +30,7 @@ class Moderation(commands.Cog):
         logger.info(f"Cog Online: {self.qualified_name}")
 
     ##### Chat Commands #####
+
     @app_commands.command()
     async def _send(self, itx: discord.Interaction, message: str, *, channel: discord.TextChannel):
         pass
@@ -37,6 +38,14 @@ class Moderation(commands.Cog):
     @app_commands.command()
     async def _send_embed(self, itx: discord.Interaction, *, title: str, description: str):
         pass
+
+    @commands.command(name="get_mod_roles", description="Get a list of guild's mod roles", aliases=['modroles'])
+    async def _get_mod_roles(self, ctx):
+        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
+        r = []
+        for i in mod_roles:
+            r.append(f"<@&{i}>")
+        await ctx.send(embed=discord.Embed(description=f"Mod roles: {r}."))
 
     ##### Slash Commands ######
 
@@ -77,7 +86,7 @@ class Moderation(commands.Cog):
         await channel.send(content=newmsg, files=files)
         await msg.delete()
         await itx.followup.send(f"Message moved to <#{channel.id}>")
-
+    
     async def _add_role():
         pass
 

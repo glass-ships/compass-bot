@@ -169,7 +169,6 @@ class Music(commands.Cog):
             return
 
         current_guild.voice_client.stop()
-
         #await asyncio.sleep(1.0)        
         #await ctx.send(embed=audiocontroller.current_song.info.format_output(config.SONGINFO_NOW_PLAYING))
 
@@ -193,11 +192,11 @@ class Music(commands.Cog):
         await ctx.send(":track_previous: Playing previous song")
 
     @commands.command(name='skipto', description=config.HELP_SKIPTO, aliases=['goto'])
-    async def _skip_to(self, ctx):
+    async def _skip_to(self, ctx, position: int):
         pass
 
     @commands.command(name='move', description=config.HELP_MOVE, aliases=['mv'])
-    async def _move(self, ctx, oldindex: int, newindex: int):
+    async def _move(self, ctx, oldposition: int, newposition: int):
         
         current_guild = get_guild(self.bot, ctx.message)
         audiocontroller = utils.guild_audiocontroller[current_guild]
@@ -207,33 +206,33 @@ class Music(commands.Cog):
             await ctx.send(":hole: Queue is empty!")
             return
             
-        song = audiocontroller.queue.playque[oldindex-1]
+        song = audiocontroller.queue.playque[oldposition-1]
         if song.info.title is None:
             songname = f"[{song.info.webpage_url}]({song.info.webpage_url})"
         else:
             songname = f"[{song.info.title}]({song.info.webpage_url})"
 
         try:
-            audiocontroller.queue.move(oldindex - 1, newindex - 1)
+            audiocontroller.queue.move(oldposition - 1, newposition - 1)
         except IndexError:
             await ctx.send("Invalid selection")
             return
-        await ctx.send(embed=discord.Embed(description=f"Moved track to position {newindex}: {songname}"))
+        await ctx.send(embed=discord.Embed(description=f"Moved track to position {newposition}: {songname}"))
 
     @commands.command(name='remove', description=config.HELP_REMOVE, aliases=['rm', 'del', 'delete'])
-    async def _remove(self, ctx, index: int):
+    async def _remove(self, ctx, position: int):
         current_guild = get_guild(self.bot, ctx.message)
         audiocontroller = utils.guild_audiocontroller[current_guild]
         
         queue = audiocontroller.queue.playque
-        song = queue[index-1]
+        song = queue[position-1]
         if song.info.title is None:
-            songname = f"{index}. [{song.info.webpage_url}]({song.info.webpage_url})"
+            songname = f"{position}. [{song.info.webpage_url}]({song.info.webpage_url})"
         else:
-            songname = f"{index}. [{song.info.title}]({song.info.webpage_url})"
+            songname = f"{position}. [{song.info.title}]({song.info.webpage_url})"
         
         try:
-            del queue[index-1]
+            del queue[position-1]
             msg = f"Removed track from queue: {songname}"
         except Exception as e:
             msg = f"Error: Couldn't remove track from queue: {songname}\n```\n\n{e}\n```"
@@ -308,7 +307,7 @@ class Music(commands.Cog):
         current_guild.voice_client.resume()
         await ctx.send(":arrow_forward: Resumed playback")
 
-    @commands.command(name='stop', description=config.HELP_STOP, aliases=['st'])
+    @commands.command(name='stop', description=config.HELP_STOP)
     async def _stop(self, ctx):
         current_guild = get_guild(self.bot, ctx.message)
 
@@ -323,7 +322,7 @@ class Music(commands.Cog):
         await utils.guild_audiocontroller[current_guild].stop_player()
         await ctx.send(":x: Stopped all sessions.")
 
-    @commands.command(name='clear', description=config.HELP_CLEAR, aliases=['cl'])
+    @commands.command(name='clear', description=config.HELP_CLEAR)
     async def _clear(self, ctx):
         current_guild = get_guild(self.bot, ctx.message)
 
@@ -369,3 +368,4 @@ class Music(commands.Cog):
             utils.guild_audiocontroller[current_guild].volume = volume
         except:
             await ctx.send("Error: Volume must be a number 1-100")
+

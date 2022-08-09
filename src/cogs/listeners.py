@@ -1,5 +1,4 @@
 ##### Cog - Listeners #####
-
 ### Imports ###
 #
 import discord
@@ -8,6 +7,7 @@ from discord.utils import get
 
 import time
 from datetime import datetime
+import traceback
 
 from utils.helper import * 
 
@@ -29,6 +29,7 @@ class Listeners(commands.Cog):
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
         """A global error handler cog."""
@@ -43,11 +44,17 @@ class Listeners(commands.Cog):
         elif isinstance(error, commands.UserInputError):
             message = "Something about your input was wrong, please check your input and try again!"
         elif isinstance(error, commands.CheckFailure):
-            pass # message = f"{dir(error)}\n\n{error.__context__}"
+            pass
         else:
-            message = f"Oh no! Something went wrong while running the command!\n```\n{error}\n```"
+            tb = traceback.format_exception(error)
+            err_msg = ''
+            for i in tb:
+                if 'The above exception' in i:
+                    break
+                err_msg += i
+            message = f"Oh no! Something went wrong while running the command!\n```\n{err_msg}\n```"#```\n{exception_type}\n{filename}\n{line_number}```"
 
-        await ctx.send(message, delete_after=60)
+        await ctx.send(embed=discord.Embed(description=message))#, delete_after=60)
         await ctx.message.delete(delay=5)
 
     @commands.Cog.listener()
