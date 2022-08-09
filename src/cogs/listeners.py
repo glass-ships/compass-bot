@@ -29,26 +29,26 @@ class Listeners(commands.Cog):
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
-        """A global error handler cog."""
-        if isinstance(error, commands.CommandNotFound):
-            return  # Return because we don't want to show an error for every command not found
-        elif isinstance(error, commands.CommandOnCooldown):
-            message = f"This command is on cooldown. Please try again after {round(error.retry_after, 1)} seconds."
-        elif isinstance(error, commands.MissingPermissions):
-            message = "You are missing the required permissions to run this command!"
-        elif isinstance(error, commands.MissingRequiredArgument):
-            message = f"Missing a required argument: {error.param}"
-        elif isinstance(error, commands.UserInputError):
-            message = "Something about your input was wrong, please check your input and try again!"
-        elif isinstance(error, commands.CheckFailure):
-            pass # message = f"{dir(error)}\n\n{error.__context__}"
-        else:
-            message = f"Oh no! Something went wrong while running the command!\n```\n{error}\n```"
+    # @commands.Cog.listener()
+    # async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
+    #     """A global error handler cog."""
+    #     if isinstance(error, commands.CommandNotFound):
+    #         return  # Return because we don't want to show an error for every command not found
+    #     elif isinstance(error, commands.CommandOnCooldown):
+    #         message = f"This command is on cooldown. Please try again after {round(error.retry_after, 1)} seconds."
+    #     elif isinstance(error, commands.MissingPermissions):
+    #         message = "You are missing the required permissions to run this command!"
+    #     elif isinstance(error, commands.MissingRequiredArgument):
+    #         message = f"Missing a required argument: {error.param}"
+    #     elif isinstance(error, commands.UserInputError):
+    #         message = "Something about your input was wrong, please check your input and try again!"
+    #     elif isinstance(error, commands.CheckFailure):
+    #         pass # message = f"{dir(error)}\n\n{error.__context__}"
+    #     else:
+    #         message = f"Oh no! Something went wrong while running the command!\n```\n{error}\n```"
 
-        await ctx.send(message, delete_after=60)
-        await ctx.message.delete(delay=5)
+    #     await ctx.send(message, delete_after=60)
+    #     await ctx.message.delete(delay=5)
 
     @commands.Cog.listener()
     async def on_message(self, message):

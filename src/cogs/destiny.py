@@ -4,6 +4,7 @@ from discord.ext import commands
 from random import choice
 import utils.music_config as config
 from utils.helper import * 
+from datetime import datetime as dt
 
 logger = get_logger(__name__)
 ### Setup Cog
@@ -142,3 +143,45 @@ class Destiny(commands.Cog):
             embed.set_footer(text=f"Requested by: {user.nick or user.name}")
             await bot.get_channel(payload.channel_id).send(embed=embed, delete_after=10.0)
 
+    @commands.command(name='checkmembers', aliases=['members', 'cm'])
+    async def _check_members(self, ctx):
+        """End Game specific: Get a list of members/veterans"""
+        # Check for mod
+        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
+        if not await role_check(ctx, mod_roles):
+            return
+        
+        vet = get(ctx.guild.roles, id=889212097706217493)
+        mem = get(ctx.guild.roles, id=780536143556116530)
+        #vet = get(ctx.guild.roles, id=594462694103318530)
+        #mem = get(ctx.guild.roles, id=594462177553809438)
+
+        vets, mems, both = ([] for i in range(3))
+        for user in ctx.guild.members:
+            if (vet in user.roles and mem not in user.roles):
+                vets.append([user.mention, int(dt.timestamp(user.joined_at))])
+            if (mem in user.roles and vet not in user.roles):
+                mems.append([user.mention, int(dt.timestamp(user.joined_at))])
+            if (vet in user.roles and mem in user.roles):
+                both.append([user.mention, int(dt.timestamp(user.joined_at))])
+
+        vets = sorted(vets, key=lambda x: x[1], reverse=False)
+        mems = sorted(mems, key=lambda x: x[1], reverse=False)
+        both = sorted(both, key=lambda x: x[1], reverse=False)
+
+        vets_str, mems_str, both_str = [""]*3
+        for i in vets:
+            vets_str += f"{i[0]} - Joined <t:{i[1]}:R>\n"
+        for i in mems:
+            mems_str += f"{i[0]} - Joined <t:{i[1]}:R>\n"
+        for i in both:
+            both_str += f"{i[0]} - Joined <t:{i[1]}:R>\n"
+        embed = discord.Embed(
+            title="Members and Veterans",
+            description=f"""
+                __**Non-Veteran Members ({len(mems)}):**__\n{mems_str}\n
+                __**Veteran Members ({len(both)}):**__\n{both_str}\n
+                __**Veterans Not in a Clan ({len(vets)}):**__\n{vets_str}
+            """
+        )
+        await ctx.send(embed=embed)
