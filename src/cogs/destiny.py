@@ -178,12 +178,21 @@ class Destiny(commands.Cog):
             mems_str += f"{i[0]} - Joined <t:{i[1]}:R>\n"
         for i in both:
             both_str += f"{i[0]} - Joined <t:{i[1]}:R>\n"
+
         embed = discord.Embed(
-            title="Members and Veterans",
-            description=f"""
-                __**Non-Veteran Members ({len(mems)}):**__\n{mems_str}\n
-                __**Veteran Members ({len(both)}):**__\n{both_str}\n
-                __**Veterans Not in a Clan ({len(vets)}):**__\n{vets_str}
-            """
+            title=f"Non-Veteran Members ({len(mems)})",
+            description=f"""{mems_str}"""
+        )
+        await ctx.send(embed=embed)
+
+        embed = discord.Embed(
+            title=f"Veteran Members ({len(both)})",
+            description=f"""{both_str}"""
+        )
+        await ctx.send(embed=embed)
+
+        embed = discord.Embed(
+            title=f"Veterans Not in a Clan ({len(vets)})",
+            description=f"""{vets_str}"""
         )
         await ctx.send(embed=embed)
