@@ -166,7 +166,7 @@ class Destiny(commands.Cog):
                 mems = []
                 for user in ctx.guild.members:
                     joined = int(datetime.timestamp(user.joined_at))
-                    if ((mem in user.roles and vet not in user.roles) and (now - joined <= 5260000)):
+                    if ((mem in user.roles and vet not in user.roles) and (now - joined > 5260000)):
                         mems.append([user.mention, joined])
                 mems = sorted(mems, key=lambda x: x[1], reverse=False)
                 mems_str = ''
