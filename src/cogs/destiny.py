@@ -146,15 +146,15 @@ class Destiny(commands.Cog):
     @commands.command(name='checkmembers', aliases=['members', 'cm'])
     async def _check_members(self, ctx):
         """End Game specific: Get a list of members/veterans"""
+        #if ctx.guild.id != 
+
         # Check for mod
         mod_roles = bot.db.get_mod_roles(ctx.guild.id)
         if not await role_check(ctx, mod_roles):
             return
         
-        vet = get(ctx.guild.roles, id=889212097706217493)
-        mem = get(ctx.guild.roles, id=780536143556116530)
-        #vet = get(ctx.guild.roles, id=594462694103318530)
-        #mem = get(ctx.guild.roles, id=594462177553809438)
+        mem = get(ctx.guild.roles, id=bot.db.get_mem_role(ctx.guild.id))
+        vet = get(ctx.guild.roles, id=594462694103318530)
 
         vets, mems, both = ([] for i in range(3))
         for user in ctx.guild.members:
