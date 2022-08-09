@@ -157,7 +157,7 @@ class Destiny(commands.Cog):
         
         mem = get(ctx.guild.roles, id=bot.db.get_mem_role(ctx.guild.id))
         vet = get(ctx.guild.roles, id=594462694103318530) if ctx.guild.id == 509499331552739328 else get(ctx.guild.roles, id=889212097706217493)
-        vet = get(ctx.guild.roles, id=889212097706217493)
+        #vet = get(ctx.guild.roles, id=889212097706217493)
         
         now = int(datetime.timestamp(datetime.now(timezone.utc)))
 
@@ -166,7 +166,7 @@ class Destiny(commands.Cog):
                 mems = []
                 for user in ctx.guild.members:
                     joined = int(datetime.timestamp(user.joined_at))
-                    if ((mem in user.roles and vet not in user.roles) and (now - joined > 5260000)):
+                    if (mem in user.roles and vet not in user.roles and (now - joined) > 5260000):
                         mems.append([user.mention, joined])
                 mems = sorted(mems, key=lambda x: x[1], reverse=False)
                 mems_str = ''
