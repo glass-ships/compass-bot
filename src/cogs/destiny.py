@@ -146,7 +146,9 @@ class Destiny(commands.Cog):
     @commands.command(name='checkmembers', aliases=['members', 'cm'])
     async def _check_members(self, ctx):
         """End Game specific: Get a list of members/veterans"""
-        #if ctx.guild.id != 
+        if ctx.guild.id != 509499331552739328:
+            await ctx.send(embed=discord.Embed(description=f"Oops! This command can only be used in the [End Game:tm: Discord Server](https://discord.gg/d2endgame)."))
+            return
 
         # Check for mod
         mod_roles = bot.db.get_mod_roles(ctx.guild.id)
