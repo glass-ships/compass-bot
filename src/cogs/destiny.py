@@ -4,7 +4,7 @@ from discord.ext import commands
 from random import choice
 import utils.music_config as config
 from utils.helper import * 
-from datetime import datetime as dt
+from datetime import datetime, timezone
 
 logger = get_logger(__name__)
 ### Setup Cog
@@ -144,55 +144,65 @@ class Destiny(commands.Cog):
             await bot.get_channel(payload.channel_id).send(embed=embed, delete_after=10.0)
 
     @commands.command(name='checkmembers', aliases=['members', 'cm'])
-    async def _check_members(self, ctx):
+    async def _check_members(self, ctx, option: str = 'members'):
         """End Game specific: Get a list of members/veterans"""
-        if ctx.guild.id != 509499331552739328:
+        
+        if ctx.guild.id != 509499331552739328 and ctx.guild.id != 393995277713014785:
             await ctx.send(embed=discord.Embed(description=f"Oops! This command can only be used in the [End Game:tm: Discord Server](https://discord.gg/d2endgame)."))
             return
 
-        # Check for mod
         mod_roles = bot.db.get_mod_roles(ctx.guild.id)
         if not await role_check(ctx, mod_roles):
             return
         
         mem = get(ctx.guild.roles, id=bot.db.get_mem_role(ctx.guild.id))
-        vet = get(ctx.guild.roles, id=594462694103318530)
+        vet = get(ctx.guild.roles, id=594462694103318530) if ctx.guild.id == 509499331552739328 else get(ctx.guild.roles, id=889212097706217493)
+        vet = get(ctx.guild.roles, id=889212097706217493)
+        
+        now = int(datetime.timestamp(datetime.now(timezone.utc)))
 
-        vets, mems, both = ([] for i in range(3))
-        for user in ctx.guild.members:
-            if (vet in user.roles and mem not in user.roles):
-                vets.append([user.mention, int(dt.timestamp(user.joined_at))])
-            if (mem in user.roles and vet not in user.roles):
-                mems.append([user.mention, int(dt.timestamp(user.joined_at))])
-            if (vet in user.roles and mem in user.roles):
-                both.append([user.mention, int(dt.timestamp(user.joined_at))])
+        match option:
+            case 'members' | 'mems' | 'mem':
+                mems = []
+                for user in ctx.guild.members:
+                    joined = int(datetime.timestamp(user.joined_at))
+                    if ((mem in user.roles and vet not in user.roles) and (now - joined <= 5260000)):
+                        mems.append([user.mention, joined])
+                mems = sorted(mems, key=lambda x: x[1], reverse=False)
+                mems_str = ''
+                for i in mems:
+                    mems_str += f"{i[0]} - Joined <t:{i[1]}:R>\n"
+                embed = discord.Embed(
+                    title=f"Non-Veteran Members ({len(mems)})",
+                    description=f"""{mems_str}"""
+                )
+                await ctx.send(embed=embed)
+            case 'veterans' | 'vet' | 'vets':
+                vets = []
+                for user in ctx.guild.members:
+                    if (vet in user.roles and mem not in user.roles):
+                        vets.append([user.mention, int(datetime.timestamp(user.joined_at))])
+                    vets = sorted(vets, key=lambda x: x[1], reverse=True)
+                vets_str = ''
+                for i in vets:
+                    vets_str += f"{i[0]} - Joined <t:{i[1]}:R>\n"
+                embed = discord.Embed(
+                    title=f"Veterans Not in a Clan ({len(vets)})",
+                    description=f"""{vets_str}"""
+                )
+                await ctx.send(embed=embed)
+            case 'both':
+                both = []
+                for user in ctx.guild.members:
+                    if (vet in user.roles and mem in user.roles):
+                        both.append([user.mention, int(datetime.timestamp(user.joined_at))])
+                both = sorted(both, key=lambda x: x[1], reverse=True)
+                both_str = ''
+                for i in both:
+                    both_str += f"{i[0]} - Joined <t:{i[1]}:R>\n"
+                embed = discord.Embed(
+                    title=f"Veteran Members ({len(both)})",
+                    description=f"""{both_str}"""
+                )
+                await ctx.send(embed=embed)
 
-        vets = sorted(vets, key=lambda x: x[1], reverse=False)
-        mems = sorted(mems, key=lambda x: x[1], reverse=False)
-        both = sorted(both, key=lambda x: x[1], reverse=False)
-
-        vets_str, mems_str, both_str = [""]*3
-        for i in vets:
-            vets_str += f"{i[0]} - Joined <t:{i[1]}:R>\n"
-        for i in mems:
-            mems_str += f"{i[0]} - Joined <t:{i[1]}:R>\n"
-        for i in both:
-            both_str += f"{i[0]} - Joined <t:{i[1]}:R>\n"
-
-        embed = discord.Embed(
-            title=f"Non-Veteran Members ({len(mems)})",
-            description=f"""{mems_str}"""
-        )
-        await ctx.send(embed=embed)
-
-        embed = discord.Embed(
-            title=f"Veteran Members ({len(both)})",
-            description=f"""{both_str}"""
-        )
-        await ctx.send(embed=embed)
-
-        embed = discord.Embed(
-            title=f"Veterans Not in a Clan ({len(vets)})",
-            description=f"""{vets_str}"""
-        )
-        await ctx.send(embed=embed)
