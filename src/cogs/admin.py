@@ -94,7 +94,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def _dj_role(self, itx: discord.Interaction, role: discord.Role):
         bot.db.update_dj_role(itx.guild_id, role.id)
-        await itx.response.send_message(f"Member role set: {role}", ephemeral=True)
+        await itx.response.send_message(f"DJ role set: {role}", ephemeral=True)
 
     @group_set.command(name="channel")
     @commands.has_permissions(administrator=True)
@@ -141,6 +141,26 @@ class Admin(commands.Cog):
         await itx.response.send_message(f"{option.title()} channel unset.")
         return True
 
+    @group_unset.command(name="role")
+    @commands.has_permissions(administrator=True)
+    @app_commands.autocomplete()
+    async def _role(self, itx: discord.Interaction, option: str):  
+        if option == "mod":
+            bot.db.update_mod_roles(itx.guild_id, [0])
+        elif option == "member":
+            bot.db.update_mem_role(itx.guild_id, 0)
+        elif option == "dj":
+            bot.db.update_dj_role(itx.guild_id, 0)
+        else:
+            await itx.response.send_message("Error: Unknown argument. Valid targets: mod, member, dj")
+            return False
+        await itx.response.send_message(f"{option.title()} role unset.")
+        return True
+
+    @_role.autocomplete('option')
+    async def _roles_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+        options = ['mod', 'member', 'dj']
+        return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
 
     #####
 

@@ -143,9 +143,9 @@ class Destiny(commands.Cog):
             embed.set_footer(text=f"Requested by: {user.nick or user.name}")
             await bot.get_channel(payload.channel_id).send(embed=embed, delete_after=10.0)
 
+    # EG: Get list of members / veterans
     @commands.command(name='checkmembers', aliases=['members', 'cm'])
     async def _check_members(self, ctx, option: str = 'members'):
-        """End Game specific: Get a list of members/veterans"""
         
         if ctx.guild.id != 509499331552739328 and ctx.guild.id != 393995277713014785:
             await ctx.send(embed=discord.Embed(description=f"Oops! This command can only be used in the [End Game:tm: Discord Server](https://discord.gg/d2endgame)."))
@@ -157,7 +157,6 @@ class Destiny(commands.Cog):
         
         mem = get(ctx.guild.roles, id=bot.db.get_mem_role(ctx.guild.id))
         vet = get(ctx.guild.roles, id=594462694103318530) if ctx.guild.id == 509499331552739328 else get(ctx.guild.roles, id=889212097706217493)
-        #vet = get(ctx.guild.roles, id=889212097706217493)
         
         now = int(datetime.timestamp(datetime.now(timezone.utc)))
 

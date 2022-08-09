@@ -1,6 +1,6 @@
 ### Import Libraries  ###
 
-import os
+import os, sys, getopt
 
 import discord
 from discord.ext import commands
@@ -14,13 +14,43 @@ from utils.database import *
 from utils.music_utils import *
 
 logger = get_logger(__name__)
+
+dev: bool = False
+args = sys.argv[1:]
+short_options = 'hd'
+long_options = ['help', 'dev']
+try:
+    arguments, values = getopt.getopt(args, short_options, long_options)
+except getopt.error as err:
+    logger.error(str(err))
+    sys.exit(2)
+
+for arg, val in arguments:
+    if arg in ("-h", "--help"):
+        print("""
+Compass Bot
+------------
+Description: 
+    A General use Discord bot with features for moderation, music, Destiny, and more. 
+
+Usage: 
+    python src/main.py [-h, --help] [-d, --dev]
+    
+Optional Arguments:
+  -h, --help  Show this help message and exit
+  -d, --dev   Run the development version of the Bot locally 
+""")
+        sys.exit(0)
+    elif arg in ('-d', '--dev'):
+        dev = True
+
 DEFAULT_PREFIX = ';' 
-token = os.getenv("DSC_API_TOKEN")
 mongo_url = os.getenv("MONGO_URL")
+token = os.getenv("DSC_DEV_TOKEN") if dev else os.getenv("DSC_API_TOKEN")
 
 
 async def _connect_to_db():
-    bot.db = serverDB(mongo_url)
+    bot.db = serverDB(mongo_url, dev=dev)
     logger.info("Connected to database.")
 
 async def _prune_db():
@@ -65,7 +95,6 @@ async def _config_music(guild):
     """Configure music settings for each guild"""
     guild_settings[guild] = Settings(guild)
     guild_audiocontroller[guild] = AudioController(bot, guild)
-
     sett = guild_settings[guild]
 
     try:
@@ -96,10 +125,9 @@ async def _config_music(guild):
 ### Setup Discord bot
 
 bot = commands.Bot(
-    application_id = 932737557836468297, # main bot
-    #application_id = 535346715297841172, # test bot
+    application_id = 535346715297841172 if dev else 932737557836468297,
     help_command=CustomHelpCommand(),
-    command_prefix = _get_prefix,
+    command_prefix = ',' if dev else _get_prefix,
     pm_help = True,
     description = "A general use, moderation, and music bot in Python.",
     intents = discord.Intents.all()
