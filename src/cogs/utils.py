@@ -123,8 +123,8 @@ class Utils(commands.Cog):
 
     # Purely academic / for personal usage if you want to host your own instance. 
     # Not intended for scraping servers for content. 
-    @app_commands.command(name='download', description="Downloads all files in current channel (personal archiving tool - do not use to steal content from others")
-    async def download(self, itx: discord.Interaction):
+    @app_commands.command(name='download', description="Downloads all files in current channel (personal archiving tool - do not use to steal content from others)")
+    async def _download(self, itx: discord.Interaction):
         download_dir = f"./downloads/{itx.guild.name}/{itx.channel.name}"
         count = 0
         await itx.response.defer(ephemeral=True)

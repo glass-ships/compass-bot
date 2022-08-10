@@ -28,14 +28,14 @@ class Admin(commands.Cog):
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
-
     @commands.command(name="sync")
     @commands.has_permissions(administrator=True)
     async def _sync(self, ctx: commands.Context, spec: Union[Literal["all"], Literal["guild"]]):
         logger.info("Syncing ships...")
         if spec == "guild":
-            fmt = await bot.tree.sync()
             g = bot.get_guild(ctx.guild.id)
+            bot.tree.clear_commands(guild=g)
+            fmt = await bot.tree.sync()
             await bot.tree.sync(guild=g)
             bot.tree.copy_global_to(guild=g)
             await ctx.send(f"Synced {len(fmt)} commands to guild.")

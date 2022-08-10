@@ -174,9 +174,9 @@ class Listeners(commands.Cog):
         }
 
         if bot.db.add_guild_table(guild.id, data):
-            await channel.send(discord.Embed(description=f"Guild \"{guild.name}\" added to database."))
+            await channel.send(embed=discord.Embed(description=f"Guild \"{guild.name}\" added to database."))
         else:
-            await channel.send(discord.Embed(description=f"Guild \"{guild.name}\" already in database."))
+            await channel.send(embed=discord.Embed(description=f"Guild \"{guild.name}\" already in database."))
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
@@ -186,9 +186,9 @@ class Listeners(commands.Cog):
         channel = get(glass_guild.text_channels, id=chan_id)
 
         if bot.db.drop_guild_table(guild.id):
-            await channel.send(f"Guild \"{guild.name}\" removed from database.")
+            await channel.send(embed=discord.Embed(description=f"Guild \"{guild.name}\" removed from database."))
         else:
-            await channel.send(f"Guild \"{guild.name}\" not found in database.")
+            await channel.send(embed=discord.Embed(description=f"Guild \"{guild.name}\" not found in database."))
 
     @commands.Cog.listener()
     async def on_guild_update(self, oldguild, newguild):
