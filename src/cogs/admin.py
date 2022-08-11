@@ -34,7 +34,7 @@ class Admin(commands.Cog):
         logger.info("Syncing ships...")
         if spec == 'dev':
             g = bot.get_guild(771161933301940224)
-            bot.tree.copy_global_to(771161933301940224)
+            bot.tree.copy_global_to(g)
             fmt = await bot.tree.sync(g)
             await ctx.send((f"Synced {len(fmt)} commands to dev guild."))
         elif spec == "guild":
