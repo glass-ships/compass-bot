@@ -30,30 +30,33 @@ class Admin(commands.Cog):
 
     @commands.command(name="sync")
     @commands.has_permissions(administrator=True)
-    async def _sync(self, ctx: commands.Context, spec: Union[Literal["all"], Literal["guild"]]):
+    async def _sync(self, ctx: commands.Context, spec: Union[Literal['dev'], Literal["guild"], Literal["all"]]):
         logger.info("Syncing ships...")
-        if spec == "guild":
+        if spec == 'dev':
+            g = bot.get_guild(771161933301940224)
+            bot.tree.copy_global_to(771161933301940224)
+            fmt = await bot.tree.sync(g)
+            await ctx.send((f"Synced {len(fmt)} commands to dev guild."))
+        elif spec == "guild":
             g = bot.get_guild(ctx.guild.id)
-            bot.tree.clear_commands(guild=g)
-            fmt = await bot.tree.sync()
-            await bot.tree.sync(guild=g)
-            bot.tree.copy_global_to(guild=g)
-            await ctx.send(f"Synced {len(fmt)} commands to guild.")
+            fmt = await bot.tree.sync(guild=g)
+            await ctx.send(embed=discord.Embed(description=f"Synced {len(fmt)} commands to guild."))
             logger.info("Ships synced!")
             return
         elif spec == "all":
             fmt1 = await bot.tree.sync()
-            fmt2 = 0
+            #fmt2 = 0
             guilds = bot.db.get_all_guilds()
-            for guild in guilds:
-                g = bot.get_guild(guild)
-                await bot.tree.sync(guild=g)
-                fmt2 += 1
-            await ctx.send(f"Bot tree synced: {len(fmt1)} commands to {fmt2} of {len(guilds)} guilds.")
+            #for guild in guilds:
+            #    g = bot.get_guild(guild)
+            #    await bot.tree.sync(guild=g)
+            #    fmt2 += 1
+            await ctx.send(embed=discord.Embed(description=f"Bot tree synced: {len(fmt1)} commands to {len(guilds)} guilds."))
+            #await ctx.send(f"Bot tree synced: {len(fmt1)} commands to {fmt2} of {len(guilds)} guilds.")
             logger.info("Ships synced!")
             return
         else:
-            await ctx.send("Unexpected argument.\nExample usage: `;sync guild`\nType `;help` for more info.")
+            await ctx.send(embed=discord.Embed(description=f"Unexpected argument.\nExample usage: `;sync guild`\nType `;help` for more info."))
             logger.warning("Error syncing ships! (Bad argument)")
             return
     

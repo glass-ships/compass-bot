@@ -52,9 +52,15 @@ class Utils(commands.Cog):
 
 
     @commands.command(name="test")
-    async def _test(self, ctx, arg: str):
-        thing = arg - 3
-        return thing
+    async def _test(self, ctx):
+        pass
+
+    @commands.command(name='clearcommands', aliases=['cc'])
+    async def _clear_commands(self, ctx, guild_id = None):
+        g = bot.get_guild(int(guild_id) if guild_id else ctx.guild.id)
+        bot.tree.clear_commands(guild=g)
+        fmt = await bot.tree.sync(guild=g)
+        await ctx.send(embed=discord.Embed(description=f"{len(fmt)} commands cleared from {g.name}"))
 
     @commands.command(name='clearfilecache', aliases=['cfc','rm -rf'])
     async def _clear_file_cache(self, ctx, option: str):
@@ -78,6 +84,12 @@ class Utils(commands.Cog):
     @has_mod_ctx
     @commands.command(name="download_emojis", description="Downloads a guild's emojis (Used in Glass Harbor - can be safely ignored)", aliases=['dlemojis', 'dle'])
     async def _download_emojis(self, ctx) -> None:
+        # if ctx.guild.id != 393995277713014785:
+        #     await ctx.send(embed=discord.Embed(description=f"Oops! This command can only be used in the Glass Harbor Discord server."))
+        #     return
+        # mod_roles = bot.db.get_mod_roles(ctx.guild.id)
+        # if not await role_check(ctx, mod_roles):
+        #     return
         await ctx.message.delete()
         fp = f"./downloads/{ctx.guild.name}/emojis"
         Path(fp).mkdir(parents=True, exist_ok=True)
@@ -97,7 +109,9 @@ class Utils(commands.Cog):
         if ctx.guild.id != 393995277713014785:
             await ctx.send(embed=discord.Embed(description=f"Oops! This command can only be used in the Glass Harbor Discord server."))
             return
-        
+        # mod_roles = bot.db.get_mod_roles(ctx.guild.id)
+        # if not await role_check(ctx, mod_roles):
+        #     return        
         repo_url = f"https://glass-ships:{os.getenv('GITLAB_TOKEN')}@gitlab.com/glass-ships/discord-stuff.git"
         repo_path = f"{cog_path.parent.parent.parent.parent}"
         print(repo_path)
@@ -119,7 +133,7 @@ class Utils(commands.Cog):
 
         # if in server but not in folder, "guild.delete_emoji()""
         # if in folder but not in server, "guild.add_emoji()""
-        # maybe return a nice message
+        # Return a nice message
 
     # Purely academic / for personal usage if you want to host your own instance. 
     # Not intended for scraping servers for content. 
