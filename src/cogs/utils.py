@@ -8,6 +8,7 @@ from discord.utils import get
 import os, shutil, subprocess
 from pathlib import Path
 from git import Repo
+from typing import Union, Literal
 
 from utils.helper import * 
 
@@ -44,7 +45,6 @@ class Utils(commands.Cog):
     def __init__(self, bot_):
         global bot
         bot = bot_
-        self.name = self.qualified_name
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -54,6 +54,34 @@ class Utils(commands.Cog):
     @commands.command(name="test")
     async def _test(self, ctx):
         pass
+
+    @commands.command(name='getcommands', aliases=['gc', 'getcmds'])
+    async def _get_commands(self, ctx, guild_id = None):
+        g = bot.get_guild(int(guild_id) if guild_id else ctx.guild.id)
+        global_get_cmds = bot.tree.get_commands()
+        guild_get_cmds = bot.tree.get_commands(guild=g)
+        guild_fetch_cmds = await bot.tree.fetch_commands(guild=g)
+        global_fetch_cmds = await bot.tree.fetch_commands()
+
+        def cmds_to_str(string, list):
+            for i in list:
+                if isinstance(i, discord.app_commands.Command):
+                    string += f"/{i.name}\n"
+                elif isinstance(i, discord.app_commands.Group):
+                    for j in i.commands:
+                        string += f'/{i.name} {j.name}\n'
+            return string
+
+        msg = f"__**Global Commands (get) ({len(global_get_cmds)}):**__\n"
+        msg = cmds_to_str(msg, global_get_cmds)
+        msg += f"__**Guild Commands (get) ({len(guild_get_cmds)}):**__\n"
+        msg = cmds_to_str(msg, guild_get_cmds)
+        msg += f"__**Global Commands (fetch) ({len(global_fetch_cmds)}):**__\n"
+        msg = cmds_to_str(msg, global_fetch_cmds)
+        msg += f"__**Guild Commands (fetch) ({len(guild_fetch_cmds)}):**__\n"
+        msg = cmds_to_str(msg, guild_fetch_cmds)
+
+        await ctx.send(embed=discord.Embed(description=msg))
 
     @commands.command(name='clearcommands', aliases=['cc'])
     async def _clear_commands(self, ctx, guild_id = None):
@@ -77,7 +105,9 @@ class Utils(commands.Cog):
         if not await role_check(ctx, mod_roles):
             return
 
-        emojis_static, emojis_anim = get_emojis(bot.get_guild(ctx.guild.id))
+        emojis_static, emojis_anim = get_emojis(guild=bot.get_guild(ctx.guild.id))
+        emojis_anim = [i.name for i in emojis_anim]
+        emojis_static = [i.name for i in emojis_static]
         await ctx.send(f"__**Guild emojis (static):**__\n```\n{emojis_static}\n```")
         await ctx.send(f"__**Guild emojis (animated):**__\n```\n{emojis_anim}\n```")
 
@@ -114,37 +144,63 @@ class Utils(commands.Cog):
         #     return        
         repo_url = f"https://glass-ships:{os.getenv('GITLAB_TOKEN')}@gitlab.com/glass-ships/discord-stuff.git"
         repo_path = f"{cog_path.parent.parent.parent.parent}"
-        print(repo_path)
+
         if not Path(f"{repo_path}/discord-stuff").is_dir():
             subprocess.call(['git', 'clone', repo_url, f"{repo_path}/discord-stuff"])
         else:
             logger.debug("Repo already exists")
 
-        local_static, local_anim = get_emojis(bot.get_guild(ctx.guild.id))
+        guild_static, guild_anim = get_emojis(bot.get_guild(ctx.guild.id))
 
-        remote_static = os.listdir(f"{repo_path}/discord-stuff/_emojis/png")
-        remote_anim = os.listdir(f"{repo_path}/discord-stuff/_emojis/gif")
+        backup_static = os.listdir(f"{repo_path}/discord-stuff/_emojis/png")
+        backup_anim = os.listdir(f"{repo_path}/discord-stuff/_emojis/gif")
 
-        print(f"Remote static emojis: {remote_static}")
-        print(f"Remote animated emojis: {remote_anim}")
+        print(f"backup static emojis: {backup_static}")
+        print(f"backup animated emojis: {backup_anim}")
 
-        print(f"Local static emojis: {local_static}")
-        print(f"Local animated emojis: {local_anim}")
+        print(f"guild static emojis: {guild_static}")
+        print(f"guild animated emojis: {guild_anim}")
 
-        # if in server but not in folder, "guild.delete_emoji()""
-        # if in folder but not in server, "guild.add_emoji()""
+        print("\nStatic - In guild, but not in repo:\n")
+        for e in guild_static:
+            if f'{e.name}.png' not in backup_static:
+                print(f'{e.name}.png')
+                #await ctx.guild.delete_emoji(e)
+        # print("\nAnimated - In guild, but not in repo:\n")
+        # for e in guild_anim:
+        #     if f'{e.name}.gif' not in backup_anim:
+        #         print(e.name)
+        #         #await ctx.guild.delete_emoji(e)
+        # print("\nStatic - In repo, but not in guild:\n")
+        # for e in backup_static:
+        #     if e not in [i.name for i in guild_static]:
+        #         print(e)
+        #         #with open(f"{repo_path}/discord-stuff/_emojis/png/e"):
+        #         #    await ctx.guild.create_custom_emoji()
+        # print("\nAnimated - In repo, but not in guild:\n")
+        # for e in backup_anim:
+        #     if e.name not in [i.name for i in guild_anim]:
+        #         print(e)
+        #         #await ctx.guild.delete_emoji(e)
+
         # Return a nice message
 
     # Purely academic / for personal usage if you want to host your own instance. 
     # Not intended for scraping servers for content. 
-    @app_commands.command(name='download', description="Downloads all files in current channel (personal archiving tool - do not use to steal content from others)")
+    @app_commands.command(name='download', description="Downloads all files in current channel (personal archiving tool)")
     async def _download(self, itx: discord.Interaction):
         download_dir = f"./downloads/{itx.guild.name}/{itx.channel.name}"
+        if not os.path.exists(download_dir):
+            os.makedirs(download_dir)
         count = 0
         await itx.response.defer(ephemeral=True)
-        for msg in itx.channel.history():
+        async for msg in itx.channel.history():
             if msg.attachments:
+                print("attachment(s) found")
                 for a in msg.attachments:
-                    await a.save(fp=download_dir, filename=a.name)
+                    try:
+                        await a.save(fp=f"{download_dir}/{a.filename}")
+                    except Exception as e:
+                        await itx.followup.send(f"Error downloading attachment from {msg.id}:\n```\n{e}\n```", ephemeral=True)
                     count += 1
-        await itx.followup.send(f"Success: Downloaded {count} items.")
+        await itx.followup.send(f"Success: Downloaded {count} items.", ephemeral=True)

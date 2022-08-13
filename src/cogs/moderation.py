@@ -31,11 +31,9 @@ class Moderation(commands.Cog):
 
     ##### Chat Commands #####
 
-    @app_commands.command()
     async def _send(self, itx: discord.Interaction, message: str, *, channel: discord.TextChannel):
         pass
 
-    @app_commands.command()
     async def _send_embed(self, itx: discord.Interaction, *, title: str, description: str):
         pass
 
@@ -54,8 +52,9 @@ class Moderation(commands.Cog):
         mod_roles = bot.db.get_mod_roles(itx.guild_id)
         if not await role_check_itx(itx, mod_roles):
             return
+        await itx.response.defer()
         await itx.channel.purge(limit=int(number))
-        await itx.response.send_message(f"{number} messages successfully purged!", ephemeral=True)
+        await itx.followup.send(f"{number} messages successfully purged!", ephemeral=True)
 
     @app_commands.command(name="moveto", description="Move a message to specified channel")
     async def _move_message(self, itx: discord.Interaction, channel: Union[discord.TextChannel, discord.Thread], message_id: str):

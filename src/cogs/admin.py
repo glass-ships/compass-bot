@@ -34,8 +34,9 @@ class Admin(commands.Cog):
         logger.info("Syncing ships...")
         if spec == 'dev':
             g = bot.get_guild(771161933301940224)
-            bot.tree.copy_global_to(g)
-            fmt = await bot.tree.sync(g)
+            await ctx.send(embed=discord.Embed(description=f"Copying command tree to {g}"), delete_after=5.0)
+            bot.tree.copy_global_to(guild=g)
+            fmt = await bot.tree.sync(guild=g)
             await ctx.send((f"Synced {len(fmt)} commands to dev guild."))
         elif spec == "guild":
             g = bot.get_guild(ctx.guild.id)
@@ -103,7 +104,7 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     @app_commands.describe(option='What to specify a channel for', channel='Which channel to send to')
     @app_commands.autocomplete()
-    async def _channel(self, itx: discord.Interaction, option: str, channel: discord.TextChannel):  
+    async def _channel_set(self, itx: discord.Interaction, option: str, channel: discord.TextChannel):  
         if option == "logs":
             bot.db.update_channel_logs(itx.guild_id, channel.id)
         elif option == "bot":
@@ -119,7 +120,7 @@ class Admin(commands.Cog):
         await itx.response.send_message(f"{option.title()} channel set to <#{channel.id}>.")
         return True
 
-    @_channel.autocomplete('option')
+    @_channel_set.autocomplete('option')
     async def _channel_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
         options = ['logs', 'bot', 'music', 'videos', 'lfg']
         return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
@@ -127,7 +128,7 @@ class Admin(commands.Cog):
     @group_unset.command(name="channel")
     @commands.has_permissions(administrator=True)
     @app_commands.autocomplete(option=_channel_autocomplete)
-    async def _channel(self, itx: discord.Interaction, option: str):  
+    async def _channel_unset(self, itx: discord.Interaction, option: str):  
         if option == "logs":
             bot.db.update_channel_logs(itx.guild_id, 0)
         elif option == "bot":

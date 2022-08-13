@@ -65,16 +65,16 @@ def get_guild(bot, command):
                 return guild
     return None
 
-def get_emojis(self, guild):
+def get_emojis(guild):
         emojis = {
             'anim': [],
             'static': []
         }
         for i in guild.emojis:
             if i.animated == True:
-                emojis['anim'].append(i.name)
+                emojis['anim'].append(i)
             else:
-                emojis['static'].append(i.name)
+                emojis['static'].append(i)
         return emojis['static'], emojis['anim']
 
 ##################################################################################

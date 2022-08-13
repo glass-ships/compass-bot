@@ -33,6 +33,7 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
         """A global error handler cog."""
+        message = ''
         if isinstance(error, commands.CommandNotFound):
             return  # Return because we don't want to show an error for every command not found
         elif isinstance(error, commands.CommandOnCooldown):
