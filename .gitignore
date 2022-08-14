@@ -2,8 +2,8 @@ discordpy/
 site/
 downloads/
 src/Untitled.ipynb
-#src/main-test.py
 test.py
+nohup.out
 
 **/__pycache__
 .cache
