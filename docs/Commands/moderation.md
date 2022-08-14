@@ -2,8 +2,8 @@
     | Command | Arguments | Description |
     | :--- | :--- | :--- |
     | `;modroles` |  | Get a list of the guild's mod roles. |
-    | `;send` | `channel`, `message` | Send a `message` to a `channel`. WIP |
-    | `;sendembed` | `channel`, `embed (fields?)` | Send an `embed` to a `channel`. WIP |
+    | `;send` | `message`, `channel` (optional) | Send a `message` to a `channel`<br>Example usage: `;send "Some kinda message" #some-channel |
+    | `;sendembed` | `channel`, `embed fields` | Send an `embed` to a `channel`. WIP |
 
 ???+ tldr "Slash Commands (mod only)"
     | Command | Arguments | Description |

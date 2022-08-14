@@ -1,12 +1,11 @@
 ### Imports ###
-
-from datetime import datetime
-#from re import T
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
 from discord.utils import get
 
+from datetime import datetime
+import shlex
 from typing import Optional, Union
 
 from utils.helper import * 
@@ -31,11 +30,49 @@ class Moderation(commands.Cog):
 
     ##### Chat Commands #####
 
-    async def _send(self, itx: discord.Interaction, message: str, *, channel: discord.TextChannel):
-        pass
+    @commands.command(name='send', aliases=['say'], description="Send a message via the bot")
+    async def _send(self, ctx: commands.Context, message: str=None, channel: discord.TextChannel=None):
+        if channel is None:
+            channel = ctx.channel
+        if message is None:
+            await ctx.channel.send("Please enter a message to be sent.")
+            return
+        await channel.send(content=message)
+        await ctx.message.delete()
+        await ctx.channel.send(f"Message sent to <#{channel.id}>.", delete_after=5.0)
 
-    async def _send_embed(self, itx: discord.Interaction, *, title: str, description: str):
-        pass
+    @commands.command(name='sendembed', aliases=['se'], description="Send an embed to a channel (fields not yet supported)")
+    async def _send_embed(self,
+        ctx: commands.Context, channel: discord.TextChannel, *, embed_fields: str = None):
+        if channel is None:
+            channel = ctx.channel
+        
+        args = shlex.split(embed_fields)
+        post_options = ['image', 'thumbnail', 'footer']
+        opts = {}
+        post_opts = {}
+        for i in range(len(args)):
+            arg = args[i]
+            if arg.startswith('--'):
+                if arg.strip('-') not in post_options:
+                    opts[arg.strip('-')] = args[i+1]
+                else:
+                    post_opts[arg.strip('-')] = args[i+1]
+        print(opts)
+        print(post_opts)
+
+        embed = discord.Embed().from_dict(opts)
+
+        if 'footer' in post_opts.keys():
+            embed.set_footer(icon_url=post_opts['footer'])
+        if 'image' in post_opts.keys():
+            embed.set_image(url=post_opts['image'])
+        if 'thumbnail' in post_opts.keys():
+            embed.set_thumbnail(url=post_opts['thumbnail'])
+        
+        await channel.send(embed=embed)
+        await ctx.channel.send(f"Embed sent to <#{channel.id}>.", delete_after=5.0)
+
 
     @commands.command(name="get_mod_roles", description="Get a list of guild's mod roles", aliases=['modroles'])
     async def _get_mod_roles(self, ctx):
