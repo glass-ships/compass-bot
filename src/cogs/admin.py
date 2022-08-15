@@ -30,7 +30,7 @@ class Admin(commands.Cog):
 
     @commands.command(name="sync")
     @commands.has_permissions(administrator=True)
-    async def _sync(self, ctx: commands.Context, spec: Union[Literal['dev'], Literal["guild"], Literal["all"]]):
+    async def _sync(self, ctx: commands.Context, spec: Union[Literal['dev'], Literal["guild"], None]):
         logger.info("Syncing ships...")
         if spec == 'dev':
             g = bot.get_guild(771161933301940224)
@@ -44,20 +44,21 @@ class Admin(commands.Cog):
             await ctx.send(embed=discord.Embed(description=f"Synced {len(fmt)} commands to guild."))
             logger.info("Ships synced!")
             return
-        elif spec == "all":
+        elif spec is None:
             fmt1 = await bot.tree.sync()
-            #fmt2 = 0
-            guilds = bot.db.get_all_guilds()
+            await ctx.send(embed=discord.Embed(description=f"Synced bot tree ({len(fmt1)} commands)"))
+            # fmt2 = 0
+            #guilds = bot.db.get_all_guilds()
             #for guild in guilds:
             #    g = bot.get_guild(guild)
             #    await bot.tree.sync(guild=g)
             #    fmt2 += 1
-            await ctx.send(embed=discord.Embed(description=f"Bot tree synced: {len(fmt1)} commands to {len(guilds)} guilds."))
+            #await ctx.send(embed=discord.Embed(description=f"Bot tree synced: {len(fmt1)} commands to {len(guilds)} guilds."))
             #await ctx.send(f"Bot tree synced: {len(fmt1)} commands to {fmt2} of {len(guilds)} guilds.")
             logger.info("Ships synced!")
             return
         else:
-            await ctx.send(embed=discord.Embed(description=f"Unexpected argument.\nExample usage: `;sync guild`\nType `;help` for more info."))
+            await ctx.send(embed=discord.Embed(description=f"Unexpected argument.\nType `;help` for more info."))
             logger.warning("Error syncing ships! (Bad argument)")
             return
     

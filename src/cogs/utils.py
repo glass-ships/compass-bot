@@ -24,6 +24,7 @@ async def _mod_check_ctx(ctx):
     await asyncio.sleep(3)
     await ctx.message.delete()
     return False
+
 async def _mod_check_itx(itx: discord.Interaction):
     mod_roles = bot.db.get_mod_roles(itx.guild_id)
     user_roles = [x.id for x in itx.user.roles]
@@ -183,7 +184,7 @@ class Utils(commands.Cog):
         #         print(e)
         #         #await ctx.guild.delete_emoji(e)
 
-        # Return a nice message
+        print("Return a nice message")
 
     # Purely academic / for personal usage if you want to host your own instance. 
     # Not intended for scraping servers for content. 

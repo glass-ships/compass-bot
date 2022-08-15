@@ -5,13 +5,14 @@ import discord
 from discord.ext import commands
 from discord.utils import get
 
-import time
+import time, traceback
 from datetime import datetime
-import traceback
+from pathlib import Path
 
 from utils.helper import * 
 
 logger = get_logger(__name__)
+cog_path = Path(__file__)
 
 ### Setup Cog
 #
@@ -194,3 +195,48 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_update(self, oldguild, newguild):
         bot.db.update_guild_name(oldguild.id, newguild.name)
+
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member) -> None:
+        from PIL import Image
+        import io
+        import requests
+
+        guild = member.guild
+        if guild.id != 393995277713014785:
+            return
+
+        # channel = bot.db.get_channel_welcome(guild=guild.id)
+        channel = bot.get_channel(1008640829365161984)
+
+        av = requests.get(member.display_avatar.url)
+        ocean = Image.open(f'{cog_path.parent.parent.parent}/docs/images/welcome_background.png')
+        pfp = Image.open(io.BytesIO(av.content))
+        pfp = pfp.resize((650,650))
+        
+        ocean_w, ocean_h = ocean.size
+        pfp_w, pfp_h = pfp.size
+        offset = ((ocean_w - pfp_w) // 2, (ocean_h - pfp_h) // 2)
+                        
+        base = Image.new('RGBA', ocean.size)
+        base.paste(pfp, offset)
+        
+        img = Image.alpha_composite(base, ocean)
+
+        with io.BytesIO() as image_binary:
+            img.save(image_binary, 'PNG')
+            image_binary.seek(0)
+            await channel.send(
+                content=f"Welcome, {member.mention}!",
+                embed=discord.Embed(
+                    title=f"Welcome to {guild.name}",
+                    description=f"""
+                    Please familiarize yourself with the Harbor <#954197139049816066>, 
+                    have a look around, and enjoy your stay!
+
+                    If you have any questions or concerns, feel free to mention the crew: <@&408812277836283908>/<@&428800694439641091>.
+                    """
+                ),
+                file=discord.File(fp=image_binary, filename='image.png')
+            )

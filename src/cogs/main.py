@@ -38,7 +38,7 @@ class Main(commands.Cog):
         """Returns a user's Discord avatar"""
         u = user or itx.user
         mem = await itx.guild.fetch_member(u.id)
-        userAvatarUrl = mem.avatar.url
+        userAvatarUrl = mem.display_avatar.url
         embed = discord.Embed(description=f"{mem.mention}'s avatar")
         embed.set_image(url=f"{userAvatarUrl}")
         await itx.response.send_message(embed=embed)
