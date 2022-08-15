@@ -5,6 +5,7 @@ git+https://github.com/Rapptz/discord.py.git
 python-dateutil 
 pytz
 GitPython
+pillow
 
 # database stuff
 pymongo
