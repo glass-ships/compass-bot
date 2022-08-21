@@ -136,55 +136,83 @@ class Utils(commands.Cog):
         return
 
     @commands.command(name='syncemojis', description="Clone glass' discord repo and sync Glass Harbor emojis")
-    async def _sync_emojis(self, ctx):
+    async def _sync_emojis(self, ctx, option: str):
         if ctx.guild.id != 393995277713014785:
             await ctx.send(embed=discord.Embed(description=f"Oops! This command can only be used in the Glass Harbor Discord server."))
             return
-        # mod_roles = bot.db.get_mod_roles(ctx.guild.id)
-        # if not await role_check(ctx, mod_roles):
-        #     return        
+        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
+        if not await role_check(ctx, mod_roles):
+            return
+
         repo_url = f"https://glass-ships:{os.getenv('GITLAB_TOKEN')}@gitlab.com/glass-ships/discord-stuff.git"
         repo_path = f"{cog_path.parent.parent.parent.parent}"
 
         if not Path(f"{repo_path}/discord-stuff").is_dir():
             subprocess.call(['git', 'clone', repo_url, f"{repo_path}/discord-stuff"])
         else:
-            logger.debug("Repo already exists")
+            subprocess.Popen(['git', 'pull'], cwd=f"{repo_path}/discord-stuff")
+            await asyncio.sleep(7)
+            logger.debug("Repo already exists - cloning repo")
 
         guild_static, guild_anim = get_emojis(bot.get_guild(ctx.guild.id))
 
         backup_static = os.listdir(f"{repo_path}/discord-stuff/_emojis/png")
         backup_anim = os.listdir(f"{repo_path}/discord-stuff/_emojis/gif")
 
-        print(f"backup static emojis: {backup_static}")
-        print(f"backup animated emojis: {backup_anim}")
+        # print(f"backup static emojis: {backup_static}")
+        # print(f"backup animated emojis: {backup_anim}")
+        # print(f"guild static emojis: {guild_static}")
+        # print(f"guild animated emojis: {guild_anim}")
 
-        print(f"guild static emojis: {guild_static}")
-        print(f"guild animated emojis: {guild_anim}")
-
-        print("\nStatic - In guild, but not in repo:\n")
+        added = 0
+        removed = 0
+        logger.info("Deleting static emojis in guild, but not in repo...")
         for e in guild_static:
             if f'{e.name}.png' not in backup_static:
-                print(f'{e.name}.png')
-                #await ctx.guild.delete_emoji(e)
-        # print("\nAnimated - In guild, but not in repo:\n")
-        # for e in guild_anim:
-        #     if f'{e.name}.gif' not in backup_anim:
-        #         print(e.name)
-        #         #await ctx.guild.delete_emoji(e)
-        # print("\nStatic - In repo, but not in guild:\n")
-        # for e in backup_static:
-        #     if e not in [i.name for i in guild_static]:
-        #         print(e)
-        #         #with open(f"{repo_path}/discord-stuff/_emojis/png/e"):
-        #         #    await ctx.guild.create_custom_emoji()
-        # print("\nAnimated - In repo, but not in guild:\n")
-        # for e in backup_anim:
-        #     if e.name not in [i.name for i in guild_anim]:
-        #         print(e)
-        #         #await ctx.guild.delete_emoji(e)
+                #print(f'{e.name}')
+                await ctx.guild.delete_emoji(e)
+                await asyncio.sleep(1.0)
+                removed += 1
+        logger.info("Deleting animated emojis in guild, but not in repo...")
+        for e in guild_anim:
+            if f'{e.name}.gif' not in backup_anim:
+                #print(e.name)
+                await ctx.guild.delete_emoji(e)
+                await asyncio.sleep(1.0)
+                removed += 1
+        logger.info("Adding static repo emojis not in guild...")
+        for e in backup_static:
+            if e not in [i.name for i in guild_static]:
+                #print(e)
+                with open(f"{repo_path}/discord-stuff/_emojis/png/{e}", 'rb') as image:
+                    await ctx.guild.create_custom_emoji(name=e[:-4], image=image.read())
+                await asyncio.sleep(1.0)
+                added += 1
+        logger.info("Adding animated repo emojis not in guild...")
+        for e in backup_anim:
+            if e not in [i.name for i in guild_anim]:
+                #print(e)
+                with open(f"{repo_path}/discord-stuff/_emojis/gif/{e}", 'rb') as image:
+                    await ctx.guild.create_custom_emoji(name=e[:-4], image=image.read())
+                await asyncio.sleep(1.0)
+                added += 1
+        
+        await ctx.send(embed=discord.Embed(title="Emojis Synced", description=f"{len(added)} added\n{len(removed)} removed"))
 
-        print("Return a nice message")
+    @commands.command(name='clearemojis')
+    async def _clear_emojis(self, ctx) -> None:
+        if ctx.guild.id != 393995277713014785:
+            await ctx.send(embed=discord.Embed(description=f"Oops! This command can only be used in the Glass Harbor Discord server."))
+            return
+        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
+        if not await role_check(ctx, mod_roles):
+            return
+        guild_static, guild_anim = get_emojis(bot.get_guild(ctx.guild.id))
+        for i in guild_static:
+            await ctx.guild.delete_emoji(i)
+        for i in guild_anim:
+            await ctx.guild.delete_emoji(i)
+        await ctx.send("Emojis cleared!")
 
     # Purely academic / for personal usage if you want to host your own instance. 
     # Not intended for scraping servers for content. 
