@@ -147,6 +147,8 @@ class Listeners(commands.Cog):
                 else:
                     await flagged_message.channel.send(f"Logs channel has not been set!\nUse `;set_logs_channel <#channel>` to set one.")
 
+# Guild Listeners
+
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         # prep sending notif to Glass Harbor (for logging/debug)
@@ -196,6 +198,7 @@ class Listeners(commands.Cog):
     async def on_guild_update(self, oldguild, newguild):
         bot.db.update_guild_name(oldguild.id, newguild.name)
 
+# Member Listeners
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
