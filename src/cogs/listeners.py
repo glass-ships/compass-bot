@@ -173,6 +173,7 @@ class Listeners(commands.Cog):
             "chan_logs": default_channel,
             "chan_music": 0,
             "chan_vids": 0,
+            "chan_lfg": 0,
             "videos_whitelist": [],
             "lfg": {},
         }
