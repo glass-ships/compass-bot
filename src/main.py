@@ -78,7 +78,7 @@ async def _patch_db():
     for guild in bot_guilds:
         default_channel = guild.system_channel.id if guild.system_channel else None
         if guild.id not in db_guilds:
-            data = {"guild_id": guild.id, "guild_name": guild.name, "prefix": ";", "mod_roles": [], "mem_role": 0, "dj_role": 0, "chan_bot": default_channel, "chan_logs": default_channel, "chan_music": 0, "chan_vids": 0, "videos_whitelist": [], "lfg": []}
+            data = {"guild_id": guild.id, "guild_name": guild.name, "prefix": ";", "mod_roles": [], "mem_role": 0, "dj_role": 0, "chan_bot": default_channel, "chan_logs": default_channel, "chan_music": 0, "chan_vids": 0, "chan_lfg": 0, "videos_whitelist": [], "lfg": []}
             bot.db.add_guild_table(guild.id, data)
 
 async def _get_prefix(bot, ctx):
