@@ -42,8 +42,8 @@ class Destiny(commands.Cog):
         num_players = int(search.group()[2])
         bot.db.add_lfg(guild_id=message.guild.id, lfg_id=message.id, user_id=message.author.id, num_players=num_players)
 
-        await message.add_reaction('<:_plus:1000298488908746792>')
-        await message.add_reaction('<:_minus:1000298486643830855>')
+        await message.add_reaction('<:_plus:1011101343030726687>')
+        await message.add_reaction('<:_minus:1011101369245106176>')
         await message.add_reaction('📖')
 
         embed = discord.Embed(
