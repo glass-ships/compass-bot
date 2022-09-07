@@ -87,19 +87,19 @@ class Admin(commands.Cog):
             else:
                 roles.append(int(role))
         bot.db.update_mod_roles(itx.guild_id, roles)
-        await itx.response.send_message(f"Mod roles set: {mod_roles}", ephemeral=True)
+        await itx.response.send_message(f"Mod roles set: {mod_roles}")
 
     @group_set.command(name="member_role")
     @commands.has_permissions(administrator=True)
     async def _member_role(self, itx: discord.Interaction, role: discord.Role):
         bot.db.update_mem_role(itx.guild_id, role.id)
-        await itx.response.send_message(f"Member role set: {role}", ephemeral=True)
+        await itx.response.send_message(f"Member role set: {role}")
 
     @group_set.command(name="dj_role")
     @commands.has_permissions(administrator=True)
     async def _dj_role(self, itx: discord.Interaction, role: discord.Role):
         bot.db.update_dj_role(itx.guild_id, role.id)
-        await itx.response.send_message(f"DJ role set: {role}", ephemeral=True)
+        await itx.response.send_message(f"DJ role set: {role}")
 
     @group_set.command(name="channel")
     @commands.has_permissions(administrator=True)
