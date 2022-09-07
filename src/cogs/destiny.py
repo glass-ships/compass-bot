@@ -143,3 +143,10 @@ class Destiny(commands.Cog):
             embed.set_footer(text=f"Requested by: {user.nick or user.name}")
             await bot.get_channel(payload.channel_id).send(embed=embed, delete_after=10.0)
 
+    # Raid Red-Frame Chests
+    @commands.command(name='chest')
+    async def _raid_chests(self, ctx: discord.Interaction, raid: str = None) -> None:
+        if raid == 'kingsfall':
+            emb = discord.Embed(
+                title="King's Fall Red-Frame Chest"
+            )

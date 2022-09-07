@@ -159,8 +159,10 @@ class Utils(commands.Cog):
 
         for e in emojis:
             with open(e, 'rb') as image:
+                name = e.split('/')[-1]
+                name = name[:-4]
                 try:
-                    await ctx.guild.create_custom_emoji(name=e[:-4], image=image.read())
+                    await ctx.guild.create_custom_emoji(name=name, image=image.read())
                 except Exception as error:
                     await ctx.send(f"Error uploading emoji `{e}`: {error}")
             await asyncio.sleep(3.0)
