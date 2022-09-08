@@ -152,7 +152,7 @@ class Utils(commands.Cog):
         else:
             await ctx.send("Error: expected None or List[emoji names] as argument")
 
-    async def _add_emojis(self, ctx, emojis = None) -> None:
+    async def _add_emojis(self, ctx, emojis: list = None) -> None:
         if ctx.guild.id != 393995277713014785:
             await ctx.send(embed=discord.Embed(description=f"Oops! This command can only be used in the Glass Harbor Discord server."))
             return
@@ -166,6 +166,7 @@ class Utils(commands.Cog):
                 except Exception as error:
                     await ctx.send(f"Error uploading emoji `{e}`: {error}")
             await asyncio.sleep(3.0)
+        await ctx.send(embed=discord.Embed(description=f"{len(emojis)} emojis added"))
 
     @has_mod_ctx
     @commands.command(name='syncemojis', description="Clone glass' discord repo and sync Glass Harbor emojis")
@@ -182,7 +183,7 @@ class Utils(commands.Cog):
         else:
             subprocess.Popen(['git', 'pull'], cwd=f"{repo_path}/discord-stuff")
             await asyncio.sleep(7)
-            logger.debug("Repo already exists - cloning repo")
+            logger.debug("Repo already exists - pulling repo")
 
         guild_static, guild_anim = get_emojis(bot.get_guild(ctx.guild.id))
 
