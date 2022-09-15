@@ -3,19 +3,16 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-from discord.utils import get
 
 import os, shutil, subprocess
 from pathlib import Path
-from git import Repo
-from typing import Union, Literal
 
 from utils.helper import * 
 
 logger = get_logger(__name__)
 cog_path = Path(__file__)
 
-async def _mod_check_ctx(ctx):
+async def mod_check_ctx(ctx):
     mod_roles = bot.db.get_mod_roles(ctx.guild.id)
     user_roles = [x.id for x in ctx.author.roles]
     if any(i in user_roles for i in mod_roles):
@@ -24,15 +21,15 @@ async def _mod_check_ctx(ctx):
     await asyncio.sleep(3)
     await ctx.message.delete()
     return False
-async def _mod_check_itx(itx: discord.Interaction):
+async def mod_check_itx(itx: discord.Interaction):
     mod_roles = bot.db.get_mod_roles(itx.guild_id)
     user_roles = [x.id for x in itx.user.roles]
     if any(i in user_roles for i in mod_roles):
         return True
     await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
     return False
-has_mod_ctx = commands.check(_mod_check_ctx)
-has_mod_itx = app_commands.check(_mod_check_itx)
+has_mod_ctx = commands.check(mod_check_ctx)
+has_mod_itx = app_commands.check(mod_check_itx)
 
 ### Setup Cog
 
@@ -51,11 +48,13 @@ class Utils(commands.Cog):
         logger.info(f"Cog Online: {self.qualified_name}")
 
 ### Debug Commands ###
-
+    
+    @has_mod_ctx
     @commands.command(name="test")
     async def _test(self, ctx):
         pass
 
+    @has_mod_ctx
     @commands.command(name='getcommands', aliases=['gc', 'getcmds'])
     async def _get_commands(self, ctx, guild_id = None):
         g = bot.get_guild(int(guild_id) if guild_id else ctx.guild.id)
@@ -83,7 +82,8 @@ class Utils(commands.Cog):
         msg = cmds_to_str(msg, guild_fetch_cmds)
 
         await ctx.send(embed=discord.Embed(description=msg))
-
+    
+    @has_mod_ctx
     @commands.command(name='clearcommands', aliases=['cc'])
     async def _clear_commands(self, ctx, guild_id = None):
         g = bot.get_guild(int(guild_id) if guild_id else ctx.guild.id)
@@ -92,13 +92,10 @@ class Utils(commands.Cog):
         await ctx.send(embed=discord.Embed(description=f"{len(fmt)} commands cleared from {g.name}"))
 
 ### Emoji Commands ###
-
+    
+    @has_mod_ctx
     @commands.command(name="getemojis", description="Get a list of guild's emojis (Used in Glass Harbor - can be safely ignored)", aliases=['emojis'])
     async def _get_emojis(self, ctx):
-        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
-        if not await role_check(ctx, mod_roles):
-            return
-
         emojis_static, emojis_anim = get_emojis(guild=bot.get_guild(ctx.guild.id))
         emojis_anim = [i.name for i in emojis_anim]
         emojis_static = [i.name for i in emojis_static]
@@ -215,17 +212,16 @@ class Utils(commands.Cog):
 
 ### Misc Commands ###
 
+    @has_mod_ctx
     @commands.command(name='clearfilecache', aliases=['cfc','rm -rf'])
     async def _clear_file_cache(self, ctx, option: str):
-        mod_roles = bot.db.get_mod_roles(ctx.guild.id)
-        if not await role_check(ctx, mod_roles):
-            return
         shutil.rmtree(f"downloads/")
         await ctx.message.delete()
         await ctx.send(f"File cache cleared!", delete_after=2.0)
 
     # Purely academic / for personal usage if you want to host your own instance. 
     # Not intended for scraping servers for content. 
+    @has_mod_itx
     @app_commands.command(name='download', description="Downloads all files in current channel (personal archiving tool)")
     async def _download(self, itx: discord.Interaction):
         download_dir = f"./downloads/{itx.guild.name}/{itx.channel.name}"

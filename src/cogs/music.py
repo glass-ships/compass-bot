@@ -13,7 +13,6 @@ from utils.helper import *
 import utils.music_config as config
 import utils.music_utils as utils
 
-
 logger = get_logger(__name__)
 
 ### Setup Cog
@@ -42,7 +41,7 @@ class Music(commands.Cog):
     async def _play_song(self, ctx, *, track: str):
 
         # Get audio controller for guild
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
         audiocontroller = utils.guild_audiocontroller[current_guild]
 
         if (await utils.is_connected(ctx) == None):
@@ -85,7 +84,7 @@ class Music(commands.Cog):
 
     @commands.command(name='songinfo', description=config.HELP_SONGINFO, aliases=["np", 'nowplaying', 'song'])
     async def _songinfo(self, ctx):
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
 
         if await utils.play_check(ctx) == False:
             return
@@ -100,7 +99,7 @@ class Music(commands.Cog):
 
     @commands.command(name='queue', description=config.HELP_QUEUE, aliases=['playlist', 'q'])
     async def _queue(self, ctx):
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
 
         if await utils.play_check(ctx) == False:
             return
@@ -136,7 +135,7 @@ class Music(commands.Cog):
 
     @commands.command(name='history', description=config.HELP_HISTORY, aliases=['hist', 'h'])
     async def _history(self, ctx):
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
 
         if await utils.play_check(ctx) == False:
             return
@@ -148,7 +147,7 @@ class Music(commands.Cog):
 
     @commands.command(name='skip', description=config.HELP_SKIP, aliases=['s'])
     async def _skip(self, ctx):
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
 
         if await utils.play_check(ctx) == False:
             return
@@ -174,7 +173,7 @@ class Music(commands.Cog):
 
     @commands.command(name='prev', description=config.HELP_PREV, aliases=['back'])
     async def _prev(self, ctx):
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
 
         if await utils.play_check(ctx) == False:
             return
@@ -198,7 +197,7 @@ class Music(commands.Cog):
     @commands.command(name='move', description=config.HELP_MOVE, aliases=['mv'])
     async def _move(self, ctx, oldposition: int, newposition: int):
         
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
         audiocontroller = utils.guild_audiocontroller[current_guild]
         
         # could this just be "if len(playque) == 0" ???
@@ -221,7 +220,7 @@ class Music(commands.Cog):
 
     @commands.command(name='remove', description=config.HELP_REMOVE, aliases=['rm', 'del', 'delete'])
     async def _remove(self, ctx, position: int):
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
         audiocontroller = utils.guild_audiocontroller[current_guild]
         
         queue = audiocontroller.queue.playque
@@ -240,7 +239,7 @@ class Music(commands.Cog):
 
     @commands.command(name='shuffle', description=config.HELP_SHUFFLE, aliases=["sh"])
     async def _shuffle(self, ctx):
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
         audiocontroller = utils.guild_audiocontroller[current_guild]
 
         if await utils.play_check(ctx) == False:
@@ -262,7 +261,7 @@ class Music(commands.Cog):
     @commands.command(name='loop', description=config.HELP_LOOP, aliases=['l', 'repeat'])
     async def _loop(self, ctx):
         return            
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
         audiocontroller = utils.guild_audiocontroller[current_guild]
 
         if await utils.play_check(ctx) == False:
@@ -281,7 +280,7 @@ class Music(commands.Cog):
 
     @commands.command(name='pause', description=config.HELP_PAUSE)
     async def _pause(self, ctx):
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
 
         if await utils.play_check(ctx) == False:
             return
@@ -296,7 +295,7 @@ class Music(commands.Cog):
 
     @commands.command(name='resume', description=config.HELP_RESUME)
     async def _resume(self, ctx):
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
 
         if await utils.play_check(ctx) == False:
             return
@@ -309,7 +308,7 @@ class Music(commands.Cog):
 
     @commands.command(name='stop', description=config.HELP_STOP)
     async def _stop(self, ctx):
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
 
         if await utils.play_check(ctx) == False:
             return
@@ -324,7 +323,7 @@ class Music(commands.Cog):
 
     @commands.command(name='clear', description=config.HELP_CLEAR)
     async def _clear(self, ctx):
-        current_guild = get_guild(self.bot, ctx.message)
+        current_guild = utils.get_guild(self.bot, ctx.message)
 
         if await utils.play_check(ctx) == False:
             return
@@ -337,11 +336,6 @@ class Music(commands.Cog):
 
     @commands.command(name='volume', description=config.HELP_VOL, aliases=["vol"])
     async def _volume(self, ctx, *args):
-
-        # Check for mod
-        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
-        if not await role_check(ctx, mod_roles):
-            return
 
         if ctx.guild is None:
             await ctx.send(config.NO_GUILD_MESSAGE)
@@ -359,7 +353,7 @@ class Music(commands.Cog):
             volume = int(volume)
             if volume > 100 or volume < 0:
                 raise Exception('')
-            current_guild = get_guild(self.bot, ctx.message)
+            current_guild = utils.get_guild(self.bot, ctx.message)
 
             if utils.guild_audiocontroller[current_guild]._volume >= volume:
                 await ctx.send(':sound: Volume set to {}%'.format(str(volume)))

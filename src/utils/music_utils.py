@@ -14,15 +14,12 @@ guild_settings = {}
 
 # Connect to Spotify API
 try:
-    sp_api = spotipy.Spotify(
-        auth_manager=spotipy.oauth2.SpotifyClientCredentials(
-            client_id=config.SPOTIFY_ID,
-            client_secret=config.SPOTIFY_SECRET)
-        )
+    client_credentials_manager = spotipy.oauth2.SpotifyClientCredentials(client_id=config.SPOTIFY_ID, client_secret=config.SPOTIFY_SECRET)
+    sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
     api = True
 except:
     api = False
-logger.info(f"Spotify api user level connection:{api}")
+logger.info(f"Spotify API | User-Level Connection:{api}")
 
 # Helper methods for parsing links
 
@@ -87,6 +84,29 @@ def clean_sclink(track):
         track = track.replace("http://m.", "https://")
     return track
 
+# Connection methods
+
+def get_guild(bot, command):
+    """
+    Gets the guild a command belongs to (for VC commands). 
+    Useful, if the command was sent via pm.
+    """
+    if command.guild is not None:
+        return command.guild
+    for guild in bot.guilds:
+        for channel in guild.voice_channels:
+            if command.author in channel.members:
+                return guild
+    return None
+
+async def is_connected(ctx):
+    """Checks whether bot is connected to a VC"""
+    try:
+        voice_channel = ctx.guild.voice_client.channel
+        return voice_channel
+    except:
+        return None
+
 async def connect_to_channel(guild, dest_channel_name, ctx, switch=False, default=True):
     """Connects the bot to the specified voice channel.
         Args:
@@ -112,14 +132,6 @@ async def connect_to_channel(guild, dest_channel_name, ctx, switch=False, defaul
             await ctx.send(config.DEFAULT_CHANNEL_JOIN_FAILED)
     else:
         await ctx.send(config.CHANNEL_NOT_FOUND_MESSAGE + str(dest_channel_name))
-
-async def is_connected(ctx):
-    """Checks whether bot is connected to a VC"""
-    try:
-        voice_channel = ctx.guild.voice_client.channel
-        return voice_channel
-    except:
-        return None
 
 async def play_check(ctx):
     """Checks that user is in a VC, and command was sent in appropriate channel"""
@@ -186,11 +198,11 @@ async def get_spotify_playlist(session, url):
 
         if "open.spotify.com/album" in url:
             try:
-                results = sp_api.album_tracks(code)
+                results = sp.album_tracks(code)
                 tracks = results['items']
 
                 while results['next']:
-                    results = sp_api.next(results)
+                    results = sp.next(results)
                     tracks.extend(results['items'])
 
                 links = []
@@ -207,10 +219,10 @@ async def get_spotify_playlist(session, url):
 
         if "open.spotify.com/playlist" in url:
             try:
-                results = sp_api.playlist_items(code)
+                results = sp.playlist_items(code)
                 tracks = results['items']
                 while results['next']:
-                    results = sp_api.next(results)
+                    results = sp.next(results)
                     tracks.extend(results['items'])
 
                 links = []
@@ -243,3 +255,4 @@ async def get_spotify_playlist(session, url):
     title = title.string
 
     return links
+

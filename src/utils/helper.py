@@ -18,52 +18,7 @@ url_regex = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-
 
 ##### Helper Functions #####
 
-async def role_check(ctx=None, roles=None):
-    """
-    Check if user has required roles
-    Usage:
-        mod_roles = self.bot.db.get_mod_roles(ctx.guild.id)
-        if not await role_check(ctx, mod_roles):
-            return
-        # rest of your code
-    """
-    user_roles = [x.id for x in ctx.author.roles]
-    if any(i in user_roles for i in roles):
-        return True
-    await ctx.send("You do not have permission to use this command.", delete_after=5.0)
-    await asyncio.sleep(3)
-    await ctx.message.delete()
-    return False
-
-async def role_check_itx(itx: discord.Interaction=None, roles=None):
-    """
-    Check if user has required roles (for Interactions)
-    Usage:
-        mod_roles = self.bot.db.get_mod_roles(itx.guild_id)
-        if not await role_check_itx(itx, mod_roles):
-            return
-        # rest of your code
-    """
-    user_roles = [x.id for x in itx.user.roles]
-    if any(i in user_roles for i in roles):
-        return True
-    await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
-    return False
-
 ##################################################################################
-
-def get_guild(bot, command):
-    """
-    Gets the guild a command belongs to (for VC commands). 
-    Useful, if the command was sent via pm.
-    """
-    if command.guild is not None:
-        return command.guild
-    for guild in bot.guilds:
-        for channel in guild.voice_channels:
-            if command.author in channel.members:
-                return guild
-    return None
 
 def get_emojis(guild):
         emojis = {

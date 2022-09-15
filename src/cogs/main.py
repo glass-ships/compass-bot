@@ -3,9 +3,6 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
-#from discord.utils import get
-
-import os
 
 from utils.helper import * 
 from utils.database import *
