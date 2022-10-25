@@ -64,7 +64,7 @@ fi
 if [ $update -eq 1 ]
 then
     echo "Upgrading required libraries..."
-    pip install --upgrade -r requirements.txt
+    pip install --upgrade .
 fi
 
 if [ $dev -eq 1 ]
