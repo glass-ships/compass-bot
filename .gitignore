@@ -6,4 +6,6 @@ test.py
 nohup.out
 
 **/__pycache__
+**.egg-info
+build
 .cache

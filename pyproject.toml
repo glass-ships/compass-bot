@@ -1,0 +1,53 @@
+[project]
+name = "compass-bot"
+version = "1.0.0"
+description = "A Discord bot in Python"
+authors = [
+    {name = "Glass Ships", email = "contact@glass-ships.com"},
+    {name = "fatcatnine", email = "fatcatnine@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+	"discord.py@git+https://github.com/Rapptz/discord.py.git",
+	
+	# Database stuff
+	"pymongo",
+	"pymongo[srv]",
+
+	# for Commands
+	"python-dateutil",
+	"pytz",
+	"GitPython",
+	"pillow",
+
+	# for Music commands
+	"yt-dlp",
+	"spotipy@git+https://github.com/plamere/spotipy.git@master",
+	"beautifulsoup4",
+	"pynacl",
+
+    # Documentation
+    "mkdocs",
+	"mkdocs-material"
+]
+
+[project.optional-dependencies]
+docs = [
+]
+
+[project.urls]
+homepage = "https://gitlab.com/glass-ships/compass-bot"
+documentation = "https://glass-ships.gitlab.io/compass-bot/"
+repository = "https://gitlab.com/glass-ships/compass-bot"
+
+[project.scripts]
+# poetry = "infer_pyproject.cli:main"
+
+[build-system]
+requires = [
+    "setuptools >= 35.0.2",
+    "setuptools_scm >= 2.0.0, <3"
+]
+build-backend = "setuptools.build_meta"
