@@ -11,7 +11,7 @@ For guided instructions on creating a Discord bot in C# or Python, see [Fatcatni
 [![DigitalOcean Referral Badge](https://web-platforms.sfo2.cdn.digitaloceanspaces.com/WWW/Badge%201.svg)](https://www.digitalocean.com/?refcode=2c48df5114ee&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=badge)
 
 #### Dependencies
-- Python >= 3.10
+- Python >= 3.11
 - libffi-dev
 - libnacl-dev
 - libopus0
