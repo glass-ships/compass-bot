@@ -8,15 +8,13 @@ If you have any questions, suggestions, or feedback, please feel free to create 
 
 For guided instructions on creating a Discord bot in C# or Python, see [Fatcatnine's Thinbotnine repository](https://gitlab.com/fatcatnine/thinbotnine) (soon TM)
 
-[![DigitalOcean Referral Badge](https://web-platforms.sfo2.cdn.digitaloceanspaces.com/WWW/Badge%201.svg)](https://www.digitalocean.com/?refcode=2c48df5114ee&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=badge)
-
 #### Dependencies
 - Python >= 3.11
 - libffi-dev
 - libnacl-dev
 - libopus0
 
-#### Development - Running the bot
+### Development - Running the bot
 
 - Install required libraries:  
     `./setup.sh`
@@ -25,3 +23,5 @@ For guided instructions on creating a Discord bot in C# or Python, see [Fatcatni
     `./start.sh [options]`
 
 For more info, run `./start.sh --help`
+
+[![DigitalOcean Referral Badge](https://web-platforms.sfo2.cdn.digitaloceanspaces.com/WWW/Badge%201.svg)](https://www.digitalocean.com/?refcode=2c48df5114ee&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=badge)
