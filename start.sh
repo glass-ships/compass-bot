@@ -75,6 +75,7 @@ then
 else
     echo "Starting production version of bot..."
     ps axf | grep -i 'python src/main.py' | grep -v grep | awk '{print "kill -9 " $1}' | sh # kill running instance
+    rm nohup.out
     nohup python src/main.py &
     disown $!
 fi

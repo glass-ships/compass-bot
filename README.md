@@ -24,4 +24,7 @@ For guided instructions on creating a Discord bot in C# or Python, see [Fatcatni
 
 For more info, run `./start.sh --help`
 
+*Note* You may find you need to install some additional libraries if the `pip install .` step fails:  
+`sudo apt install -y build-essential libssl-dev libffi-dev libxml2-dev libxslt1-dev zlib1g-dev`
+
 [![DigitalOcean Referral Badge](https://web-platforms.sfo2.cdn.digitaloceanspaces.com/WWW/Badge%201.svg)](https://www.digitalocean.com/?refcode=2c48df5114ee&utm_campaign=Referral_Invite&utm_medium=Referral_Program&utm_source=badge)
