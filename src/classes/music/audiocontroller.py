@@ -6,7 +6,7 @@ import utils.music_config as config
 import utils.music_utils as utils
 #from utils.music_utils import Timer, Sites, Playlist_Types, Origins
 
-from utils.helper import *
+from utils.utils import *
 from classes.music.queue import Queue
 from classes.music.songinfo import Song
 from classes.music.misc import *

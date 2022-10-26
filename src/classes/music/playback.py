@@ -7,7 +7,7 @@ import utils.music_utils as utils
 
 from classes.music.queue import Queue
 from classes.music.songinfo import Song
-from utils.helper import *
+from utils.utils import *
 
 logger = get_logger(__name__)
 

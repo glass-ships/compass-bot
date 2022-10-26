@@ -3,7 +3,7 @@
 from discord.ext import commands
 from random import choice
 import utils.music_config as config
-from utils.helper import * 
+from utils.utils import * 
 from datetime import datetime, timezone
 
 logger = get_logger(__name__)

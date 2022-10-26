@@ -4,7 +4,7 @@
 #from discord.utils import get
 from discord.ext import commands
 
-from utils.helper import * 
+from utils.utils import * 
 
 logger = get_logger(__name__)
 ### Setup Cog

@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import spotipy
 
 from classes.music.misc import *
-from utils.helper import *
+from utils.utils import *
 import utils.music_config as config
 
 logger = get_logger(__name__)

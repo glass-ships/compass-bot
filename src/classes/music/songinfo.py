@@ -33,9 +33,9 @@ class Song():
         def format_output(self, playtype, *, pos: int = None):
 
             if playtype == config.SONGINFO_QUEUE_ADDED:
-                embed = discord.Embed(description=f"<a:_musicNote:987548355339104266> Song queued: {pos}. [{self.title}]({self.webpage_url})", color=choice(config.EMBED_COLORS))
+                embed = discord.Embed(description=f"<a:_musicNote:1011101467576385556> Song queued: {pos}. [{self.title}]({self.webpage_url})", color=choice(config.EMBED_COLORS))
             else:    
-                embed = discord.Embed(title="Now Playing", description=f"<a:_music:986744613572341772> [{self.title}]({self.webpage_url})", color=choice(config.EMBED_COLORS))
+                embed = discord.Embed(title="Now Playing", description=f"<a:_music:1011116507587162122> [{self.title}]({self.webpage_url})", color=choice(config.EMBED_COLORS))
 
                 if self.thumbnail is not None:
                     embed.set_thumbnail(url=self.thumbnail)

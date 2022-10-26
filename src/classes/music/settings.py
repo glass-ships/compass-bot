@@ -1,20 +1,17 @@
 import json
-import os
-
+from pathlib import Path
+from random import choice
 import discord
 import utils.music_config as config
 
-# dir_path = "src/"
-dir_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-
+dir_path = Path(__file__).parent.parent.parent
 
 class Settings():
-
     def __init__(self, guild):
         self.guild = guild
         self.json_data = None
         self.config = None
-        self.path = '{}/generated/settings.json'.format(dir_path)
+        self.path = f"{dir_path}/generated/settings.json"
 
         self.settings_template = {
             "id": 0,
@@ -130,7 +127,6 @@ class Settings():
         return embed
 
     async def process_setting(self, setting, value, ctx):
-
         switcher = {
             'default_nickname': lambda: self.default_nickname(setting, value, ctx),
             'command_channel': lambda: self.command_channel(setting, value, ctx),
@@ -154,7 +150,6 @@ class Settings():
     # -----setting methods-----
 
     async def default_nickname(self, setting, value, ctx):
-
         if value.lower() == "unset":
             self.config[setting] = ""
             return
@@ -171,7 +166,6 @@ class Settings():
 
 
     async def command_channel(self, setting, value, ctx):
-
         if value.lower() == "unset":
             self.config[setting] = None
             return
@@ -186,7 +180,6 @@ class Settings():
             return False
 
     async def start_voice_channel(self, setting, value, ctx):
-
         if value.lower() == "unset":
             self.config[setting] = None
             return
@@ -211,7 +204,6 @@ class Settings():
             return False
 
     async def button_emote(self, setting, value, ctx):
-
         if value.lower() == "unset":
             self.config[setting] = ""
             return
@@ -237,7 +229,6 @@ class Settings():
         self.config[setting] = value
 
     async def vc_timeout(self, setting, value, ctx):
-
         if config.ALLOW_VC_TIMEOUT_EDIT == False:
             await ctx.send("`Error: This value cannot be modified".format(config.BOT_PREFIX, setting))
 

@@ -1,11 +1,8 @@
-discordpy/
-site/
-downloads/
-src/Untitled.ipynb
-test.py
-nohup.out
+/downloads/
+/site/
+/nohup.out
 
-**/__pycache__
+**__pycache__
 **.egg-info
-build
+/build/
 .cache

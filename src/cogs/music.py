@@ -3,13 +3,10 @@
 import discord
 from discord.ext import commands
 from discord.utils import get
-#from distutils.command.config import config
 
 from random import choice
-#import aiohttp, yt_dlp
-#from email.mime import audio
 
-from utils.helper import * 
+from utils.utils import * 
 import utils.music_config as config
 import utils.music_utils as utils
 
@@ -107,12 +104,15 @@ class Music(commands.Cog):
         if current_guild is None:
             await ctx.send(config.NO_GUILD_MESSAGE)
             return
-        if current_guild.voice_client is None or not current_guild.voice_client.is_playing():
+        
+        queue = utils.guild_audiocontroller[current_guild].queue.playque
+        if (
+                current_guild.voice_client is None or 
+                not current_guild.voice_client.is_playing() or
+                len(queue) == 0
+            ):
             await ctx.send(":hole: Queue is empty!")
             return
-
-        queue = utils.guild_audiocontroller[current_guild].queue.playque
-        embed = discord.Embed(title="<:playlist:986751164274049044> Queue", color=choice(config.EMBED_COLORS))
 
         queue_list = []
         for counter, song in enumerate(list(queue), start=1):
@@ -126,6 +126,8 @@ class Music(commands.Cog):
                 queue_list.append(queue_entry)
             else:
                 break
+
+        embed = discord.Embed(title="<:_playlist:1011048129111543880> Queue", color=choice(config.EMBED_COLORS))
         embed.description="\n".join(queue_list)
         embed.set_footer(
             text=f"Plus {len(queue)-counter} more queued..."
@@ -273,7 +275,7 @@ class Music(commands.Cog):
 
         if audiocontroller.queue.loop == False:
             audiocontroller.queue.loop = True
-            await ctx.send("<:retweet:964692541779898430> Loop enabled")
+            await ctx.send("<:retweet:1011048385534496862> Loop enabled")
         else:
             audiocontroller.queue.loop = False
             await ctx.send(":arrow_right: Loop disabled")

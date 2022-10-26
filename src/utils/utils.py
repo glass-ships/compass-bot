@@ -12,19 +12,13 @@ from datetime import datetime
 from dateutil import tz
 
 import logging
-#logger = logging.getLogger(__name__)
 
 url_regex = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
 ##### Helper Functions #####
 
-##################################################################################
-
 def get_emojis(guild):
-        emojis = {
-            'anim': [],
-            'static': []
-        }
+        emojis = {'anim': [], 'static': []}
         for i in guild.emojis:
             if i.animated == True:
                 emojis['anim'].append(i)
@@ -32,11 +26,9 @@ def get_emojis(guild):
                 emojis['static'].append(i)
         return emojis['static'], emojis['anim']
 
-##################################################################################
 
 async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> None:
     """Download an attachment from a message"""
-
     fp = os.path.join("downloads", itx.guild.name, path)
     fn = attachment.filename
     Path(fp).mkdir(parents=True, exist_ok=True)
@@ -47,7 +39,6 @@ def getfilepath(itx, fp) -> str:
     """Normalize a downloaded filepath"""
     return f"downloads/{itx.guild.name}/{fp}"
 
-##################################################################################
 
 def check_time_format(t):
     """Assert datetime format  """
@@ -67,16 +58,14 @@ def dt_to_epoch(t):
     et = int(time.mktime(dt.timetuple()))
     return et
 
-##################################################################################
 
 def get_logger(name: str) -> logging.Logger:
-    """Get an instance of logger."""
+    """Get a logger instance"""
     logger = logging.getLogger(name)
     handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter("|%(levelname)s|%(name)s|%(message)s|")
+    formatter = logging.Formatter("| %(levelname)s | %(name)s | %(message)s |")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
-    #logger.setLevel(logging.DEBUG)
     logger.propagate = False
     return logger

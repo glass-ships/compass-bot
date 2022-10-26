@@ -9,7 +9,7 @@ from classes.customhelpcommands import CustomHelpCommand
 from classes.music.audiocontroller import AudioController
 from classes.music.settings import Settings
 
-from utils.helper import *
+from utils.utils import *
 from utils.database import *
 from utils.music_utils import *
 

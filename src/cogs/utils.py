@@ -7,7 +7,7 @@ from discord.ext import commands
 import os, shutil, subprocess
 from pathlib import Path
 
-from utils.helper import * 
+from utils.utils import * 
 
 logger = get_logger(__name__)
 cog_path = Path(__file__)

@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 
-path = Path(__file__)
+src_path = Path(__file__).parent.parent
 ABSOLUTE_PATH = '' # DO NOT MODIFY
-ROOT_DIR = f"{path.parent.parent}/generated"
+ROOT_DIR = f"{src_path}/generated"
 
 
 BOT_PREFIX = ";"
@@ -52,7 +52,7 @@ SONGINFO_DISLIKES = "Dislikes: "
 SONGINFO_NOW_PLAYING = "Now Playing"
 SONGINFO_QUEUE_ADDED = "Added to queue"
 SONGINFO_ERROR = "Error: Unsupported site or age restricted content. To enable age restricted content check the documentation/wiki."
-SONGINFO_PLAYLIST_QUEUED = "Queued playlist <a:catChillin:979459462551191593>"
+SONGINFO_PLAYLIST_QUEUED = "Queued playlist <a:catChillin:1011104612733952011>"
 SONGINFO_UNKNOWN_DURATION = "Unknown"
 
 ### Help messages
