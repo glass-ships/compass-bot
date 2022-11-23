@@ -1,21 +1,22 @@
-##### Cog - Listeners #####
 ### Imports ###
-#
-import discord
-from discord.ext import commands
-from discord.utils import get
 
 import time, traceback
 from datetime import datetime
 from pathlib import Path
 
+import discord
+from discord.ext import commands
+from discord.utils import get
+
 from utils.utils import * 
+from utils.log_utils import get_logger
 
 logger = get_logger(__name__)
-cog_path = Path(__file__)
 
 ### Setup Cog
-#
+
+cog_path = Path(__file__)
+
 # Startup method
 async def setup(bot):
     await bot.add_cog(Listeners(bot))

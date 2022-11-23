@@ -9,7 +9,7 @@ import shlex
 from typing import Optional, Union
 
 from utils.utils import * 
-
+from utils.log_utils import get_logger
 logger = get_logger(__name__)
 
 async def mod_check_ctx(ctx):

@@ -10,11 +10,15 @@ from classes.music.audiocontroller import AudioController
 from classes.music.settings import Settings
 
 from utils.utils import *
-from utils.database import *
+from utils.database import ServerDB
 from utils.music_utils import *
+from utils.log_utils import set_log_config, get_logger
 
-logger = get_logger(__name__)
+# Setup logging
+set_log_config()
+logger = get_logger("compass.main")
 
+# Parse command line arguments
 dev: bool = False
 args = sys.argv[1:]
 short_options = 'hd'
@@ -50,7 +54,7 @@ token = os.getenv("DSC_DEV_TOKEN") if dev else os.getenv("DSC_API_TOKEN")
 
 
 async def _connect_to_db():
-    bot.db = serverDB(mongo_url, dev=dev)
+    bot.db = ServerDB(mongo_url, dev=dev)
     logger.info("Connected to database.")
 
 async def _prune_db():

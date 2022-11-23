@@ -58,14 +58,3 @@ def dt_to_epoch(t):
     et = int(time.mktime(dt.timetuple()))
     return et
 
-
-def get_logger(name: str) -> logging.Logger:
-    """Get a logger instance"""
-    logger = logging.getLogger(name)
-    handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter("| %(levelname)s | %(name)s | %(message)s |")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
-    logger.propagate = False
-    return logger

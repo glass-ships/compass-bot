@@ -3,7 +3,7 @@ from pymongo import MongoClient
 
 mongo_url = os.getenv("MONGO_URL")
 
-class serverDB():
+class ServerDB():
     def __init__(self, mongo_url, dev: bool = False):
         
         # Connect to MongoDB client

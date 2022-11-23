@@ -9,7 +9,7 @@ from random import choice
 from utils.utils import * 
 import utils.music_config as config
 import utils.music_utils as utils
-
+from utils.log_utils import get_logger
 logger = get_logger(__name__)
 
 ### Setup Cog

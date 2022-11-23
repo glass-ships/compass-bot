@@ -3,9 +3,10 @@ from bs4 import BeautifulSoup
 import spotipy
 
 from classes.music.misc import *
-from utils.utils import *
 import utils.music_config as config
 
+from utils.utils import *
+from utils.log_utils import get_logger
 logger = get_logger(__name__)
 
 
@@ -24,8 +25,7 @@ logger.info(f"Spotify API | User-Level Connection:{api}")
 # Helper methods for parsing links
 
 def clean_url(content):
-    regex = re.compile(
-        "http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
+    regex = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
     if re.search(regex, content):
         result = regex.search(content)

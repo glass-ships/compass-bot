@@ -2,11 +2,14 @@
 
 from discord.ext import commands
 from random import choice
-import utils.music_config as config
-from utils.utils import * 
 from datetime import datetime, timezone
 
+import utils.music_config as config
+from utils.utils import * 
+from utils.log_utils import get_logger
+
 logger = get_logger(__name__)
+
 ### Setup Cog
 
 # Startup method

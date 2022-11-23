@@ -6,6 +6,7 @@ from discord.ext import commands
 
 from utils.utils import * 
 from utils.database import *
+from utils.log_utils import get_logger
 
 logger = get_logger(__name__)
 

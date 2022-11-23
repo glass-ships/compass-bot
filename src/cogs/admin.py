@@ -1,6 +1,5 @@
 ### Imports ###
 
-from xmlrpc.client import Boolean
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -9,6 +8,7 @@ from discord.utils import get
 from typing import List, Optional, Literal, Union
 
 from utils.utils import * 
+from utils.log_utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -171,8 +171,8 @@ class Admin(commands.Cog):
 
     @app_commands.command(name="allowvideos")
     @commands.has_permissions(administrator=True)
-    @app_commands.describe(channel="Which channel to allow/disallow videos in", switch="Boolean: True to allow videos")
-    async def _allowvideos(self, itx: discord.Interaction, channel: discord.TextChannel, switch: Boolean):
+    @app_commands.describe(channel="Which channel to allow/disallow videos in", switch="bool: True to allow videos")
+    async def _allowvideos(self, itx: discord.Interaction, channel: discord.TextChannel, switch: bool):
         if switch == True:
             bot.db.add_videos_whitelist(itx.guild_id, channel.id)
             await itx.response.send_message(f"Videos allowed in <#{channel.id}>.")

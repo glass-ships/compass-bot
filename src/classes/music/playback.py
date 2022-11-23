@@ -2,12 +2,13 @@ import os, discord
 import yt_dlp, asyncio, aiohttp
 import concurrent.futures
 
+from classes.music.queue import Queue
+from classes.music.songinfo import Song
 import utils.music_config as config
 import utils.music_utils as utils
 
-from classes.music.queue import Queue
-from classes.music.songinfo import Song
 from utils.utils import *
+from utils.log_utils import get_logger
 
 logger = get_logger(__name__)
 
