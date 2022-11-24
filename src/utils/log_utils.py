@@ -2,7 +2,7 @@ import logging, sys
 from pathlib import Path
 from typing import Union
 
-FORMAT = "[%(asctime)s][%(levelname)-7s][%(name)-8s] %(message)s"
+FORMAT = "[%(asctime)s][%(levelname)-7s][%(name)-30s] %(message)s"
 DATEFMT = "%Y-%m-%d %H:%M:%S"
 LOG_FMT = logging.Formatter(fmt=FORMAT, datefmt=DATEFMT)
 
@@ -36,11 +36,9 @@ def get_logger(name: str, verbose: bool = None) -> logging.Logger:
     # logging.getLogger().setLevel(log_level)
     logger = logging.getLogger(name)
     logger.setLevel(log_level)
-    # logger.propagate = False
+    logger.propagate = False
     
-
     # Set a handler for console output
-    # if not logger.hasHandlers():
     if not any(isinstance(h, logging.StreamHandler) for h in logger.handlers):
         stream_handler = logging.StreamHandler(sys.stdout)
         stream_handler.setFormatter(LOG_FMT)

@@ -1,18 +1,20 @@
 import json
 from pathlib import Path
 from random import choice
-import discord
-import utils.music_config as config
 
-dir_path = Path(__file__).parent.parent.parent
+import discord
+
+from utils import bot_config
+from music import music_config
+
+src_dir = Path(__file__).parent.parent.parent
 
 class Settings():
     def __init__(self, guild):
         self.guild = guild
         self.json_data = None
         self.config = None
-        self.path = f"{dir_path}/generated/settings.json"
-
+        self.path = f"{src_dir}/.generated/settings.json"
         self.settings_template = {
             "id": 0,
             "default_nickname": "",
@@ -21,7 +23,7 @@ class Settings():
             "user_must_be_in_vc": True,
             "button_emote": "",
             "default_volume": 100,
-            "vc_timeout": config.VC_TIMOUT_DEFAULT
+            "vc_timeout": music_config.VC_TIMOUT_DEFAULT
         }
 
         self.reload()
@@ -78,11 +80,11 @@ class Settings():
 
     async def format(self):
         embed = discord.Embed(
-            title="Settings", description=self.guild.name, color=choice(config.EMBED_COLORS))
+            title="Settings", description=self.guild.name, color=choice(music_config.EMBED_COLORS))
 
         embed.set_thumbnail(url=self.guild.icon_url)
         embed.set_footer(
-            text="Usage: {}set setting_name value".format(config.BOT_PREFIX))
+            text="Usage: {}set setting_name value".format(bot_config.DEFAULT_PREFIX))
 
         exclusion_keys = ['id']
 
@@ -155,7 +157,7 @@ class Settings():
             return
 
         if len(value) > 32:
-            await ctx.send("`Error: Nickname exceeds character limit`\nUsage: {}set {} nickname\nOther options: unset".format(config.BOT_PREFIX, setting))
+            await ctx.send("`Error: Nickname exceeds character limit`\nUsage: {}set {} nickname\nOther options: unset".format(bot_config.DEFAULT_PREFIX, setting))
             return False
         else:
             self.config[setting] = value
@@ -176,7 +178,7 @@ class Settings():
                 self.config[setting] = chan.id
                 found = True
         if found == False:
-            await ctx.send("`Error: Channel name not found`\nUsage: {}set {} channelname\nOther options: unset".format(config.BOT_PREFIX, setting))
+            await ctx.send("`Error: Channel name not found`\nUsage: {}set {} channelname\nOther options: unset".format(bot_config.DEFAULT_PREFIX, setting))
             return False
 
     async def start_voice_channel(self, setting, value, ctx):
@@ -191,7 +193,7 @@ class Settings():
                 self.config['vc_timeout'] = False
                 found = True
         if found == False:
-            await ctx.send("`Error: Voice channel name not found`\nUsage: {}set {} vchannelname\nOther options: unset".format(config.BOT_PREFIX, setting))
+            await ctx.send("`Error: Voice channel name not found`\nUsage: {}set {} vchannelname\nOther options: unset".format(bot_config.DEFAULT_PREFIX, setting))
             return False
 
     async def user_must_be_in_vc(self, setting, value, ctx):
@@ -200,7 +202,7 @@ class Settings():
         elif value.lower() == "false":
             self.config[setting] = False
         else:
-            await ctx.send("`Error: Value must be True/False`\nUsage: {}set {} True/False".format(config.BOT_PREFIX, setting))
+            await ctx.send("`Error: Value must be True/False`\nUsage: {}set {} True/False".format(bot_config.DEFAULT_PREFIX, setting))
             return False
 
     async def button_emote(self, setting, value, ctx):
@@ -210,7 +212,7 @@ class Settings():
 
         emoji = discord.utils.get(self.guild.emojis, name=value)
         if emoji is None:
-            await ctx.send("`Error: Emote name not found on server`\nUsage: {}set {} emotename\nOther options: unset".format(config.BOT_PREFIX, setting))
+            await ctx.send("`Error: Emote name not found on server`\nUsage: {}set {} emotename\nOther options: unset".format(bot_config.DEFAULT_PREFIX, setting))
             return False
         else:
             self.config[setting] = value
@@ -219,18 +221,18 @@ class Settings():
         try:
             value = int(value)
         except:
-            await ctx.send("`Error: Value must be a number`\nUsage: {}set {} 0-100".format(config.BOT_PREFIX, setting))
+            await ctx.send("`Error: Value must be a number`\nUsage: {}set {} 0-100".format(bot_config.DEFAULT_PREFIX, setting))
             return False
 
         if value > 100 or value < 0:
-            await ctx.send("`Error: Value must be a number`\nUsage: {}set {} 0-100".format(config.BOT_PREFIX, setting))
+            await ctx.send("`Error: Value must be a number`\nUsage: {}set {} 0-100".format(bot_config.DEFAULT_PREFIX, setting))
             return False
 
         self.config[setting] = value
 
     async def vc_timeout(self, setting, value, ctx):
-        if config.ALLOW_VC_TIMEOUT_EDIT == False:
-            await ctx.send("`Error: This value cannot be modified".format(config.BOT_PREFIX, setting))
+        if music_config.ALLOW_VC_TIMEOUT_EDIT == False:
+            await ctx.send("`Error: This value cannot be modified".format(bot_config.DEFAULT_PREFIX, setting))
 
         if value.lower() == "true":
             self.config[setting] = True
@@ -238,5 +240,5 @@ class Settings():
         elif value.lower() == "false":
             self.config[setting] = False
         else:
-            await ctx.send("`Error: Value must be True/False`\nUsage: {}set {} True/False".format(config.BOT_PREFIX, setting))
+            await ctx.send("`Error: Value must be True/False`\nUsage: {}set {} True/False".format(bot_config.DEFAULT_PREFIX, setting))
             return False

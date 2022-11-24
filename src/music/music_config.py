@@ -1,36 +1,23 @@
 import os
 from pathlib import Path
 
-src_path = Path(__file__).parent.parent
 ABSOLUTE_PATH = '' # DO NOT MODIFY
-ROOT_DIR = f"{src_path}/generated"
-
-
-BOT_PREFIX = ";"
-EMBED_COLORS = [
-    0xA575FF, 
-    0xFF23E9, 
-    0x37F3E4, 
-    0x7E6C6C, 
-    0xEBC280  
-]
-
-#### Music config 
+ROOT_DIR = f"{Path(__file__).parent.parent.parent}/.generated"
 
 SPOTIFY_ID: str = os.getenv('SPOTIFY_ID')
 SPOTIFY_SECRET: str = os.getenv('SPOTIFY_SECRET')
+
+#### Bot settings
 SUPPORTED_EXTENSIONS = ('.webm', '.mp4', '.mp3', '.avi', '.wav', '.m4v', '.ogg', '.mov')
-
 COOKIE_PATH = f"{ROOT_DIR}/cookies.txt"
-
 GLOBAL_DISABLE_AUTOJOIN_VC = False
-MAX_SONG_PRELOAD = 5  #maximum of 25
-VC_TIMEOUT = 60 #seconds
-VC_TIMOUT_DEFAULT = True  #default template setting for VC timeout true= yes, timeout false= no timeout
-ALLOW_VC_TIMEOUT_EDIT = True  #allow or disallow editing the vc_timeout guild setting
-
+MAX_SONG_PRELOAD = 5  # maximum of 25
+ALLOW_VC_TIMEOUT_EDIT = True  # allow or disallow editing the vc_timeout guild setting
+VC_TIMEOUT = 60 # seconds
+VC_TIMOUT_DEFAULT = True # Default template setting for VC timeout true= yes, timeout false= no timeout
 MAX_HISTORY_LENGTH = 10
 MAX_TRACKNAME_HISTORY_LENGTH = 15
+
 
 ### Error messages
 NO_GUILD_MESSAGE = 'Error: Please join a voice channel or enter the command in guild chat'
@@ -51,8 +38,8 @@ SONGINFO_LIKES = "Likes: "
 SONGINFO_DISLIKES = "Dislikes: "
 SONGINFO_NOW_PLAYING = "Now Playing"
 SONGINFO_QUEUE_ADDED = "Added to queue"
-SONGINFO_ERROR = "Error: Unsupported site or age restricted content. To enable age restricted content check the documentation/wiki."
 SONGINFO_PLAYLIST_QUEUED = "Queued playlist <a:catChillin:1011104612733952011>"
+SONGINFO_ERROR = "Error: Unsupported site or age restricted content. To enable age restricted content check the documentation/wiki."
 SONGINFO_UNKNOWN_DURATION = "Unknown"
 
 ### Help messages

@@ -8,7 +8,7 @@ from utils.utils import *
 from utils.database import *
 from utils.log_utils import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger(f"compass.{__name__}")
 
 ### Setup Cog
 

@@ -2,8 +2,8 @@
 /site/
 /nohup.out
 
+.venv
 **__pycache__
 **.egg-info
 /build/
 .cache
-.venv

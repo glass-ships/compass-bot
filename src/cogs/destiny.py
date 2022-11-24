@@ -1,14 +1,13 @@
-### Imports ###
-
+import discord
 from discord.ext import commands
+import re
+import asyncio
 from random import choice
-from datetime import datetime, timezone
 
-import utils.music_config as config
-from utils.utils import * 
+from utils import bot_config
 from utils.log_utils import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger(f"compass.{__name__}")
 
 ### Setup Cog
 
@@ -51,7 +50,7 @@ class Destiny(commands.Cog):
 
         embed = discord.Embed(
             title="LFG session created!",
-            color=choice(config.EMBED_COLORS),
+            color=choice(bot_config.EMBED_COLORS),
 	        description="React with 📖 to see your active roster.\n\n**Note:** Please do not edit your post, as our bot will automatically react with 🇫 when session is full.",
         )
         embed.set_footer(text=f"Fireteam Leader: {message.author.nick}", icon_url=message.author.avatar.url)
@@ -127,7 +126,7 @@ class Destiny(commands.Cog):
                 return
             embed = discord.Embed(
                 title=f"{message.author.name}'s LFG",
-                color=choice(config.EMBED_COLORS),
+                color=choice(bot_config.EMBED_COLORS),
             )
             embed.set_thumbnail(url=message.author.avatar.url)
             

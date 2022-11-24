@@ -1,28 +1,30 @@
-### Import Libraries  ###
-
 import os, sys, getopt
-
+import asyncio
 import discord
 from discord.ext import commands
 
-from classes.customhelpcommands import CustomHelpCommand
-from classes.music.audiocontroller import AudioController
-from classes.music.settings import Settings
-
-from utils.utils import *
 from utils.database import ServerDB
-from utils.music_utils import *
+from utils.bot_config import DEFAULT_PREFIX, HELP, default_guild_data
+
+from utils.custom_help_commands import CustomHelpCommand
+from music.playback import AudioController
+from music.settings import Settings
+from music import music_config
+from music.music_utils import guild_settings, guild_player
+
 from utils.log_utils import set_log_config, get_logger
 
-# Setup logging
 set_log_config()
-logger = get_logger("compass.main")
+logger = get_logger(f"compass.{__name__}")
 
-# Parse command line arguments
+####################################
+### Parse command line arguments ###
+####################################
+
 dev: bool = False
 args = sys.argv[1:]
 short_options = 'hd'
-long_options = ['help', 'dev']
+long_options = ['help', 'dev', 'debug']
 try:
     arguments, values = getopt.getopt(args, short_options, long_options)
 except getopt.error as err:
@@ -31,62 +33,61 @@ except getopt.error as err:
 
 for arg, val in arguments:
     if arg in ("-h", "--help"):
-        print("""
-Compass Bot
-------------
-Description: 
-    A General use Discord bot with features for moderation, music, Destiny, and more. 
-
-Usage: 
-    python src/main.py [-h, --help] [-d, --dev]
-    
-Optional Arguments:
-  -h, --help  Show this help message and exit
-  -d, --dev   Run the development version of the Bot locally 
-""")
+        print(HELP)
         sys.exit(0)
     elif arg in ('-d', '--dev'):
         dev = True
+    elif arg in ('--debug'):
+        set_log_config(10)
 
-DEFAULT_PREFIX = ';' 
 mongo_url = os.getenv("MONGO_URL")
 token = os.getenv("DSC_DEV_TOKEN") if dev else os.getenv("DSC_API_TOKEN")
 
+###################################
+### Connect to/verify database  ###
+###################################
 
 async def _connect_to_db():
+    """Connects to Mongo database"""
+
     bot.db = ServerDB(mongo_url, dev=dev)
     logger.info("Connected to database.")
 
+
 async def _prune_db():
+    """Prunes unused database entries"""
+
     logger.info("Pruning unused database entries...")
 
     db_guilds = bot.db.get_all_guilds()
     bot_guilds = [i.id for i in bot.guilds]
-
-    # print(f"Bot guilds: {bot.guilds}")
-    # print(f"DB Guilds: {db_guilds}")
+    logger.debug(f"Bot guilds: {bot.guilds}\nDB Guilds: {db_guilds}")
 
     for guild_id in db_guilds:
         if guild_id not in bot_guilds:
+            logger.debug(f"Bot not in guild with id {guild_id}. Removing database entry.")
             bot.db.drop_guild_table(guild_id)
 
-async def _patch_db():
-    logger.info("Patching missing database entries...")
 
+async def _patch_db():
+    """Creates an entry with default values for any guilds missing in database"""
+
+    logger.info("Patching missing database entries...")
+    
     db_guilds = bot.db.get_all_guilds()
     bot_guilds = [i for i in bot.guilds]
-
-    # print(f"Bot guilds: {bot.guilds}")
-    # print(f"DB Guilds: {db_guilds}")
+    logger.debug(f"Bot guilds: {bot.guilds}\nDB Guilds: {db_guilds}")
 
     for guild in bot_guilds:
-        default_channel = guild.system_channel.id if guild.system_channel else None
         if guild.id not in db_guilds:
-            data = {"guild_id": guild.id, "guild_name": guild.name, "prefix": ";", "mod_roles": [], "mem_role": 0, "dj_role": 0, "chan_bot": default_channel, "chan_logs": default_channel, "chan_music": 0, "chan_vids": 0, "chan_lfg": 0, "videos_whitelist": [], "lfg": []}
+            logger.debug(f"Guild: {guild.name} not found in database. Adding default entry.")
+            data = default_guild_data(guild)
             bot.db.add_guild_table(guild.id, data)
 
+
 async def _get_prefix(bot, ctx):
-    """Setup prefix (guild-specific or default)"""
+    """Returns a guild's bot prefix, or default if none"""
+
     if not ctx.guild:
         return commands.when_mentioned_or(DEFAULT_PREFIX)(bot,ctx)
     prefix = bot.db.get_prefix(ctx.guild.id)
@@ -95,10 +96,11 @@ async def _get_prefix(bot, ctx):
         prefix = DEFAULT_PREFIX
     return commands.when_mentioned_or(prefix)(bot,ctx)
 
-async def _config_music(guild):
-    """Configure music settings for each guild"""
+
+async def _set_guild_music_config(guild):
+    """Set a guild's music configs"""
     guild_settings[guild] = Settings(guild)
-    guild_audiocontroller[guild] = AudioController(bot, guild)
+    guild_player[guild] = AudioController(bot, guild)
     sett = guild_settings[guild]
 
     try:
@@ -106,7 +108,7 @@ async def _config_music(guild):
     except:
         pass
 
-    if config.GLOBAL_DISABLE_AUTOJOIN_VC == True:
+    if music_config.GLOBAL_DISABLE_AUTOJOIN_VC == True:
         return
 
     vc_channels = guild.voice_channels
@@ -114,7 +116,7 @@ async def _config_music(guild):
     if sett.get('vc_timeout') == False:
         if sett.get('start_voice_channel') == None:
             try:
-                await guild_audiocontroller[guild].register_voice_channel(guild.voice_channels[0])
+                await guild_player[guild].register_voice_channel(guild.voice_channels[0])
             except Exception as e:
                 logger.error(e)
 
@@ -122,11 +124,14 @@ async def _config_music(guild):
             for vc in vc_channels:
                 if vc.id == sett.get('start_voice_channel'):
                     try:
-                        await guild_audiocontroller[guild].register_voice_channel(vc_channels[vc_channels.index(vc)])
+                        await guild_player[guild].register_voice_channel(vc_channels[vc_channels.index(vc)])
                     except Exception as e:
                         logger.error(e)
 
-### Setup Discord bot
+
+############################################
+### Define Discord bot and startup tasks ###
+############################################
 
 bot = commands.Bot(
     application_id = 535346715297841172 if dev else 932737557836468297,
@@ -136,6 +141,7 @@ bot = commands.Bot(
     description = "A general use, moderation, and music bot in Python.",
     intents = discord.Intents.all()
 )
+
 
 async def _startup_tasks():
     logger.info("Connecting to database...")
@@ -152,13 +158,17 @@ async def on_ready():
     await _prune_db()
     await _patch_db()
     for guild in bot.guilds:
-        await _config_music(guild)
+        await _set_guild_music_config(guild)
     logger.info(f'{bot.user.name} has connected to Discord!')
 
-##########################################################################
+###################
+### Run the bot ###
+###################
 
-# Run bot
-logger.info(f"Parent Logger: {logger.parent}")
-asyncio.run(_startup_tasks())
-bot.run(token)
-#asyncio.run(bot.tree.sync())
+if __name__ == "__main__":
+    logger.info(f"Top-level Logger: {logger}")
+    logger.debug(f"Parent Logger: {logger.parent}")
+
+    asyncio.run(_startup_tasks())
+    bot.run(token)
+

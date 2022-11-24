@@ -1,5 +1,3 @@
-### Imports ###
-
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -7,10 +5,9 @@ from discord.utils import get
 
 from typing import List, Optional, Literal, Union
 
-from utils.utils import * 
+# from utils.utils import * 
 from utils.log_utils import get_logger
-
-logger = get_logger(__name__)
+logger = get_logger(f"compass.{__name__}")
 
 ### Setup Cog
 

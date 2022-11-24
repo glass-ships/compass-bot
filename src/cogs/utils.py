@@ -9,7 +9,7 @@ from pathlib import Path
 
 from utils.utils import * 
 from utils.log_utils import get_logger
-logger = get_logger(__name__)
+logger = get_logger(f"compass.{__name__}")
 
 cog_path = Path(__file__)
 

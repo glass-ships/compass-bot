@@ -17,37 +17,40 @@ all: install test clean
 
 .PHONY: install
 install: 
-	poetry install
+	# poetry install
+	pip install .
 
-.PHONY: build
-build:
-	poetry build
+# .PHONY: build
+# build:
+# 	poetry build
 
-.PHONY: test
-test: install
-	poetry run python -m pytest
+# .PHONY: test
+# test: install
+# 	poetry run python -m pytest
 
 .PHONY: clean
 clean:
 	rm -rf `find . -name __pycache__`
 	rm -f `find . -type f -name '*.py[co]' `
-	rm -rf .pytest_cache
-	rm -rf output test-output
-	rm -rf dist
+	rm -rf .pytest_cache \
+		*dist \
+		*build \
+		*egg-info
 
-.PHONY: lint
-lint:
-	flake8 --exit-zero --max-line-length 120 koza/ tests/ examples/
-	black --check --diff koza tests
-	isort --check-only --diff koza tests
+# .PHONY: lint
+# lint:
+# 	flake8 --exit-zero --max-line-length 120 src/
+# 	black --check --diff src
+# 	isort --check-only --diff src
 
-.PHONY: format
-format:
-	autoflake \
-		--recursive \
-		--remove-all-unused-imports \
-		--remove-unused-variables \
-		--ignore-init-module-imports \
-		--in-place koza tests examples
-	isort koza tests examples
-	black koza tests examples
+# .PHONY: format
+# format:
+# 	autoflake \
+# 		--recursive \
+# 		--remove-all-unused-imports \
+# 		--remove-unused-variables \
+# 		--ignore-init-module-imports \
+# 		--in-place \
+#		src
+# 	isort src
+# 	black src

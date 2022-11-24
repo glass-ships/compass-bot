@@ -1,7 +1,7 @@
 import random
 from collections import deque
 
-import utils.music_config as config
+from music.music_config import *
 
 
 class Queue:
@@ -22,7 +22,7 @@ class Queue:
 
     def add_name(self, trackname):
         self.trackname_history.append(trackname)
-        if len(self.trackname_history) > config.MAX_TRACKNAME_HISTORY_LENGTH:
+        if len(self.trackname_history) > MAX_TRACKNAME_HISTORY_LENGTH:
             self.trackname_history.popleft()
 
     def add(self, track):
@@ -37,7 +37,7 @@ class Queue:
             return None
 
         if song_played != "Dummy":
-            if len(self.playhistory) > config.MAX_HISTORY_LENGTH:
+            if len(self.playhistory) > MAX_HISTORY_LENGTH:
                 self.playhistory.popleft()
 
         return self.playque[0]
