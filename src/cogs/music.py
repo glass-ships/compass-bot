@@ -34,8 +34,18 @@ class Music(commands.Cog):
         current_guild = music_utils.get_guild(self.bot, ctx.message)
         player = music_utils.guild_player[current_guild]
 
-        # if not await self.checks(ctx, input):
-        #     return
+        if (await music_utils.is_connected(ctx) == None):
+            if await player.uconnect(ctx) == False:
+                return
+        
+        # Make sure command isn't empty
+        if input.isspace() or not input:
+            return
+
+        # Checks that user is in a VC, and command was sent in appropriate channel
+        if await music_utils.play_check(ctx) == False:
+            return
+
         
         # Reset time-out timer
         player.timer.cancel()

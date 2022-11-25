@@ -10,9 +10,6 @@ from utils.database import ServerDB
 from utils.bot_config import DEFAULT_PREFIX, HELP, default_guild_data
 
 from utils.custom_help_commands import CustomHelpCommand
-from music.settings import Settings
-from music.playback import MusicPlayer
-from music.music_utils import guild_settings, guild_player
 from utils.log_utils import get_logger
 # from utils.logutils import setup_logging
 
@@ -132,6 +129,9 @@ class CompassBot:
 
     async def set_guild_music_config(self, guild):
         """Set a guild's music configs"""
+        from music.settings import Settings
+        from music.playback import MusicPlayer
+        from music.music_utils import guild_settings, guild_player
 
         guild_settings[guild] = Settings(guild)
         guild_player[guild] = MusicPlayer(self.bot, guild)

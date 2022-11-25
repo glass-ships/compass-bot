@@ -135,8 +135,8 @@ async def convert_spotify(url):
 
     try:
         async with httpx.AsyncClient() as r:
-            response = r.get(url)
-            page = await response.text()
+            response = await r.get(url)
+            page = response.text
             
             logger.info(f"Parsing response")
 
@@ -203,8 +203,8 @@ async def get_spotify_playlist(url):
                     logger.error("ERROR: Check spotify CLIENT_ID and SECRET")
 
     async with httpx.AsyncClient() as r:
-        response = r.get(f"{url}&nd=1")
-        page = await response.text()
+        response = await r.get(f"{url}&nd=1")
+        page = response.text
 
     soup = BeautifulSoup(page, 'html.parser')
 

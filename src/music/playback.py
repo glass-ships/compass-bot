@@ -424,7 +424,7 @@ class MusicPlayer(object):
 
     async def uconnect(self, ctx):
         """ ???????? """
-        if not self.check_user_connection(ctx):
+        if not await self.check_user_vc(ctx):
             return False
 
         if self.guild.voice_client == None:
