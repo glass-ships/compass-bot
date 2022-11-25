@@ -1,12 +1,14 @@
 import re
-from bs4 import BeautifulSoup
-import spotipy
 from enum import StrEnum, auto
+
+from bs4 import BeautifulSoup
+import httpx
+import spotipy
 
 from utils.utils import URL_REGEX
 from music.music_config import *
-
 from utils.log_utils import get_logger
+
 logger = get_logger(f"compass.{__name__}")
 
 guild_player = {}
@@ -45,7 +47,7 @@ try:
     api = True
 except:
     api = False
-logger.info(f"Spotify API | User-Level Connection: {api}")
+logger.info(f"Spotify API User-Level Connection: {api}")
 
 ###########################
 ### URL Parsing Methods ###

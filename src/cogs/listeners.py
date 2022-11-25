@@ -206,7 +206,7 @@ class Listeners(commands.Cog):
     async def on_member_join(self, member: discord.Member) -> None:
         from PIL import Image
         import io
-        import requests
+        import httpx
 
         guild = member.guild
         if guild.id != 393995277713014785:
@@ -215,7 +215,7 @@ class Listeners(commands.Cog):
         # channel = bot.db.get_channel_welcome(guild=guild.id)
         channel = bot.get_channel(1008640829365161984)
 
-        av = requests.get(member.display_avatar.url)
+        av = httpx.get(member.display_avatar.url)
         ocean = Image.open(f'{cog_path.parent.parent.parent}/docs/images/welcome_background.png')
         pfp = Image.open(io.BytesIO(av.content))
         pfp = pfp.resize((650,650))

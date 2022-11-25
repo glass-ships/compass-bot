@@ -23,14 +23,10 @@ theme:
         text: 'Roboto'
         #code: 'Fira Mono'
 
-extra:
-  social:
-    - icon: 'fontawesome/solid/house'
-      link: 'https://glass-ships.com'
-    - icon: 'fontawesome/brands/github-alt'
-      link: 'https://github.com/glass-ships'
-    #- icon: 'fontawesome/brands/twitter'
-    #  link: 'https://twitter.com/'
+plugins:
+  - search
+  - mkdocstrings
+
 
 markdown_extensions:
   - admonition
@@ -43,4 +39,12 @@ markdown_extensions:
       smart_enable: all
 
 
-copyright: 'Copyright &copy; 2020 - 2022 Glass (contact@glass-ships.com)'
+extra:
+  social:
+    - icon: 'fontawesome/solid/house'
+      link: 'https://glass-ships.com'
+    - icon: 'fontawesome/brands/github-alt'
+      link: 'https://github.com/glass-ships'
+
+
+copyright: 'Copyright &copy; 2020 - 2022 [Glass](glass-ships.com)'

@@ -43,7 +43,7 @@ class Timer:
         self._task.cancel()
 
 
-class AudioController(object):
+class MusicPlayer(object):
     """ 
     Controls the playback of audio and the sequential playing of the songs.
 
@@ -51,7 +51,7 @@ class AudioController(object):
         bot: The instance of the bot that will be playing the music.
         queue: A Queue object that stores the history and queue of songs.
         current_song: A Song object that stores details of the current song.
-        guild: The guild in which the Audiocontroller operates.
+        guild: The guild in which the MusicPlayer operates.
     """
 
     def __init__(self, bot, guild):
@@ -71,7 +71,7 @@ class AudioController(object):
                 discord.opus.load_opus('libopus.so.0')
                 logger.info("Opus successfully loaded")
             except Exception as e:
-                logger.info("Something went wrong: {}".format(e))
+                logger.info(f"Error loading opus: {e}")
 
     ### Properties ###
     
@@ -99,7 +99,8 @@ class AudioController(object):
         if song.info.title == None:
             if song.host == Sites.Spotify:
                 try:
-                    conversion = self.search_youtube(await music_utils.convert_spotify(self.session, song.info.webpage_url))
+                    search_str = await music_utils.convert_spotify(self.session, song.info.webpage_url)
+                    conversion = self.search_youtube(search_str)
                     song.info.webpage_url = conversion
                 except Exception as e:
                     logger.error(f"Error: couldn't convert Spotify link: \n{e}")
@@ -415,3 +416,4 @@ class AudioController(object):
     async def udisconnect(self):
         await self.stop_player()
         await self.guild.voice_client.disconnect(force=True)
+

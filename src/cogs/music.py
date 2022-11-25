@@ -21,6 +21,7 @@ async def setup(bot):
 
 # Define Class
 class Music(commands.Cog):
+    
     def __init__(self, bot):
         self.bot = bot
 
@@ -35,23 +36,36 @@ class Music(commands.Cog):
         logger.info(f"Cog Online: {self.qualified_name}")
 
     @commands.command(name='play', description=HELP_PLAY, aliases=['p'])
-    async def _play_song(self, ctx, *, track: str):
+    async def _add_to_queue(self, ctx, *, track: str):
 
-        # Get audio controller for guild
+        # Get MusicPlayer for guild
         current_guild = music_utils.get_guild(self.bot, ctx.message)
         player = music_utils.guild_player[current_guild]
 
-        if (await music_utils.is_connected(ctx) == None):
-            if await player.uconnect(ctx) == False:
-                return
-        
-        # Make sure command isn't empty
-        if track.isspace() or not track:
-            return
+        if any([
+                # Bot and user are both not in a VC
+                (await music_utils.is_connected(ctx) is None and 
+                await player.uconnect(ctx) == False),
 
-        # Checks that user is in a VC, and command was sent in appropriate channel
-        if await music_utils.play_check(ctx) == False:
+                # Empty input
+                (track.isspace() or not track),
+
+                
+                (await music_utils.play_check(ctx) == False)
+            ]):
             return
+        
+        # if (await music_utils.is_connected(ctx) is None and 
+        #     await player.uconnect(ctx) == False):
+        #     return
+        
+        # # Make sure command isn't empty
+        # if (track.isspace() or not track):
+        #     return
+
+        # # Checks that user is in a VC, and command was sent in appropriate channel
+        # if await music_utils.play_check(ctx) == False:
+        #     return
 
         # Reset time-out timer
         player.timer.cancel()
