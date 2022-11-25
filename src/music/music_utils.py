@@ -47,7 +47,7 @@ try:
     api = True
 except:
     api = False
-logger.info(f"Spotify API User-Level Connection: {api}")
+logger.debug(f"Spotify API User-Level Connection: {api}")
 
 ###########################
 ### URL Parsing Methods ###
@@ -119,10 +119,10 @@ def identify_playlist(url):
 ### Spotify Metadata Methods ###
 ################################
 
-async def convert_spotify(session, url):
+async def convert_spotify(url):
     """Parses a spotify link for song info"""
 
-    logger.info(f"Session: {session} - parsing Spotify link: {url}")
+    logger.info(f"Parsing Spotify link: {url}")
 
     if re.search(URL_REGEX, url):
         result = URL_REGEX.search(url)
@@ -134,7 +134,8 @@ async def convert_spotify(session, url):
     logger.info("Awaiting response...")
 
     try:
-        async with session.get(url) as response:
+        async with httpx.AsyncClient() as r:
+            response = r.get(url)
             page = await response.text()
             
             logger.info(f"Parsing response")
@@ -152,13 +153,12 @@ async def convert_spotify(session, url):
     return title
 
 
-async def get_spotify_playlist(session, url):
+async def get_spotify_playlist(url):
     """Parses a Spotify playlist link, returns Spotify_Playlist class"""
 
     code = url.split('/')[4].split('?')[0]
 
     if api == True:
-
         if "open.spotify.com/album" in url:
             try:
                 results = sp.album_tracks(code)
@@ -202,8 +202,9 @@ async def get_spotify_playlist(session, url):
                 if SPOTIFY_ID != "" or SPOTIFY_SECRET != "":
                     logger.error("ERROR: Check spotify CLIENT_ID and SECRET")
 
-    async with session.get(url + "&nd=1") as response:
-         page = await response.text()
+    async with httpx.AsyncClient() as r:
+        response = r.get(f"{url}&nd=1")
+        page = await response.text()
 
     soup = BeautifulSoup(page, 'html.parser')
 
@@ -216,7 +217,7 @@ async def get_spotify_playlist(session, url):
 
     title = soup.find('title')
     title = title.string
-
+    
     return links
 
 #############################

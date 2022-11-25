@@ -10,24 +10,24 @@ SPOTIFY_SECRET: str = os.getenv('SPOTIFY_SECRET')
 #### Bot settings
 SUPPORTED_EXTENSIONS = ('.webm', '.mp4', '.mp3', '.avi', '.wav', '.m4v', '.ogg', '.mov')
 COOKIE_PATH = f"{ROOT_DIR}/cookies.txt"
-GLOBAL_DISABLE_AUTOJOIN_VC = False
-MAX_SONG_PRELOAD = 5  # maximum of 25
-ALLOW_VC_TIMEOUT_EDIT = True  # allow or disallow editing the vc_timeout guild setting
-VC_TIMEOUT = 60 # seconds
-VC_TIMOUT_DEFAULT = True # Default template setting for VC timeout true= yes, timeout false= no timeout
-MAX_HISTORY_LENGTH = 10
-MAX_TRACKNAME_HISTORY_LENGTH = 15
+MAX_SONG_PRELOAD = 5                # maximum of 25
+ALLOW_VC_TIMEOUT_EDIT = True        # allow or disallow editing the vc_timeout guild setting
+VC_TIMEOUT = 60                     # seconds
+VC_TIMOUT_DEFAULT = True            # Timeout by DefaultTrue/False 
+MAX_HISTORY_LENGTH = 10             # Number of songs to keep in history
+MAX_TRACKNAME_HISTORY_LENGTH = 15   # Not sure how this is different?
 
 
 ### Error messages
-NO_GUILD_MESSAGE = 'Error: Please join a voice channel or enter the command in guild chat'
-USER_NOT_IN_VC_MESSAGE = "Error: Please join the active voice channel to use commands"
-WRONG_CHANNEL_MESSAGE = "Error: Please use the correct command channel"
-NOT_CONNECTED_MESSAGE = "Error: Compass is not connected to any voice channel"
 ALREADY_CONNECTED_MESSAGE = "Error: Already connected to a voice channel"
 CHANNEL_NOT_FOUND_MESSAGE = "Error: Could not find channel"
 DEFAULT_CHANNEL_JOIN_FAILED = "Error: Could not join the default voice channel"
 INVALID_INVITE_MESSAGE = "Error: Invalid invitation link"
+NO_GUILD_MESSAGE = 'Error: Please join a voice channel or enter the command in guild chat'
+NOT_CONNECTED_MESSAGE = "Error: Compass is not connected to any voice channel"
+USER_NOT_IN_VC_MESSAGE = "Error: Please join the active voice channel to use commands"
+WRONG_CHANNEL_MESSAGE = "Error: Please use the correct command channel"
+
 
 ### Track info formatting
 INFO_HISTORY_TITLE = "Songs Played:"
@@ -41,6 +41,7 @@ SONGINFO_QUEUE_ADDED = "Added to queue"
 SONGINFO_PLAYLIST_QUEUED = "Queued playlist <a:catChillin:1011104612733952011>"
 SONGINFO_ERROR = "Error: Unsupported site or age restricted content. To enable age restricted content check the documentation/wiki."
 SONGINFO_UNKNOWN_DURATION = "Unknown"
+
 
 ### Help messages
 HELP_CHANGECHANNEL = "Move the bot to your voice channel."

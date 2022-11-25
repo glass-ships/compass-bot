@@ -1,4 +1,7 @@
-import os, sys, getopt
+import os, sys
+import getopt
+import signal
+
 import asyncio
 import discord
 from discord.ext import commands
@@ -7,13 +10,36 @@ from utils.database import ServerDB
 from utils.bot_config import DEFAULT_PREFIX, HELP, default_guild_data
 
 from utils.custom_help_commands import CustomHelpCommand
-from music.playback import MusicPlayer
 from music.settings import Settings
-from music import music_config
+from music.playback import MusicPlayer
 from music.music_utils import guild_settings, guild_player
-
 from utils.log_utils import get_logger
-logger = get_logger(f"compass")
+# from utils.logutils import setup_logging
+
+dev: bool = False
+verbose: bool = None
+try:
+    arguments, values = getopt.getopt(
+            args=sys.argv[1:], 
+            shortopts=None,
+            longopts=['help', 'dev', 'debug']
+            )
+except getopt.error as err:
+    print(str(err))
+    sys.exit(2)
+
+for arg, val in arguments:
+    match arg:
+        case "--help":
+            print(HELP)
+            sys.exit(0)
+        case "--dev":
+            dev = True
+        case "--debug":
+            verbose = True
+
+logger = get_logger(f"compass", verbose)
+discord.utils.setup_logging()
 
 ############################################
 ### Define Bot and Startup Tasks ###
@@ -39,27 +65,28 @@ class CompassBot:
             await self.patch_db()
             for guild in self.bot.guilds:
                 await self.set_guild_music_config(guild)
-            logger.info(f'{self.bot.user.name} has connected to Discord!')
-        
-            
+            logger.info(f'{self.bot.user.name} is online.')
+           
     async def startup_tasks(self):
-
+        """"""
         logger.info("Connecting to database...")
         await self.connect_to_db()
         
         logger.info("Loading cogs...")
         for f in os.listdir("src/cogs"):
             if f.endswith(".py"):
-                await self.bot.load_extension("cogs." + f[:-3])
-
+                await self.bot.load_extension(f"cogs.{f[:-3]}")
                 
     async def connect_to_db(self, dev: bool = False):
         """Connects to Mongo database"""
 
         mongo_url = os.getenv("MONGO_URL")
-        self.bot.db = ServerDB(mongo_url, dev=dev)
-        logger.info("Connected to database.")
-
+        try:
+            self.bot.db = ServerDB(mongo_url, dev=dev)
+            logger.info("Connected to database.")
+        except Exception as e:
+            logger.error(f"Error connecting to database: {e}")
+        return
 
     async def prune_db(self):
         """Prunes unused database entries"""
@@ -74,7 +101,7 @@ class CompassBot:
             if guild_id not in bot_guilds:
                 logger.debug(f"Bot not in guild with id {guild_id}. Removing database entry.")
                 self.bot.db.drop_guild_table(guild_id)
-
+        return
 
     async def patch_db(self):
         """Creates an entry with default values for any guilds missing in database"""
@@ -90,7 +117,7 @@ class CompassBot:
                 logger.debug(f"Guild: {guild.name} not found in database. Adding default entry.")
                 data = default_guild_data(guild)
                 self.bot.db.add_guild_table(guild.id, data)
-
+        return
 
     async def get_prefix(self, bot, ctx):
         """Returns a guild's bot prefix, or default if none"""
@@ -103,9 +130,9 @@ class CompassBot:
             prefix = DEFAULT_PREFIX
         return commands.when_mentioned_or(prefix)(bot,ctx)
 
-
     async def set_guild_music_config(self, guild):
         """Set a guild's music configs"""
+
         guild_settings[guild] = Settings(guild)
         guild_player[guild] = MusicPlayer(self.bot, guild)
         sett = guild_settings[guild]
@@ -115,60 +142,25 @@ class CompassBot:
         except:
             pass
 
-        if music_config.GLOBAL_DISABLE_AUTOJOIN_VC == True:
-            return
+        return
 
-        vc_channels = guild.voice_channels
+    async def shutdown(self):
+        await compass.bot.close()
+        logger.info(f'{self.bot.user.name} offline.')
+        sys.exit(0)
 
-        if sett.get('vc_timeout') == False:
-            if sett.get('start_voice_channel') == None:
-                try:
-                    await guild_player[guild].register_voice_channel(guild.voice_channels[0])
-                except Exception as e:
-                    logger.error(e)
+##############################################################################
+### Run the bot
 
-            else:
-                for vc in vc_channels:
-                    if vc.id == sett.get('start_voice_channel'):
-                        try:
-                            await guild_player[guild].register_voice_channel(vc_channels[vc_channels.index(vc)])
-                        except Exception as e:
-                            logger.error(e)
+logger.debug(f"Top-level Logger: {logger}")
+logger.debug(f"Parent Logger: {logger.parent}")
 
+token = os.getenv("DSC_DEV_TOKEN") if dev else os.getenv("DSC_API_TOKEN")
 
-if __name__ == "__main__":
+compass = CompassBot(dev=dev)
+asyncio.run(compass.startup_tasks())
 
-    ####################################
-    ### Parse command line arguments ###
-
-    dev: bool = False
-    try:
-        arguments, values = getopt.getopt(
-                args=sys.argv[1:], 
-                shortopts=None,
-                longopts=['help', 'dev', 'debug']
-                )
-    except getopt.error as err:
-        logger.error(str(err))
-        sys.exit(2)
-
-    for arg, val in arguments:
-        if arg in ("-h", "--help"):
-            print(HELP)
-            sys.exit(0)
-        if arg in ('-d', '--dev'):
-            dev = True
-        if arg in ('--debug'):
-            logger.setLevel(10)
-    
-    ####################################
-
-    logger.info(f"Top-level Logger: {logger}")
-    logger.debug(f"Parent Logger: {logger.parent}")
-
-    token = os.getenv("DSC_DEV_TOKEN") if dev else os.getenv("DSC_API_TOKEN")
-    
-    compass = CompassBot(dev=dev)
-    asyncio.run(compass.startup_tasks())
-    compass.bot.run(token)
-
+try:
+    asyncio.run(compass.bot.start(token))
+except KeyboardInterrupt:
+    asyncio.run(compass.shutdown())

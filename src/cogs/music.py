@@ -14,59 +14,29 @@ logger = get_logger(f"compass.{__name__}")
 
 ### Setup Cog
 
-# Startup method
 async def setup(bot):
     await bot.add_cog(Music(bot))
-    
 
-# Define Class
+
 class Music(commands.Cog):
     
     def __init__(self, bot):
         self.bot = bot
-
-    def _get_prefix(self, ctx):
-        return self.bot.db.get_prefix(ctx.message.guild.id)
-
-    def _get_prefix_itx(self, itx):
-        return self.bot.db.get_prefix(itx.guild_id)
 
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
     @commands.command(name='play', description=HELP_PLAY, aliases=['p'])
-    async def _add_to_queue(self, ctx, *, track: str):
+    async def _add_to_queue(self, ctx, *, input: str):
 
         # Get MusicPlayer for guild
         current_guild = music_utils.get_guild(self.bot, ctx.message)
         player = music_utils.guild_player[current_guild]
 
-        if any([
-                # Bot and user are both not in a VC
-                (await music_utils.is_connected(ctx) is None and 
-                await player.uconnect(ctx) == False),
-
-                # Empty input
-                (track.isspace() or not track),
-
-                
-                (await music_utils.play_check(ctx) == False)
-            ]):
+        if not await self.checks(ctx, input):
             return
         
-        # if (await music_utils.is_connected(ctx) is None and 
-        #     await player.uconnect(ctx) == False):
-        #     return
-        
-        # # Make sure command isn't empty
-        # if (track.isspace() or not track):
-        #     return
-
-        # # Checks that user is in a VC, and command was sent in appropriate channel
-        # if await music_utils.play_check(ctx) == False:
-        #     return
-
         # Reset time-out timer
         player.timer.cancel()
         player.timer = Timer(player.timeout_handler)
@@ -80,7 +50,7 @@ class Music(commands.Cog):
         current_queue = len(player.queue.playque)
         
         # Process/play song
-        song = await player.process_song(ctx,  track=track) #session=self.session,)
+        song = await player.process_song(ctx, track=input)
         
         if song is None:
             await ctx.send(SONGINFO_ERROR)
@@ -89,7 +59,7 @@ class Music(commands.Cog):
         # Send a "queued" message if not the first song
         if song.origin == Origins.Default:
             if player.current_song != None and len(player.queue.playque) != 0:
-                await ctx.send(embed=song.info.format_output(SONGINFO_QUEUE_ADDED, pos=current_queue+1))
+                await ctx.send(embed=song.format_output(SONGINFO_QUEUE_ADDED, pos=current_queue+1))
         elif song.origin == Origins.Playlist:
             await ctx.send(embed=discord.Embed(description=f"{SONGINFO_PLAYLIST_QUEUED}", color=choice(EMBED_COLORS)))    
 
@@ -106,7 +76,7 @@ class Music(commands.Cog):
         song = music_utils.guild_player[current_guild].current_song
         if song is None:
             return
-        await ctx.send(embed=song.info.format_output(SONGINFO_NOW_PLAYING))
+        await ctx.send(embed=song.format_output(SONGINFO_NOW_PLAYING))
 
     @commands.command(name='queue', description=HELP_QUEUE, aliases=['playlist', 'q'])
     async def _queue(self, ctx):
@@ -125,15 +95,15 @@ class Music(commands.Cog):
                 not current_guild.voice_client.is_playing() or
                 len(queue) == 0
             ):
-            await ctx.send(":hole: Queue is empty!")
+            await ctx.send(":jar: Queue is empty!")
             return
 
         queue_list = []
         for counter, song in enumerate(list(queue), start=1):
-            if song.info.title is None:
-                queue_entry = f"{counter}. [{song.info.webpage_url}]({song.info.webpage_url})"
+            if song.title is None:
+                queue_entry = f"{counter}. [{song.webpage_url}]({song.webpage_url})"
             else:
-                queue_entry = f"{counter}. [{song.info.title}]({song.info.webpage_url})"
+                queue_entry = f"{counter}. [{song.title}]({song.webpage_url})"
             
             queue_str = "\n".join(queue_list)
             if len(queue_str) + len(queue_entry) < 4096 and len(queue_list) < 20:
@@ -180,12 +150,10 @@ class Music(commands.Cog):
 
         if current_guild.voice_client is None or (
                 not current_guild.voice_client.is_paused() and not current_guild.voice_client.is_playing()):
-            await ctx.send(":hole: Queue is empty!")
+            await ctx.send(":jar: Queue is empty!")
             return
 
         current_guild.voice_client.stop()
-        #await asyncio.sleep(1.0)        
-        #await ctx.send(embed=player.current_song.info.format_output(SONGINFO_NOW_PLAYING))
 
     @commands.command(name='prev', description=HELP_PREV, aliases=['back'])
     async def _prev(self, ctx):
@@ -222,10 +190,10 @@ class Music(commands.Cog):
             return
             
         song = player.queue.playque[oldposition-1]
-        if song.info.title is None:
-            songname = f"[{song.info.webpage_url}]({song.info.webpage_url})"
+        if song.title is None:
+            songname = f"[{song.webpage_url}]({song.webpage_url})"
         else:
-            songname = f"[{song.info.title}]({song.info.webpage_url})"
+            songname = f"[{song.title}]({song.webpage_url})"
 
         try:
             player.queue.move(oldposition - 1, newposition - 1)
@@ -241,10 +209,10 @@ class Music(commands.Cog):
         
         queue = player.queue.playque
         song = queue[position-1]
-        if song.info.title is None:
-            songname = f"{position}. [{song.info.webpage_url}]({song.info.webpage_url})"
+        if song.title is None:
+            songname = f"{position}. [{song.webpage_url}]({song.webpage_url})"
         else:
-            songname = f"{position}. [{song.info.title}]({song.info.webpage_url})"
+            songname = f"{position}. [{song.title}]({song.webpage_url})"
         
         try:
             del queue[position-1]
@@ -272,7 +240,7 @@ class Music(commands.Cog):
         await ctx.send(":twisted_rightwards_arrows: Queue shuffled ")
 
         for song in list(player.queue.playque)[:MAX_SONG_PRELOAD]:
-            asyncio.ensure_future(player.preload(song))#self.session, song))
+            asyncio.ensure_future(player.preload(song))
 
     @commands.command(name='loop', description=HELP_LOOP, aliases=['l', 'repeat'])
     async def _loop(self, ctx):
@@ -324,18 +292,19 @@ class Music(commands.Cog):
 
     @commands.command(name='stop', description=HELP_STOP)
     async def _stop(self, ctx):
-        current_guild = music_utils.get_guild(self.bot, ctx.message)
 
         if await music_utils.play_check(ctx) == False:
             return
 
+        current_guild = music_utils.get_guild(self.bot, ctx.message)
         player = music_utils.guild_player[current_guild]
         player.queue.loop = False
-        if current_guild is None:
-            await ctx.send(NO_GUILD_MESSAGE)
-            return
         await music_utils.guild_player[current_guild].stop_player()
-        await ctx.send(":x: Stopped all sessions.")
+
+        # if current_guild is None:
+        #     await ctx.send(NO_GUILD_MESSAGE)
+        #     return
+        await ctx.send(":x: Stopped.")
 
     @commands.command(name='clear', description=HELP_CLEAR)
     async def _clear(self, ctx):
@@ -348,7 +317,15 @@ class Music(commands.Cog):
         player.clear_queue()
         current_guild.voice_client.stop()
         player.queue.loop = False
-        await ctx.send(":no_entry_sign: Cleared queue.")
+        await ctx.send(":jar: Cleared queue.")
+
+    @commands.command(name='leave')
+    async def _disconnect(self, ctx):
+        current_guild = music_utils.get_guild(self.bot, ctx.message)
+
+        
+
+        await music_utils.guild_player[current_guild].udisconnect()
 
     @commands.command(name='volume', description=HELP_VOL, aliases=["vol"])
     async def _volume(self, ctx, *args):

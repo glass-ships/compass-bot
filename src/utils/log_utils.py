@@ -2,7 +2,8 @@ import logging, sys
 from pathlib import Path
 from typing import Union
 
-FORMAT = "[%(asctime)s][%(levelname)-7s][%(name)-30s] %(message)s"
+# FORMAT = "[%(asctime)s][%(levelname)-7s][%(name)-30s] %(message)s"
+FORMAT = "%(asctime)s | %(levelname)-7s | %(name)-30s | %(message)s"
 DATEFMT = "%Y-%m-%d %H:%M:%S"
 LOG_FMT = logging.Formatter(fmt=FORMAT, datefmt=DATEFMT)
 
@@ -25,7 +26,7 @@ def set_log_config(level: Union[str, int] = logging.INFO):
 
 
 def get_logger(name: str, verbose: bool = None) -> logging.Logger:
-    """Get the logger of a given name and level, adding a stream handler to stdout if none exists"""
+    """Returns logger of given name and level"""
 
     log_level = logging.INFO if verbose is None else   \
                 logging.DEBUG if verbose == True else \

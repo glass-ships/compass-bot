@@ -64,14 +64,12 @@ class MusicPlayer(object):
         self.timer = Timer(self.timeout_handler)
         self._volume = sett.get('default_volume')
         
-        self.session = aiohttp.ClientSession()
-        
         if ~ discord.opus.is_loaded():
             try: 
                 discord.opus.load_opus('libopus.so.0')
-                logger.info("Opus successfully loaded")
+                logger.debug("Opus successfully loaded")
             except Exception as e:
-                logger.info(f"Error loading opus: {e}")
+                logger.warning(f"Could not load opus: {e}")
 
     ### Properties ###
     
@@ -87,8 +85,10 @@ class MusicPlayer(object):
         except Exception as e:
             pass
 
+    ##################################
     ### Playback control functions ###
-
+    ##################################
+        
     async def play_song(self, ctx, song):
         """Plays a song object"""
 
@@ -96,31 +96,31 @@ class MusicPlayer(object):
             self.timer.cancel()
             self.timer = Timer(self.timeout_handler)
 
-        if song.info.title == None:
+        if song.title == None:
             if song.host == Sites.Spotify:
                 try:
-                    search_str = await music_utils.convert_spotify(self.session, song.info.webpage_url)
+                    search_str = await music_utils.convert_spotify(song.webpage_url)
                     conversion = self.search_youtube(search_str)
-                    song.info.webpage_url = conversion
+                    song.webpage_url = conversion
                 except Exception as e:
                     logger.error(f"Error: couldn't convert Spotify link: \n{e}")
 
             try:
                 downloader = yt_dlp.YoutubeDL({'format': 'bestaudio', 'title': True, "cookiefile": COOKIE_PATH})
-                r = downloader.extract_info(song.info.webpage_url, download=False)
+                r = downloader.extract_info(song.webpage_url, download=False)
             except:
                 asyncio.wait(2)
                 downloader = yt_dlp.YoutubeDL({'title': True, "cookiefile": COOKIE_PATH})
                 r = downloader.extract_info(song, download=False)
 
             song.base_url = r.get('url')
-            song.info.uploader = r.get('uploader')
-            song.info.title = r.get('title')
-            song.info.duration = r.get('duration')
-            song.info.webpage_url = r.get('webpage_url')
-            song.info.thumbnail = r.get('thumbnails')[0]['url']
+            song.uploader = r.get('uploader')
+            song.title = r.get('title')
+            song.duration = r.get('duration')
+            song.webpage_url = r.get('webpage_url')
+            song.thumbnail = r.get('thumbnails')[0]['url']
 
-        self.queue.add_name(song.info.title)
+        self.queue.add_name(song.title)
         self.current_song = song
 
         self.queue.playhistory.append(self.current_song)
@@ -133,7 +133,7 @@ class MusicPlayer(object):
             after=lambda e: self._next_song(ctx, e)
         )
 
-        await ctx.send(embed=song.info.format_output(SONGINFO_NOW_PLAYING))
+        await ctx.send(embed=song.format_output(SONGINFO_NOW_PLAYING))
 
         self.guild.voice_client.source = discord.PCMVolumeTransformer(self.guild.voice_client.source)
         self.guild.voice_client.source.volume = float(self.volume) / 100.0
@@ -174,7 +174,7 @@ class MusicPlayer(object):
             track = self.search_youtube(track)
 
         if host == Sites.Spotify:
-            title = await music_utils.convert_spotify(self.session, track)
+            title = await music_utils.convert_spotify(track)
             track = self.search_youtube(title)
 
         if host == Sites.YouTube:
@@ -242,7 +242,7 @@ class MusicPlayer(object):
                     self.queue.add(song)
 
         if playlist_type == PlaylistTypes.Spotify_Playlist:
-            links = await music_utils.get_spotify_playlist(session=self.session, url=url)
+            links = await music_utils.get_spotify_playlist(url=url)
             for link in links:
                 song = Song(
                             origin=Origins.Playlist,
@@ -275,30 +275,30 @@ class MusicPlayer(object):
 
     async def preload(self, song):
 
-        if song.info.title != None:
+        if song.title != None:
             return
 
         def down(song):
 
             if song.host == Sites.Spotify:
-                song.info.webpage_url = self.search_youtube(song.info.title)
+                song.webpage_url = self.search_youtube(song.title)
 
-            if song.info.webpage_url == None:
+            if song.webpage_url == None:
                 return None
 
             downloader = yt_dlp.YoutubeDL(
                 {'format': 'bestaudio', 'title': True, "cookiefile": COOKIE_PATH})
             r = downloader.extract_info(
-                song.info.webpage_url, download=False)
+                song.webpage_url, download=False)
             song.base_url = r.get('url')
-            song.info.uploader = r.get('uploader')
-            song.info.title = r.get('title')
-            song.info.duration = r.get('duration')
-            song.info.webpage_url = r.get('webpage_url')
-            song.info.thumbnail = r.get('thumbnails')[0]['url']
+            song.uploader = r.get('uploader')
+            song.title = r.get('title')
+            song.duration = r.get('duration')
+            song.webpage_url = r.get('webpage_url')
+            song.thumbnail = r.get('thumbnails')[0]['url']
 
         if song.host == Sites.Spotify:
-            song.info.title = await music_utils.convert_spotify(self.session, song.info.webpage_url)
+            song.title = await music_utils.convert_spotify(song.webpage_url)
 
         loop = asyncio.get_event_loop()
         executor = concurrent.futures.ThreadPoolExecutor(
@@ -351,21 +351,31 @@ class MusicPlayer(object):
         self.queue.next(self.current_song)
         self.clear_queue()
         self.guild.voice_client.stop()
+        return
 
     def clear_queue(self):
         self.queue.playque.clear()
+        return
     
+    def track_history(self):
+        history_string = INFO_HISTORY_TITLE
+        for trackname in self.queue.trackname_history:
+            history_string += "\n" + trackname
+        return history_string
+    
+    ########################
     ### Helper functions ###
-
-    def search_youtube(self, title):
+    ########################
+    
+    def search_youtube(self, search_str):
         """Searches youtube for the video title and returns the first results video link"""
 
         # if title is already a link
-        if music_utils.extract_url(title) is not None:
-            return title
+        if music_utils.extract_url(search_str) is not None:
+            return search_str
 
         with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
-            r = ydl.extract_info(title, download=False)
+            r = ydl.extract_info(search_str, download=False)
 
         if r == None:
             return None
@@ -373,18 +383,28 @@ class MusicPlayer(object):
         videocode = r['entries'][0]['id']
 
         return "https://www.youtube.com/watch?v={}".format(videocode)
-        
-    async def register_voice_channel(self, channel):
-        await channel.connect(reconnect=True, timeout=None)
 
-    def track_history(self):
-        history_string = INFO_HISTORY_TITLE
-        for trackname in self.queue.trackname_history:
-            history_string += "\n" + trackname
-        return history_string
+    ##########################
+    ### Connection Methods ###
+    ##########################
+
+    async def check_user_vc(self, ctx) -> bool:
+        """Check if a user is in a VC"""
+        try:
+            user_vc = ctx.author.voice
+            return user_vc
+        except AttributeError:
+            return False
+    
+    async def connect_to_vc(self, channel):
+        """Connect the bot to a VC"""
+        await channel.connect(reconnect=True, timeout=None)
 
     async def timeout_handler(self):
 
+        if self.guild.voice_client is None:
+            return
+        
         if len(self.guild.voice_client.channel.voice_states) == 1:
             await self.udisconnect()
             return
@@ -403,17 +423,17 @@ class MusicPlayer(object):
         await self.udisconnect()
 
     async def uconnect(self, ctx):
-
-        if not ctx.author.voice:
-            await ctx.send(NO_GUILD_MESSAGE)
+        """ ???????? """
+        if not self.check_user_connection(ctx):
             return False
 
         if self.guild.voice_client == None:
-            await self.register_voice_channel(ctx.author.voice.channel)
+            await self.connect_to_vc(ctx.author.voice.channel)
         else:
             await ctx.send(ALREADY_CONNECTED_MESSAGE)
 
     async def udisconnect(self):
+        """ ???????? """
         await self.stop_player()
         await self.guild.voice_client.disconnect(force=True)
 

@@ -19,10 +19,7 @@ class Song():
         self.host = host
         self.origin = origin
         self.base_url = base_url
-        self.info = SongInfo(requested_by, uploader, title, duration, webpage_url, thumbnail)
-
-class SongInfo:
-    def __init__(self, requested_by=None, uploader=None, title=None, duration=None, webpage_url=None, thumbnail=None):
+        # self.info = SongInfo(requested_by, uploader, title, duration, webpage_url, thumbnail)
         self.requested_by = requested_by
         self.uploader = uploader
         self.title = title
@@ -30,6 +27,16 @@ class SongInfo:
         self.webpage_url = webpage_url
         self.thumbnail = thumbnail
         self.output = ""
+
+# class SongInfo:
+#     def __init__(self, requested_by=None, uploader=None, title=None, duration=None, webpage_url=None, thumbnail=None):
+#         self.requested_by = requested_by
+#         self.uploader = uploader
+#         self.title = title
+#         self.duration = duration
+#         self.webpage_url = webpage_url
+#         self.thumbnail = thumbnail
+#         self.output = ""
 
     def format_output(self, playtype, *, pos: int = None):
 
