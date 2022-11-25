@@ -34,8 +34,8 @@ class Music(commands.Cog):
         current_guild = music_utils.get_guild(self.bot, ctx.message)
         player = music_utils.guild_player[current_guild]
 
-        if not await self.checks(ctx, input):
-            return
+        # if not await self.checks(ctx, input):
+        #     return
         
         # Reset time-out timer
         player.timer.cancel()
