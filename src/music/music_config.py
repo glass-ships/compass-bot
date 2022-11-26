@@ -11,15 +11,14 @@ SPOTIFY_SECRET: str = os.getenv('SPOTIFY_SECRET')
 SUPPORTED_EXTENSIONS = ('.webm', '.mp4', '.mp3', '.avi', '.wav', '.m4v', '.ogg', '.mov')
 COOKIE_PATH = f"{ROOT_DIR}/cookies.txt"
 MAX_SONG_PRELOAD = 5                # maximum of 25
-ALLOW_VC_TIMEOUT_EDIT = True        # allow or disallow editing the vc_timeout guild setting
-VC_TIMEOUT = 60                     # seconds
-VC_TIMOUT_DEFAULT = True            # Timeout by DefaultTrue/False 
+ALLOW_VC_TIMEOUT_EDIT = False       # allow or disallow editing the vc_timeout guild setting
+VC_TIMEOUT = 10                     # in seconds
+VC_TIMOUT_DEFAULT = True            # Timeout True/False, True by Default
 MAX_HISTORY_LENGTH = 10             # Number of songs to keep in history
 MAX_TRACKNAME_HISTORY_LENGTH = 15   # Not sure how this is different?
 
 
 ### Error messages
-ALREADY_CONNECTED_MESSAGE = "Error: Already connected to a voice channel"
 CHANNEL_NOT_FOUND_MESSAGE = "Error: Could not find channel"
 DEFAULT_CHANNEL_JOIN_FAILED = "Error: Could not join the default voice channel"
 INVALID_INVITE_MESSAGE = "Error: Invalid invitation link"

@@ -1,21 +1,21 @@
+import asyncio
+import re
+from random import choice
+
 import discord
 from discord.ext import commands
-import re
-import asyncio
-from random import choice
 
 from utils import bot_config
 from utils.log_utils import get_logger
 
 logger = get_logger(f"compass.{__name__}")
 
-### Setup Cog
 
-# Startup method
 async def setup(bot):
+    """Cog setup method"""
     await bot.add_cog(Destiny(bot))
 
-# Define Class
+
 class Destiny(commands.Cog):
     def __init__(self, bot_):
         global bot
@@ -145,10 +145,3 @@ class Destiny(commands.Cog):
             embed.set_footer(text=f"Requested by: {user.nick or user.name}")
             await bot.get_channel(payload.channel_id).send(embed=embed, delete_after=10.0)
 
-    # Raid Red-Frame Chests
-    @commands.command(name='chest')
-    async def _raid_chests(self, ctx: discord.Interaction, raid: str = None) -> None:
-        if raid == 'kingsfall':
-            emb = discord.Embed(
-                title="King's Fall Red-Frame Chest"
-            )

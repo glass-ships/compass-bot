@@ -1,5 +1,3 @@
-### Imports ###
-
 import time, traceback
 from datetime import datetime
 from pathlib import Path
@@ -8,20 +6,19 @@ import discord
 from discord.ext import commands
 from discord.utils import get
 
-from utils.utils import * 
+from utils.bot_config import GLASS_HARBOR, GuildData
+from utils.utils import download, getfilepath
 from utils.log_utils import get_logger
 
 logger = get_logger(f"compass.{__name__}")
-
-### Setup Cog
-
 cog_path = Path(__file__)
 
-# Startup method
+
 async def setup(bot):
+    """Cog setup method"""
     await bot.add_cog(Listeners(bot))
 
-# Define Class
+
 class Listeners(commands.Cog):
     def __init__(self, bot_):
         global bot 
@@ -63,6 +60,7 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         """Move videos"""
+
         if message.author.bot:
             return
 
@@ -147,47 +145,32 @@ class Listeners(commands.Cog):
                     await channel.send(content=None, embed=ce)
                 else:
                     await flagged_message.channel.send(f"Logs channel has not been set!\nUse `;set_logs_channel <#channel>` to set one.")
+        return
 
-# Guild Listeners
-
+    #######################              
+    ### Guild Listeners ###
+    #######################
+                    
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         # prep sending notif to Glass Harbor (for logging/debug)
-        glass_guild = bot.get_guild(393995277713014785)
+        glass_guild = bot.get_guild(GLASS_HARBOR)
         chan_id = bot.db.get_channel_logs(glass_guild.id)
         channel = get(glass_guild.text_channels, id=chan_id)
 
-        if guild.system_channel:
-            default_channel = guild.system_channel.id or None
-        else:
-            default_channel = None
-        
-        # put together default data
-        data = {
-            "guild_id": guild.id,
-            "guild_name": guild.name,
-            "prefix": ";",
-            "mod_roles": [],
-            "mem_role": 0,
-            "dj_role": 0,
-            "chan_bot": default_channel,
-            "chan_logs": default_channel,
-            "chan_music": 0,
-            "chan_vids": 0,
-            "chan_lfg": 0,
-            "videos_whitelist": [],
-            "lfg": {},
-        }
+        data = GuildData(guild).__dict__
+        del data['Guild']
 
         if bot.db.add_guild_table(guild.id, data):
             await channel.send(embed=discord.Embed(description=f"Guild \"{guild.name}\" added to database."))
         else:
             await channel.send(embed=discord.Embed(description=f"Guild \"{guild.name}\" already in database."))
+        return
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         # prep sending notif to Glass Harbor (for logging/debug)
-        glass_guild = bot.get_guild(393995277713014785)
+        glass_guild = bot.get_guild(GLASS_HARBOR)
         chan_id = bot.db.get_channel_logs(glass_guild.id)
         channel = get(glass_guild.text_channels, id=chan_id)
 
@@ -195,12 +178,16 @@ class Listeners(commands.Cog):
             await channel.send(embed=discord.Embed(description=f"Guild \"{guild.name}\" removed from database."))
         else:
             await channel.send(embed=discord.Embed(description=f"Guild \"{guild.name}\" not found in database."))
+        return
 
     @commands.Cog.listener()
     async def on_guild_update(self, oldguild, newguild):
         bot.db.update_guild_name(oldguild.id, newguild.name)
+        return
 
-# Member Listeners
+    ########################
+    ### Member Listeners ###
+    ########################
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
@@ -209,11 +196,7 @@ class Listeners(commands.Cog):
         import httpx
 
         guild = member.guild
-        if guild.id != 393995277713014785:
-            return
-
-        # channel = bot.db.get_channel_welcome(guild=guild.id)
-        channel = bot.get_channel(1008640829365161984)
+        channel = bot.db.get_channel_welcome(guild=guild.id)
 
         av = httpx.get(member.display_avatar.url)
         ocean = Image.open(f'{cog_path.parent.parent.parent}/docs/images/welcome_background.png')

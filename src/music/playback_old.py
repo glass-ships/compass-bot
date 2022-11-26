@@ -1,24 +1,21 @@
+import discord
+import yt_dlp
 import asyncio, aiohttp
 import concurrent.futures
 
-import discord
-import spotipy
-import yt_dlp
-
-from music.music_config import *
-from music.queue import Queue
-from music.songinfo import Song
 from music import music_utils
 from music.music_utils import Sites, Origins, PlaylistTypes
-from utils.log_utils import get_logger
+from music.queue import Queue
+from music.songinfo import Song
+from music.music_config import *
+# from utils.bot_config import EMBED_COLORS
 
+from utils.log_utils import get_logger
 logger = get_logger(f"compass.{__name__}")
 
 
 YTDL_OPTIONS = {
             'format': 'bestaudio/best',
-            'title': True,
-            "cookiefile": COOKIE_PATH,
             'default_search': 'auto',
             'extract_flat': 'in_playlist',
             'noplaylist': True,
@@ -29,6 +26,7 @@ YTDL_OPTIONS = {
                             }],
             'logger': get_logger("ytdl"),
             'quiet': True,
+            "cookiefile": COOKIE_PATH
         }
 
 
@@ -39,7 +37,6 @@ class Timer:
 
     async def _job(self):
         await asyncio.sleep(VC_TIMEOUT)
-        logger.info("RESTARTING TIMER")
         await self._callback()
 
     async def restart(self):
@@ -102,10 +99,10 @@ class MusicPlayer(object):
     async def play_song(self, ctx, song):
         """Plays a song object"""
 
-        if self.queue.loop != True: #let timer run through if looping
-            # await self.timer.restart()
-            self.timer.stop()
-            self.timer = Timer(self.timeout_handler)
+        if self.queue.loop != True: #let timer run thouh if looping
+            # self.timer.stop()
+            # self.timer = Timer(self.timeout_handler)
+            await self.timer.restart()
 
         if song.title == None:
             if song.host == Sites.Spotify:
@@ -133,14 +130,15 @@ class MusicPlayer(object):
 
         self.queue.add_name(song.title)
         self.current_song = song
+
         self.queue.playhistory.append(self.current_song)
 
         self.guild.voice_client.play(
             discord.FFmpegPCMAudio(
                 source = song.base_url,
                 before_options = '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
-            ), 
-            after = lambda e: self._next_song(ctx)
+                ), 
+            after=lambda e: self._next_song(ctx, e)
         )
 
         await ctx.send(embed=song.format_output(SONGINFO_NOW_PLAYING))
@@ -154,21 +152,20 @@ class MusicPlayer(object):
         for song in list(self.queue.playque)[:MAX_SONG_PRELOAD]:
             await asyncio.ensure_future(self.preload(song))
 
-    
-    async def process_search(self, ctx, search):
-        """Process user search and returns a list of search strings"""
+    async def process_search(self, ctx, track):
+        """Adds the track/playlist to the queue instance and plays it, if it is the first song"""
 
-        searches = []
-        
-        host = music_utils.identify_host(search)
-        playlist_type = music_utils.identify_playlist(search)
+        host = music_utils.identify_host(track)
+        playlist_type = music_utils.identify_playlist(track)
 
-        if playlist_type != PlaylistTypes.Not_Playlist:    
-            await self.process_playlist(ctx, url=search, playlist_type=playlist_type)
-            
+        # If input is a playlist
+        if playlist_type != PlaylistTypes.Not_Playlist:
+
+            await self.process_playlist(ctx, url=track, playlist_type=playlist_type)
+
             if self.current_song == None:
                 await self.play_song(ctx, self.queue.playque[0])
-                logger.info("Playing {}".format(search))
+                logger.info("Playing {}".format(track))
 
             song = Song(
                         origin=Origins.Playlist, 
@@ -178,64 +175,50 @@ class MusicPlayer(object):
             return song
 
         if host == Sites.Unknown:
-            if music_utils.extract_url(search) is not None:
-                return
-            searches.append(search)
+            if music_utils.extract_url(track) is not None:
+                return None
 
-        if host == Sites.SoundCloud:
-            searches.append(search)
-            
+            track = self.search_youtube(track)
+
         if host == Sites.Spotify:
-            try:
-                sp_searches = music_utils.process_spotify_url(search)
-            except spotipy.exceptions.SpotifyException:
-                await ctx.send(f"Error processing Spotify URL")
-                return
-            searches = searches + sp_searches
+            title = await music_utils.convert_spotify(track)
+            track = self.search_youtube(title)
 
         if host == Sites.YouTube:
             track = track.split("&list=")[0]
 
-        await self.add_to_queue(searches, requested_by=ctx.message.author, host=host)
-
-        if self.current_song == None:
-              self._next_song(ctx)
-
-        return
-    
-    async def add_to_queue(self, searches: list, requested_by, host):  
-        """Add list of searches to player queue"""
-
-        for search in searches:
+        try:
+            downloader = yt_dlp.YoutubeDL({'format': 'bestaudio', 'title': True, "cookiefile": COOKIE_PATH})
             try:
-                yt_url = self.search_youtube(search)
-                # downloader = yt_dlp.YoutubeDL({'format': 'bestaudio', 'title': True, "cookiefile": COOKIE_PATH})
-                downloader = yt_dlp.YoutubeDL(YTDL_OPTIONS)
-                try:
-                    r = downloader.extract_info(yt_url, download=False)
-                except Exception as e:
-                    if "ERROR: Sign in to confirm your age" in str(e):
-                        return None
-            except:
-                downloader = yt_dlp.YoutubeDL({'title': True, "cookiefile": COOKIE_PATH})
-                r = downloader.extract_info(search, download=False)
+                r = downloader.extract_info(track, download=False)
+            except Exception as e:
+                if "ERROR: Sign in to confirm your age" in str(e):
+                    return None
+        except:
+            downloader = yt_dlp.YoutubeDL({'title': True, "cookiefile": COOKIE_PATH})
+            r = downloader.extract_info(track, download=False)
 
-            thumbnail = r.get('thumbnails')[len(r.get('thumbnails')) - 1]['url'] if r.get('thumbnails') is not None else None
+        thumbnail = r.get('thumbnails')[len(r.get('thumbnails')) - 1]['url'] if r.get('thumbnails') is not None else None
 
-            song = Song(
-                origin = Origins.Default,
-                host = host,
-                base_url = r.get('url'),
-                requested_by = requested_by,
-                uploader = r.get('uploader'),
-                title = r.get('title'),
-                duration = r.get('duration'),
-                webpage_url = r.get('webpage_url'),
-                thumbnail = thumbnail
-            )
-            self.queue.add(song)
+        song = Song(
+            origin = Origins.Default,
+            host = host,
+            base_url=r.get('url'),
+            requested_by=ctx.message.author,
+            uploader=r.get('uploader'),
+            title=r.get('title'),
+            duration=r.get('duration'),
+            webpage_url=r.get('webpage_url'),
+            thumbnail=thumbnail
+        )
 
-        return
+        self.queue.add(song)
+        
+        if self.current_song == None:
+            logger.info("Playing {}".format(track))
+            await self.play_song(ctx, song)
+
+        return song
 
     async def process_playlist(self, ctx, url, playlist_type):
 
@@ -245,7 +228,7 @@ class MusicPlayer(object):
                 listid = url.split('=')[1]
             else:
                 video = url.split('&')[0]
-                await self.process_song(ctx, track=video)
+                await self.process_search(ctx, track=video)
                 return
 
             with yt_dlp.YoutubeDL(YTDL_OPTIONS) as ydl:
@@ -329,8 +312,11 @@ class MusicPlayer(object):
             max_workers=MAX_SONG_PRELOAD)
         await asyncio.wait(fs={loop.run_in_executor(executor, down, song)}, return_when=asyncio.ALL_COMPLETED)
 
-    def _next_song(self, ctx):
+    def _next_song(self, ctx, error):
         """Invoked after a song is finished. Plays the next song if there is one."""
+
+        #if error:
+        #    await ctx.send(discord.Embed(description=f"{error}"))
 
         next_song = self.queue.next(self.current_song)
 
@@ -388,9 +374,6 @@ class MusicPlayer(object):
     ### Helper functions ###
     ########################
     
-    def get_yt_metadata(self):
-        return
-
     def search_youtube(self, search_str):
         """Searches youtube for the video title and returns the first results video link"""
 
@@ -436,13 +419,13 @@ class MusicPlayer(object):
         sett = music_utils.guild_settings[self.guild]
 
         if sett.get('vc_timeout') == False:
-            # await self.timer.restart()
-            self.timer = Timer(self.timeout_handler)  # reset timer
+            await self.timer.restart()
+            # self.timer = Timer(self.timeout_handler)  # reset timer
             return
 
         if self.guild.voice_client.is_playing():
-            self.timer = Timer(self.timeout_handler)  # reset timer
-            # await self.timer.restart()
+            # self.timer = Timer(self.timeout_handler)  # reset timer
+            await self.timer.restart()
             return
 
         # self.timer = Timer(self.timeout_handler)

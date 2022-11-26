@@ -1,21 +1,20 @@
+from typing import List, Literal, Union
+
 import discord
 from discord import app_commands
 from discord.ext import commands
-from discord.utils import get
 
-from typing import List, Optional, Literal, Union
-
-# from utils.utils import * 
+from utils.bot_config import GLASS_HARBOR
 from utils.log_utils import get_logger
+
 logger = get_logger(f"compass.{__name__}")
 
-### Setup Cog
 
-# Startup method
 async def setup(bot):
+    """Cog setup method"""
     await bot.add_cog(Admin(bot))
 
-# Define Class
+
 class Admin(commands.Cog):
     def __init__(self, bot_):
         global bot
@@ -28,9 +27,11 @@ class Admin(commands.Cog):
     @commands.command(name="sync")
     @commands.has_permissions(administrator=True)
     async def _sync(self, ctx: commands.Context, spec: Union[Literal['dev'], Literal["guild"], None]):
+        """Syncs the bot's command tree"""
+        
         logger.info("Syncing ships...")
         if spec == 'dev':
-            g = bot.get_guild(771161933301940224)
+            g = bot.get_guild(GLASS_HARBOR)
             await ctx.send(embed=discord.Embed(description=f"Copying command tree to {g}"), delete_after=5.0)
             bot.tree.copy_global_to(guild=g)
             fmt = await bot.tree.sync(guild=g)
@@ -40,25 +41,37 @@ class Admin(commands.Cog):
             fmt = await bot.tree.sync(guild=g)
             await ctx.send(embed=discord.Embed(description=f"Synced {len(fmt)} commands to guild."))
             logger.info("Ships synced!")
-            return
         elif spec is None:
             fmt1 = await bot.tree.sync()
             await ctx.send(embed=discord.Embed(description=f"Synced bot tree ({len(fmt1)} commands)"))
-            # fmt2 = 0
-            #guilds = bot.db.get_all_guilds()
-            #for guild in guilds:
-            #    g = bot.get_guild(guild)
-            #    await bot.tree.sync(guild=g)
-            #    fmt2 += 1
-            #await ctx.send(embed=discord.Embed(description=f"Bot tree synced: {len(fmt1)} commands to {len(guilds)} guilds."))
-            #await ctx.send(f"Bot tree synced: {len(fmt1)} commands to {fmt2} of {len(guilds)} guilds.")
             logger.info("Ships synced!")
-            return
         else:
             await ctx.send(embed=discord.Embed(description=f"Unexpected argument.\nType `;help` for more info."))
             logger.warning("Error syncing ships! (Bad argument)")
-            return
+        return
+
+     
+    @app_commands.command(name='reload')
+    @commands.has_permissions(administrator=True)
+    @app_commands.autocomplete()
+    async def _reload(self, itx: discord.Interaction, module : str):
+        """Reloads a module."""
+        try:
+            await bot.reload_extension(f"cogs.{module}")
+        except Exception as e:
+            await itx.response.send_message(f"\nError: \n```{e}```")
+        else:
+            await itx.response.send_message(f"\nModule: `{module}` reloaded.")
+            
+    @_reload.autocomplete('module')
+    async def _reload_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+        options = ['admin', 'destiny', 'listeners', 'main', 'moderation', 'music', 'utils']
+        return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
     
+
+    ##################################
+    ### Bot Setting Config Methods ###
+    ##################################
 
     group_set = app_commands.Group(name="set",description="Group of commands to set bot settings")
     group_unset = app_commands.Group(name="unset",description="Group of commands to configure bot settings")
@@ -103,43 +116,49 @@ class Admin(commands.Cog):
     @app_commands.describe(option='What to specify a channel for', channel='Which channel to send to')
     @app_commands.autocomplete()
     async def _channel_set(self, itx: discord.Interaction, option: str, channel: discord.TextChannel):  
-        if option == "logs":
-            bot.db.update_channel_logs(itx.guild_id, channel.id)
-        elif option == "bot":
-            bot.db.update_channel_bot(itx.guild_id, channel.id)
-        elif option == "videos":
-            bot.db.update_channel_vids(itx.guild_id, channel.id)
-        elif option == "music":
-            bot.db.update_channel_music(itx.guild_id, channel.id)
-        elif option == "lfg":
-            bot.db.update_channel_lfg(itx.guild_id, channel.id)
-        else:
-            return False
+        match option:
+            case "bot":
+                bot.db.update_channel_bot(itx.guild_id, channel.id)
+            case "logs":
+                bot.db.update_channel_logs(itx.guild_id, channel.id)
+            case "welcome":
+                bot.db.update_channel_welcome(itx.guild_id, channel.id)
+            case "music":
+                bot.db.update_channel_music(itx.guild_id, channel.id)
+            case "lfg":
+                bot.db.update_channel_lfg(itx.guild_id, channel.id)
+            case "videos":
+                bot.db.update_channel_vids(itx.guild_id, channel.id)
+            case _:
+                return False
         await itx.response.send_message(f"{option.title()} channel set to <#{channel.id}>.")
         return True
 
     @_channel_set.autocomplete('option')
     async def _channel_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-        options = ['logs', 'bot', 'music', 'videos', 'lfg']
+        options = ['logs', 'bot', 'welcome', 'music', 'lfg', 'videos']
         return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
     
     @group_unset.command(name="channel")
     @commands.has_permissions(administrator=True)
     @app_commands.autocomplete(option=_channel_autocomplete)
     async def _channel_unset(self, itx: discord.Interaction, option: str):  
-        if option == "logs":
-            bot.db.update_channel_logs(itx.guild_id, 0)
-        elif option == "bot":
-            bot.db.update_channel_bot(itx.guild_id, 0)
-        elif option == "videos":
-            bot.db.update_channel_vids(itx.guild_id, 0)
-        elif option == "music":
-            bot.db.update_channel_music(itx.guild_id, 0)
-        elif option == "lfg":
-            bot.db.update_channel_lfg(itx.guild_id, 0)
-        else:
-            await itx.response.send_message("Error: Unknown argument. Valid targets: logs, bot, music, videos")
-            return False
+        match option:
+            case "bot":
+                bot.db.update_channel_bot(itx.guild_id, 0)
+            case "logs":
+                bot.db.update_channel_logs(itx.guild_id, 0)
+            case "welcome":
+                bot.db.update_channel_welcome(itx.guild_id, 0)
+            case "music":
+                bot.db.update_channel_music(itx.guild_id, 0)
+            case "lfg":
+                bot.db.update_channel_lfg(itx.guild_id, 0)
+            case "videos":
+                bot.db.update_channel_vids(itx.guild_id, 0)
+            case _:
+                await itx.response.send_message("Error: Unknown argument. Valid targets: logs, bot, music, videos")
+                return False
         await itx.response.send_message(f"{option.title()} channel unset.")
         return True
 
@@ -147,15 +166,16 @@ class Admin(commands.Cog):
     @commands.has_permissions(administrator=True)
     @app_commands.autocomplete()
     async def _role(self, itx: discord.Interaction, option: str):  
-        if option == "mod":
-            bot.db.update_mod_roles(itx.guild_id, [0])
-        elif option == "member":
-            bot.db.update_mem_role(itx.guild_id, 0)
-        elif option == "dj":
-            bot.db.update_dj_role(itx.guild_id, 0)
-        else:
-            await itx.response.send_message("Error: Unknown argument. Valid targets: mod, member, dj")
-            return False
+        match option:
+            case "mod":
+                bot.db.update_mod_roles(itx.guild_id, [0])
+            case "member":
+                bot.db.update_mem_role(itx.guild_id, 0)
+            case "dj":
+                bot.db.update_dj_role(itx.guild_id, 0)
+            case _:
+                await itx.response.send_message("Error: Unknown argument. Valid targets: mod, member, dj")
+                return False
         await itx.response.send_message(f"{option.title()} role unset.")
         return True
 
@@ -164,7 +184,10 @@ class Admin(commands.Cog):
         options = ['mod', 'member', 'dj']
         return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
 
-    #####
+    
+    ######################
+    ### Video Settings ###
+    ######################
 
     @app_commands.command(name="allowvideos")
     @commands.has_permissions(administrator=True)
@@ -176,24 +199,4 @@ class Admin(commands.Cog):
         elif switch == False:
             bot.db.remove_videos_whitelist(itx.guild_id, channel.id)
             await itx.response.send_message(f"Videos not allowed in <#{channel.id}>.")
-
-
-    #####
-    
-    @app_commands.command(name='reload')
-    @commands.has_permissions(administrator=True)
-    @app_commands.autocomplete()
-    async def _reload(self, itx: discord.Interaction, module : str):
-        """Reloads a module."""
-        try:
-            await bot.reload_extension(f"cogs.{module}")
-        except Exception as e:
-            await itx.response.send_message(f"\nError: \n```{e}```")
-        else:
-            await itx.response.send_message(f"\nModule: `{module}` reloaded.")
-
-    @_reload.autocomplete('module')
-    async def _reload_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-        options = ['admin', 'destiny', 'listeners', 'main', 'moderation', 'music', 'utils']
-        return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
 

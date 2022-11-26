@@ -1,16 +1,18 @@
-### Imports ###
+import shlex
+import asyncio
+# from datetime import datetime
+from typing import Optional, Union
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import get
 
-from datetime import datetime
-import shlex
-from typing import Optional, Union
-
 from utils.utils import * 
 from utils.log_utils import get_logger
+
 logger = get_logger(f"compass.{__name__}")
+
 
 async def mod_check_ctx(ctx):
     mod_roles = bot.db.get_mod_roles(ctx.guild.id)
@@ -21,6 +23,7 @@ async def mod_check_ctx(ctx):
     await asyncio.sleep(3)
     await ctx.message.delete()
     return False
+
 async def mod_check_itx(itx: discord.Interaction):
     mod_roles = bot.db.get_mod_roles(itx.guild_id)
     user_roles = [x.id for x in itx.user.roles]
@@ -28,16 +31,15 @@ async def mod_check_itx(itx: discord.Interaction):
         return True
     await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
     return False
-has_mod_ctx = commands.check(mod_check_ctx)
-has_mod_itx = app_commands.check(mod_check_itx)
 
-### Setup Cog
 
-# Startup method
 async def setup(bot):
     await bot.add_cog(Moderation(bot))
 
-# Define Class
+has_mod_ctx = commands.check(mod_check_ctx)
+has_mod_itx = app_commands.check(mod_check_itx)
+
+
 class Moderation(commands.Cog):
     def __init__(self, bot_):
         global bot
@@ -47,8 +49,10 @@ class Moderation(commands.Cog):
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
-    ##### Chat Commands #####
-        
+    ##################### 
+    ### Chat Commands ###
+    #####################
+    
     @has_mod_ctx
     @commands.command(name='sendembed', aliases=['se'], description="Send an embed to a channel (fields not yet supported)")
     async def _send_embed(self,
@@ -81,9 +85,12 @@ class Moderation(commands.Cog):
         
         await channel.send(embed=embed)
         await ctx.channel.send(f"Embed sent to <#{channel.id}>.", delete_after=5.0)
+        return
 
-    ##### Slash Commands ######
-
+    ######################
+    ### Slash Commands ###
+    ######################
+    
     @has_mod_itx
     @app_commands.command(name='send', description="Send a message via the bot")
     async def _send(self, itx: discord.Interaction, channel: discord.TextChannel, message: str):
@@ -92,6 +99,7 @@ class Moderation(commands.Cog):
         await channel.send(content=message)
         await itx.followup.send(f"Message sent to <#{channel.id}>.")
 
+    
     @has_mod_itx
     @app_commands.command(name="getmodroles", description="Get a list of guild's mod roles")
     async def _get_mod_roles(self, itx: discord.Interaction):
@@ -101,6 +109,7 @@ class Moderation(commands.Cog):
             r += f"<@&{i}>\n"
         await itx.response.send_message(embed=discord.Embed(description=f"Mod roles:\n{r}"))
 
+    
     @has_mod_itx
     @app_commands.command(name="purge", description="Deletes n messages from current channel")
     async def _purge(self, itx: discord.Interaction, number: int = 0):
@@ -108,6 +117,7 @@ class Moderation(commands.Cog):
         await itx.channel.purge(limit=int(number))
         await itx.followup.send(f"{number} messages successfully purged!", ephemeral=True)
 
+    
     @has_mod_itx
     @app_commands.command(name="moveto", description="Move a message to specified channel")
     async def _move_message(self, itx: discord.Interaction, channel: Union[discord.TextChannel, discord.Thread], message_id: str):
@@ -131,14 +141,15 @@ class Moderation(commands.Cog):
         await channel.send(content=newmsg, files=files)
         await msg.delete()
         await itx.followup.send(f"Message moved to <#{channel.id}>")
-    
-    async def _add_role():
+
+      
+    async def _give_role():
         pass
 
     @has_mod_itx
     @app_commands.command(name="removerole", description="Remove role from a user with optional duration")
     @app_commands.rename(dur="duration")
-    async def _role_remove(self, itx: discord.interactions, role: discord.Role, user: discord.Member, dur: Optional[int]):
+    async def _remove_role(self, itx: discord.interactions, role: discord.Role, user: discord.Member, dur: Optional[int]):
         await itx.response.defer()
         role = get(itx.guild.roles, id=role.id)    
         if not user:
@@ -155,3 +166,4 @@ class Moderation(commands.Cog):
                 await itx.followup.send(f"<@{bonked.id}> has had the \"{role.name}\" role added back.")
         else:
             await itx.followup.send("Cannot remove role - user doesn't have it!")
+

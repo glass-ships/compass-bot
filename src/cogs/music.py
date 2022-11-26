@@ -5,14 +5,16 @@ from random import choice
 import asyncio
 
 from music import music_utils
-from music.playback import Timer, Origins
+from music.music_utils import Origins
+from music.playback import Timer
+# from music.playback_old import Timer
+# from music.playback_old import MusicPlayer
 from utils.bot_config import EMBED_COLORS
 from music.music_config import *
 
 from utils.log_utils import get_logger
 logger = get_logger(f"compass.{__name__}")
 
-### Setup Cog
 
 async def setup(bot):
     await bot.add_cog(Music(bot))
@@ -26,47 +28,54 @@ class Music(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
+    
+    async def get_player(self, ctx):
+        """Get MusicPlayer for guild"""
+        current_guild = music_utils.get_guild(self.bot, ctx.message)
+        player = music_utils.guild_player[current_guild]
+
+        if (await music_utils.is_connected(ctx) == None and
+            await player.uconnect(ctx) == False):
+            return None
+        
+        # Checks that user is in a VC, and command was sent in appropriate channel
+        if await music_utils.play_check(ctx) == False:
+            return None
+        
+        return player
 
     @commands.command(name='play', description=HELP_PLAY, aliases=['p'])
     async def _add_to_queue(self, ctx, *, input: str):
 
-        # Get MusicPlayer for guild
-        current_guild = music_utils.get_guild(self.bot, ctx.message)
-        player = music_utils.guild_player[current_guild]
-
-        if (await music_utils.is_connected(ctx) == None):
-            if await player.uconnect(ctx) == False:
-                return
-        
         # Make sure command isn't empty
         if input.isspace() or not input:
             return
 
-        # Checks that user is in a VC, and command was sent in appropriate channel
-        if await music_utils.play_check(ctx) == False:
+        player = await self.get_player(ctx)
+        if player is None:
             return
-
         
-        # Reset time-out timer
-        player.timer.cancel()
+        player.timer.stop()
         player.timer = Timer(player.timeout_handler)
+        # await player.timer.restart()
 
         # Alert if loop enabled
         if player.queue.loop == True:
-            await ctx.send("Loop is enabled! Use {}loop to disable".format(self.bot.db.get_prefix(current_guild)))
+            await ctx.send("Loop is enabled! Use {}loop to disable".format(self.bot.db.get_prefix(ctx.guild.id)))
             return
 
-        # get queue before adding (send now playing if empty at first)
         current_queue = len(player.queue.playque)
+
+        await player.process_search(ctx, input)
         
-        # Process/play song
-        song = await player.process_song(ctx, track=input)
-        
+        return
+        ########### vvv DingoLingo Bingo vvv ############## 
+        song = await player.process_search(ctx, input)
+
         if song is None:
             await ctx.send(SONGINFO_ERROR)
             return
-
-        # Send a "queued" message if not the first song
+        
         if song.origin == Origins.Default:
             if player.current_song != None and len(player.queue.playque) != 0:
                 await ctx.send(embed=song.format_output(SONGINFO_QUEUE_ADDED, pos=current_queue+1))
@@ -151,8 +160,9 @@ class Music(commands.Cog):
         player = music_utils.guild_player[current_guild]
         player.queue.loop = False
 
-        player.timer.cancel()
+        player.timer.stop()
         player.timer = Timer(player.timeout_handler)
+        # await player.timer.restart()
 
         if current_guild is None:
             await ctx.send(NO_GUILD_MESSAGE)
@@ -175,8 +185,9 @@ class Music(commands.Cog):
         player = music_utils.guild_player[current_guild]
         player.queue.loop = False
 
-        player.timer.cancel()
+        player.timer.stop()
         player.timer = Timer(player.timeout_handler)
+        # await player.timer.restart()
 
         if current_guild is None:
             await ctx.send(NO_GUILD_MESSAGE)
@@ -303,39 +314,40 @@ class Music(commands.Cog):
     @commands.command(name='stop', description=HELP_STOP)
     async def _stop(self, ctx):
 
+        # Bot is already not playing
         if await music_utils.play_check(ctx) == False:
             return
 
-        current_guild = music_utils.get_guild(self.bot, ctx.message)
-        player = music_utils.guild_player[current_guild]
+        player = await self.get_player(ctx)
         player.queue.loop = False
-        await music_utils.guild_player[current_guild].stop_player()
+        player.timer.stop()
+        player.timer = Timer(player.timeout_handler)
+        # await player.timer.restart()
+        await player.stop_player()
 
-        # if current_guild is None:
-        #     await ctx.send(NO_GUILD_MESSAGE)
-        #     return
         await ctx.send(":x: Stopped.")
+        return
 
     @commands.command(name='clear', description=HELP_CLEAR)
     async def _clear(self, ctx):
-        current_guild = music_utils.get_guild(self.bot, ctx.message)
-
+        
         if await music_utils.play_check(ctx) == False:
             return
 
-        player = music_utils.guild_player[current_guild]
+        player = await self.get_player(ctx)
         player.clear_queue()
-        current_guild.voice_client.stop()
         player.queue.loop = False
+        player.timer.stop()
+        player.timer = Timer(player.timeout_handler)
+        # await player.timer.restart()
         await ctx.send(":jar: Cleared queue.")
+        return
 
     @commands.command(name='leave')
     async def _disconnect(self, ctx):
-        current_guild = music_utils.get_guild(self.bot, ctx.message)
-
-        
-
-        await music_utils.guild_player[current_guild].udisconnect()
+        player = await self.get_player(ctx)  
+        await player.udisconnect()
+        return
 
     @commands.command(name='volume', description=HELP_VOL, aliases=["vol"])
     async def _volume(self, ctx, *args):

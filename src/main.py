@@ -7,7 +7,7 @@ import discord
 from discord.ext import commands
 
 from utils.database import ServerDB
-from utils.bot_config import DEFAULT_PREFIX, HELP, default_guild_data
+from utils.bot_config import DEFAULT_PREFIX, HELP, GuildData
 
 from utils.custom_help_commands import CustomHelpCommand
 from utils.log_utils import get_logger
@@ -36,7 +36,7 @@ for arg, val in arguments:
             verbose = True
 
 logger = get_logger(f"compass", verbose)
-discord.utils.setup_logging()
+discord.utils.setup_logging(level = 20 if verbose else 30)
 
 ############################################
 ### Define Bot and Startup Tasks ###
@@ -64,10 +64,10 @@ class CompassBot:
                 await self.set_guild_music_config(guild)
             logger.info(f'{self.bot.user.name} is online.')
            
-    async def startup_tasks(self):
+    async def startup_tasks(self, dev):
         """"""
         logger.info("Connecting to database...")
-        await self.connect_to_db()
+        await self.connect_to_db(dev)
         
         logger.info("Loading cogs...")
         for f in os.listdir("src/cogs"):
@@ -112,7 +112,8 @@ class CompassBot:
         for guild in bot_guilds:
             if guild.id not in db_guilds:
                 logger.debug(f"Guild: {guild.name} not found in database. Adding default entry.")
-                data = default_guild_data(guild)
+                data = GuildData(guild).__dict__
+                del data['guild']
                 self.bot.db.add_guild_table(guild.id, data)
         return
 
@@ -131,6 +132,7 @@ class CompassBot:
         """Set a guild's music configs"""
         from music.settings import Settings
         from music.playback import MusicPlayer
+        # from music.playback_old import MusicPlayer
         from music.music_utils import guild_settings, guild_player
 
         guild_settings[guild] = Settings(guild)
@@ -158,7 +160,7 @@ logger.debug(f"Parent Logger: {logger.parent}")
 token = os.getenv("DSC_DEV_TOKEN") if dev else os.getenv("DSC_API_TOKEN")
 
 compass = CompassBot(dev=dev)
-asyncio.run(compass.startup_tasks())
+asyncio.run(compass.startup_tasks(dev))
 
 try:
     asyncio.run(compass.bot.start(token))

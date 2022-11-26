@@ -1,13 +1,13 @@
-### Imports ###
+import asyncio
+import os, shutil, subprocess
+from pathlib import Path
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-import os, shutil, subprocess
-from pathlib import Path
-
-from utils.utils import * 
+from utils.bot_config import GuildData, GLASS_HARBOR
+from utils.utils import get_emojis
 from utils.log_utils import get_logger
 logger = get_logger(f"compass.{__name__}")
 
@@ -22,6 +22,7 @@ async def mod_check_ctx(ctx):
     await asyncio.sleep(3)
     await ctx.message.delete()
     return False
+
 async def mod_check_itx(itx: discord.Interaction):
     mod_roles = bot.db.get_mod_roles(itx.guild_id)
     user_roles = [x.id for x in itx.user.roles]
@@ -29,16 +30,15 @@ async def mod_check_itx(itx: discord.Interaction):
         return True
     await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
     return False
+
 has_mod_ctx = commands.check(mod_check_ctx)
 has_mod_itx = app_commands.check(mod_check_itx)
 
-### Setup Cog
 
-# Startup method
 async def setup(bot):
     await bot.add_cog(Utils(bot))
 
-# Define Class
+
 class Utils(commands.Cog):
     def __init__(self, bot_):
         global bot
@@ -48,11 +48,16 @@ class Utils(commands.Cog):
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
-### Debug Commands ###
+    ######################
+    ### Debug Commands ###
+    ######################
     
     @has_mod_ctx
     @commands.command(name="test")
     async def _test(self, ctx):
+        data = GuildData(ctx.guild).__dict__
+        del data['guild']
+        await ctx.send(data)
         pass
 
     @has_mod_ctx
@@ -92,8 +97,10 @@ class Utils(commands.Cog):
         fmt = await bot.tree.sync(guild=g)
         await ctx.send(embed=discord.Embed(description=f"{len(fmt)} commands cleared from {g.name}"))
 
-### Emoji Commands ###
-    
+    ######################
+    ### Emoji Commands ###
+    ######################
+        
     @has_mod_ctx
     @commands.command(name="getemojis", description="Get a list of guild's emojis (Used in Glass Harbor - can be safely ignored)", aliases=['emojis'])
     async def _get_emojis(self, ctx):
@@ -169,7 +176,7 @@ class Utils(commands.Cog):
     @has_mod_ctx
     @commands.command(name='syncemojis', description="Clone glass' discord repo and sync Glass Harbor emojis")
     async def _sync_emojis(self, ctx, option: str = None):
-        if ctx.guild.id != 393995277713014785:
+        if ctx.guild.id != GLASS_HARBOR:
             await ctx.send(embed=discord.Embed(description=f"Oops! This command can only be used in the Glass Harbor Discord server."))
             return
 
@@ -211,8 +218,10 @@ class Utils(commands.Cog):
         
         await ctx.send(embed=discord.Embed(description="Emojis Synced!"))
 
-### Misc Commands ###
-
+    #####################
+    ### Misc Commands ###
+    #####################
+    
     @has_mod_ctx
     @commands.command(name='clearfilecache', aliases=['cfc','rm -rf'])
     async def _clear_file_cache(self, ctx, option: str):
@@ -240,3 +249,4 @@ class Utils(commands.Cog):
                         await itx.followup.send(f"Error downloading attachment from {msg.id}:\n```\n{e}\n```", ephemeral=True)
                     count += 1
         await itx.followup.send(f"Success: Downloaded {count} items.", ephemeral=True)
+        return

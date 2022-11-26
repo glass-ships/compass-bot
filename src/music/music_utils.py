@@ -16,7 +16,7 @@ guild_settings = {}
 
 class Sites(StrEnum):
     Spotify = auto()
-    Spotify_Playlist = auto()
+    # Spotify_Playlist = auto()
     YouTube = auto()
     Twitter = auto()
     SoundCloud = auto()
@@ -24,13 +24,11 @@ class Sites(StrEnum):
     Custom = auto()
     Unknown = auto()
 
-
 class PlaylistTypes(StrEnum):
     Spotify_Playlist = auto()
     YouTube_Playlist = auto()
     BandCamp_Playlist = auto()
-    Unknown = auto()
-
+    Not_Playlist = auto()
 
 class Origins(StrEnum):
     Default = auto()
@@ -74,12 +72,12 @@ def identify_host(url):
         "https://youtu.be" in url):
         return Sites.YouTube
 
-    if "https://open.spotify.com/track" in url:
+    if "https://open.spotify" in url:
         return Sites.Spotify
 
-    if ("https://open.spotify.com/playlist" in url or 
-        "https://open.spotify.com/album" in url):
-        return Sites.Spotify_Playlist
+    # if ("https://open.spotify.com/playlist" in url or 
+    #     "https://open.spotify.com/album" in url):
+    #     return Sites.Spotify_Playlist
 
     if "bandcamp.com/track/" in url:
         return Sites.Bandcamp
@@ -112,12 +110,58 @@ def identify_playlist(url):
     if "bandcamp.com/album/" in url:
         return PlaylistTypes.BandCamp_Playlist
 
-    return PlaylistTypes.Unknown
+    return PlaylistTypes.Not_Playlist
 
 
 ################################
 ### Spotify Metadata Methods ###
 ################################
+
+def process_spotify_url(url: str) -> list:
+    """Returns a list of searches for a Spotify URL
+    """
+
+    searches = []
+    
+    if "track" in url:
+        track = sp.track(url)
+        artists = [f"{a['name']}" for a in track['artists']]
+        search = " ".join([*artists, track['name']])
+        searches.append(search)
+
+    if "playlist" in url:
+        offset = 0
+        results = []
+        while True:
+            response = sp.playlist_items(
+                playlist_id=url,
+                offset=offset,
+                fields='items.track.name, items.track.album.name, items.track.artists.name, total',
+                additional_types=['track']
+                )
+            
+            if len(response['items']) == 0:
+                break
+            
+            results.append(response['items'])
+            offset += len(response['items'])
+        
+        tracks = [i for sublist in results for i in sublist]
+        print(len(tracks))
+        for result in results:
+            searches = searches + result
+        print(len(searches))
+
+    if "album" in url:
+        response = sp.album_tracks(url)
+        album_tracks = response['items']
+        for track in album_tracks:
+            artists = [f"{a['name']}" for a in track['artists']]
+            search = " ".join([*artists, track['name']])
+            searches.append(search)
+
+    return searches
+
 
 async def convert_spotify(url):
     """Parses a spotify link for song info"""
@@ -154,8 +198,8 @@ async def convert_spotify(url):
 
 
 async def get_spotify_playlist(url):
-    """Parses a Spotify playlist link, returns Spotify_Playlist class"""
-
+    """Parses a Spotify playlist link, returns Spotify_Playlist class
+    """
     code = url.split('/')[4].split('?')[0]
 
     if api == True:
