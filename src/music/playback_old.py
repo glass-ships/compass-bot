@@ -100,7 +100,7 @@ class MusicPlayer(object):
         """Plays a song object"""
 
         if self.queue.loop != True: #let timer run thouh if looping
-            # self.timer.stop()
+            # self.timer.cancel()
             # self.timer = Timer(self.timeout_handler)
             await self.timer.restart()
 
@@ -331,7 +331,7 @@ class MusicPlayer(object):
     async def prev_song(ctx, self):
         """Loads the last song from the history into the queue and starts it"""
 
-        # self.timer.stop()
+        # self.timer.cancel()
         self.timer = Timer(self.timeout_handler)
 
         if len(self.queue.playhistory) == 0:

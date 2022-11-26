@@ -39,7 +39,6 @@ class Timer:
 
     async def _job(self):
         await asyncio.sleep(VC_TIMEOUT)
-        logger.info("RESTARTING TIMER")
         await self._callback()
 
     async def restart(self):
@@ -48,9 +47,6 @@ class Timer:
 
     def stop(self):
         self._task.cancel()
-                        
-    # def cancel(self):
-    #     self._task.cancel()
 
 
 class MusicPlayer(object):
@@ -153,7 +149,6 @@ class MusicPlayer(object):
         #loop = asyncio.get_event_loop()
         for song in list(self.queue.playque)[:MAX_SONG_PRELOAD]:
             await asyncio.ensure_future(self.preload(song))
-
     
     async def process_search(self, ctx, search):
         """Process user search and returns a list of search strings"""
@@ -345,7 +340,7 @@ class MusicPlayer(object):
     async def prev_song(ctx, self):
         """Loads the last song from the history into the queue and starts it"""
 
-        # self.timer.stop()
+        self.timer.stop()
         self.timer = Timer(self.timeout_handler)
 
         if len(self.queue.playhistory) == 0:
@@ -426,35 +421,27 @@ class MusicPlayer(object):
     
     async def timeout_handler(self):
 
-        if self.guild.voice_client is None:
-            return
-        
+        sett = music_utils.guild_settings[self.guild]
+
         if len(self.guild.voice_client.channel.voice_states) == 1:
             await self.udisconnect()
             return
 
-        sett = music_utils.guild_settings[self.guild]
-
-        if sett.get('vc_timeout') == False:
-            # await self.timer.restart()
-            self.timer = Timer(self.timeout_handler)  # reset timer
+        if (sett.get('vc_timeout') == 0 or 
+            self.guild.voice_client.is_playing()):
+            await self.timer.restart()
             return
 
-        if self.guild.voice_client.is_playing():
-            self.timer = Timer(self.timeout_handler)  # reset timer
-            # await self.timer.restart()
-            return
-
-        # self.timer = Timer(self.timeout_handler)
-        await self.timer.stop()
         await self.udisconnect()
+        await self.timer.stop()
+        return
 
     async def uconnect(self, ctx):
         """ ???????? """
         if not await self.check_user_vc(ctx):
             return False
 
-        if self.guild.voice_client == None:
+        if self.guild.voice_client is None:
             await ctx.author.voice.channel.connect(reconnect=True, timeout=None)
         else:
             await ctx.send("Already connected to a voice channel.")
@@ -462,5 +449,8 @@ class MusicPlayer(object):
     async def udisconnect(self):
         """ ???????? """
         await self.stop_player()
-        await self.guild.voice_client.disconnect(force=True)
+        if self.guild.voice_client is not None:
+            await self.guild.voice_client.disconnect(force=True)
+        return
+        
 

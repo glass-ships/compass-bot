@@ -7,8 +7,6 @@ import asyncio
 from music import music_utils
 from music.music_utils import Origins
 from music.playback import Timer
-# from music.playback_old import Timer
-# from music.playback_old import MusicPlayer
 from utils.bot_config import EMBED_COLORS
 from music.music_config import *
 
@@ -320,6 +318,7 @@ class Music(commands.Cog):
 
         player = await self.get_player(ctx)
         player.queue.loop = False
+
         player.timer.stop()
         player.timer = Timer(player.timeout_handler)
         # await player.timer.restart()
@@ -337,6 +336,7 @@ class Music(commands.Cog):
         player = await self.get_player(ctx)
         player.clear_queue()
         player.queue.loop = False
+
         player.timer.stop()
         player.timer = Timer(player.timeout_handler)
         # await player.timer.restart()

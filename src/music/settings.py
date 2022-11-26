@@ -23,7 +23,7 @@ class Settings():
             "user_must_be_in_vc": True,
             "button_emote": "",
             "default_volume": 100,
-            "vc_timeout": music_config.VC_TIMOUT_DEFAULT
+            "vc_timeout": music_config.VC_TIMEOUT
         }
 
         self.reload()
