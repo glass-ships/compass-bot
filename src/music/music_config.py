@@ -12,7 +12,7 @@ SUPPORTED_EXTENSIONS = ('.webm', '.mp4', '.mp3', '.avi', '.wav', '.m4v', '.ogg',
 COOKIE_PATH = f"{ROOT_DIR}/cookies.txt"
 MAX_SONG_PRELOAD = 5                # maximum of 25
 ALLOW_VC_TIMEOUT_EDIT = False       # allow or disallow editing the vc_timeout guild setting
-VC_TIMEOUT = 10                     # in seconds - 0 for no timeout?
+VC_TIMEOUT = 60                     # in seconds - 0 for no timeout?
 MAX_HISTORY_LENGTH = 10             # Number of songs to keep in history
 MAX_TRACKNAME_HISTORY_LENGTH = 15   # Not sure how this is different?
 
