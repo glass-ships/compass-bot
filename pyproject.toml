@@ -28,7 +28,8 @@ dependencies = [
 
     # Documentation
     "mkdocs",
-	"mkdocs-material"
+	"mkdocs-material",
+	"mkdocstrings[python]"
 ]
 
 [project.optional-dependencies]
