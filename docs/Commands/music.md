@@ -2,7 +2,7 @@
 
 | Command | Arguments | Description |
 | :--- | :--- | :--- |
-| `;play` | `Search query`: ex. song and artist<br>or<br>`Song/Playlist URL`: Supports Spotify, SoundCloud, BandCamp, YouTube | Play a song or playlist.<br>Aliases: `p` |
+| `;play` | `Search string`: ex. song and artist<br>or<br>`Song/Playlist URL`: Supports Spotify, SoundCloud, BandCamp, and URLs ending in a supported extension\* | Play a song or playlist.<br>Aliases: `p` |
 | `;songinfo` |  | Show info about the current song.<br>Aliases: `song, np, nowplaying`|
 | `;queue` |  | Show the current queue.<br>Aliases: `q, playlist` |
 | `;history` |  | Show the queue history.<br>Aliases: `h, hist` | 
@@ -17,3 +17,6 @@
 | `;resume` |  | Resume playback. |
 | `;stop` |  | Stop playback. |
 | `;clear` |  | Clear the queue and stop playback. |
+
+
+\* Supported Extensions: .webm, .mp4, .mp3, .avi, .wav, .m4v, .ogg, .mov

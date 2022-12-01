@@ -4,6 +4,8 @@ from pymongo import MongoClient
 mongo_url = os.getenv("MONGO_URL")
 
 class ServerDB():
+    """Class representing the bot's mongoDB collection"""
+
     def __init__(self, mongo_url, dev: bool = False):
         
         # Connect to MongoDB client
@@ -14,9 +16,11 @@ class ServerDB():
 
         self.collection = db['server-info']
 
-    #### Get methods
 
+        
     def get_all_guilds(self):
+        """Returns a list of all guild entries"""
+
         a = self.collection.find({})
         guild_ids = []
         for doc in a:
@@ -24,56 +28,68 @@ class ServerDB():
         return guild_ids
 
     def get_guild_name(self, guild_id):
+        """"Returns the name of a guild by id"""
+
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
         return doc['guild_name']
 
     def get_prefix(self, guild_id):
+        """Returns the prefix associated with a guild id"""
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
         return doc['prefix']
 
     def get_mod_roles(self, guild_id):
+        """Returns a list of mod roles associated with a guild id"""
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
         return doc['mod_roles']
     
     def get_mem_role(self, guild_id):
+        """Returns the member role associated with a guild id"""
         a = self.collection.find({"guild_id":guild_id})
         doc = a[0]
         return doc['mem_role']
 
     def get_channel_bot(self, guild_id):
+        """Returns the bot channel associated with a guild id"""
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
         return doc['chan_bot']
 
     def get_channel_logs(self, guild_id):
+        """Returns the log channel associated with a guild id"""
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
         return doc['chan_logs']
     
     def get_channel_music(self, guild_id):
+        """Returns the music channel associated with a guild id"""
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
         return doc['chan_music']
 
     def get_channel_vids(self, guild_id):
+        """Returns the videos channel associated with a guild id"""
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
         return doc['chan_vids']
 
     def get_channel_lfg(self, guild_id):
+        """Returns the LFG channel associated with a guild id"""
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
         return doc['chan_lfg']
     
     def get_channel_welcome(self, guild_id):
+        """Returns the welcome channel associated with a guild id"""
         a = self.collection.find({"guild_id":guild_id})        
         doc = a[0]
         return doc['chan_welcome']
 
     def get_lfg(self, guild_id, lfg_id):
+        """Finds LFG session with given id in given guild"""
         a = self.collection.find({"guild_id":guild_id})
         doc = a[0]
         lfg = doc['lfg']
@@ -84,6 +100,9 @@ class ServerDB():
         return result
 
     def get_videos_whitelist(self, guild_id):
+        """
+        Get videos whitelist associated with a guild id
+        """
         a = self.collection.find({"guild_id":guild_id})
         doc = a[0]
         return doc['videos_whitelist']

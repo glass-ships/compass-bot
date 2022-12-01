@@ -13,11 +13,3 @@
 
     Example:  
     ![Example LFM](../images/lfm_example.png){ width="500" }
-
-???+ tldr "Mod commands"
-    ```
-    ;cm or ;checkmembers [mem/mems/members | vet/vets/veterans | both]
-        members:  gets non-veteran members older than 2 months
-        veterans: gets veterans not currently in a clan
-        both:     gets veteran members of the clan 
-    ```

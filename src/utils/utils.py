@@ -31,13 +31,13 @@ async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> 
 
 
 def getfilepath(itx, fp) -> str:
-    """Normalize a downloaded filepath"""
+    """Returns filepath with guild-specific download prefix"""
 
     return f"downloads/{itx.guild.name}/{fp}"
 
 
 def check_time_format(t):
-    """Check that datetime input is in format YYYY-MM-DD HH:MM AM/PM TZ"""
+    """Check that datetime input is in format `YYYY-MM-DD HH:MM AM/PM TZ`"""
 
     pattern = r"\d{4}-\d{1,2}-\d{1,2}\s\d{1,2}:\d{2}\s[a-zA-Z]{2}\s[a-zA-Z]{3}"
     match = re.match(pattern, t)
@@ -45,7 +45,7 @@ def check_time_format(t):
 
 
 def dt_to_epoch(t):
-    """Convert datetime to epoch time (format: YYYY-MM-DD HH:MM AM/PM TZ)"""
+    """Convert datetime to epoch time (format: `YYYY-MM-DD HH:MM AM/PM TZ`)"""
 
     msg_split = t.split()
     temp = []

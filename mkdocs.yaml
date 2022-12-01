@@ -16,16 +16,58 @@ theme:
         - navigation.tabs
         - navigation.tabs.sticky
     palette:
-        scheme: 'slate'
-        primary: 'indigo'
-        accent: 'cyan'
+        # Palette toggle for light mode
+      - media: "(prefers-color-scheme: light)"
+        scheme: default
+        primary: indigo
+        accent: cyan
+        toggle:
+          icon: material/brightness-7
+          name: Switch to dark mode
+      # Palette toggle for dark mode
+      - media: "(prefers-color-scheme: dark)"
+        scheme: slate
+        primary: indigo
+        accent: yellow
+        toggle:
+          icon: material/brightness-4
+          name: Switch to light mode
     font:
-        text: 'Roboto'
-        #code: 'Fira Mono'
+        text: 'Rajdhani'
+        # text: 'Source Sans Pro'
+        code: 'Source Sans Pro Mono'
+
+
+# plugins:
+#   - search
+#   - mkdocstrings
 
 plugins:
-  - search
-  - mkdocstrings
+- search
+# - markdown-exec
+# - gen-files:
+#     scripts:
+#     - docs/gen_ref_nav.py
+# - literate-nav:
+#     nav_file: SUMMARY.md
+# - coverage
+# - section-index
+- mkdocstrings:
+    handlers:
+      python:
+        paths: [src]
+        import:
+        - https://docs.python.org/3/objects.inv
+        - https://mkdocstrings.github.io/objects.inv
+        - https://mkdocstrings.github.io/griffe/objects.inv
+        options:
+          # docstring_style: google
+          docstring_options:
+            ignore_init_summary: yes
+          merge_init_into_class: yes
+          separate_signature: yes
+          show_source: no
+          show_root_full_path: no
 
 
 markdown_extensions:
