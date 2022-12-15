@@ -197,7 +197,10 @@ class Listeners(commands.Cog):
 
         guild = member.guild
         channel_id = bot.db.get_channel_welcome(guild_id=guild.id)
-        channel = get(guild.text_channels, id=channel_id)
+        if channel_id == 0:
+            return
+        channel = get(guild.text_channels, id=channel_id) 
+        
 
         av = httpx.get(member.display_avatar.url)
         ocean = Image.open(f'{cog_path.parent.parent.parent}/docs/images/welcome_background.png')
