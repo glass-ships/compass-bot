@@ -1,0 +1,340 @@
+from random import choice
+
+import asyncio
+from loguru import logger
+
+import discord
+from discord import app_commands
+from discord.ext import commands
+
+from compass_bot.music import music_utils
+from compass_bot.music.player import Timer
+from compass_bot.music.music_config import ErrorMessages, MAX_SONG_PRELOAD
+from compass_bot.utils.bot_config import EMBED_COLOR, Emojis
+
+
+### Helpers and Checks ###
+
+async def get_player(itx):
+    """Get MusicPlayer for guild"""
+    # TODO: maybe create player if one doesn't exist? 
+
+    player = music_utils.guild_player[itx.guild]
+    if player is None:
+        await itx.followup.send("ERROR: No Player found for this guild.")
+        raise AttributeError
+    
+    # Reset timer
+    player.timer.stop()
+    player.timer = Timer(player.timeout_handler)
+    
+    return player
+
+async def _play_check(itx: discord.Interaction):#, player):
+    """Check necessary conditions for music commands"""
+
+    ##### Possibly unnecessary, due to native app management in Discord ##################################
+    # Check that command was sent in music channel, if applicable
+    # music_channel = bot.db.get_channel_music(itx.guild.id)
+    # if (music_channel != 0 and music_channel != itx.channel_id):
+    #     await itx.followup.send(f"ERROR: Please use in the designated music channel: <#{music_channel}>")
+    #     return False
+    ######################################################################################################
+
+    # Check that command was sent in a guild
+    if itx.guild is None:
+        await itx.send(ErrorMessages.NO_GUILD)
+        return
+    
+    player = await get_player(itx)
+
+    # Check user is in a VC
+    user_vc = await player.get_user_vc(itx)
+    if user_vc is None:
+        await itx.followup.send(
+            embed=discord.Embed(
+                description=ErrorMessages.NO_USER_VC, 
+                color=EMBED_COLOR()
+            ))
+        return False
+
+    # Connect bot to VC
+    bot_vc = await player.get_bot_vc(bot, itx)
+    if bot_vc is None:
+        await player.connect(itx, user_vc)
+    elif bot_vc == user_vc:
+        logger.debug(f"Already connected: {bot_vc.name}")
+    else:
+        await itx.followup.send(
+            embed=discord.Embed(
+                description=ErrorMessages.WRONG_USER_VC(bot_vc),
+                color=EMBED_COLOR()
+        ))
+        return False
+    
+    return True
+play_check = app_commands.check(_play_check)
+
+### Setup Cog ###
+
+async def setup(bot):
+    await bot.add_cog(Music(bot))
+   
+
+class Music(commands.Cog):
+    
+    def __init__(self, bot_):
+        global bot
+        bot = bot_
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        logger.info(f"Cog Online: {self.qualified_name}")
+
+    ##################
+    # Slash Commands #
+    ##################
+
+    # @play_check 
+    @app_commands.command(name='play', description="Play a song or playlist (keyword search or supported link).")
+    async def _add_to_queue(self, itx, *, input: str):
+        await itx.response.defer()
+        player = await get_player(itx)
+        if not await _play_check(itx): 
+            return
+        await player.process_request(itx, input)
+        return
+
+    @play_check
+    @app_commands.command(name='pause', description="Pause playback (continue with `/resume`).")
+    async def _pause(self, itx):
+        
+        if itx.guild.voice_client is None or not itx.guild.voice_client.is_playing():
+            return
+        itx.guild.voice_client.pause()
+        await itx.send(f"{Emojis.pause} Playback Paused")
+
+    @play_check
+    @app_commands.command(name='resume', description="Resume playback.")
+    async def _resume(self, itx):
+
+        itx.guild.voice_client.resume()
+        await itx.send(f"{Emojis.musicNote} Resumed playback")
+
+#################################################################################################################################
+
+    @play_check
+    @commands.command(name='songinfo', description="Show info about current song.")
+    async def _songinfo(self, itx):
+       
+        song = music_utils.guild_player[itx.guild].current_song
+        if song is None:
+            await itx.send(f"{Emojis.jar} No song is currently playing!")
+            return
+        await itx.send(embed=song.now_playing_embed())
+
+    @play_check
+    @commands.command(name='queue', description="Show the current queue.")
+    async def _queue(self, itx):
+
+        player = music_utils.guild_player[itx.guild]
+
+        # Alert if loop enabled
+        if player.queue.loop == True:
+            await itx.message.reply("Loop is enabled! Use {}loop to disable".format(bot.db.get_prefix(itx.guild.id)), mention_author=False)
+            return
+
+        queue = music_utils.guild_player[itx.guild].queue.playque
+        if (
+                itx.guild.voice_client is None or 
+                not itx.guild.voice_client.is_playing() or
+                len(queue) == 0
+            ):
+            await itx.send(f"{Emojis.jar} Queue is empty!")
+            return
+
+        queue_list = []
+        for counter, song in enumerate(list(queue), start=1):
+            if song.title is None:
+                queue_entry = f"{counter}. [{song.webpage_url}]({song.webpage_url})"
+            else:
+                queue_entry = f"{counter}. [{song.title}]({song.webpage_url})"
+            
+            queue_str = "\n".join(queue_list)
+            if len(queue_str) + len(queue_entry) < 4096 and len(queue_list) < 20:
+                queue_list.append(queue_entry)
+            else:
+                break
+
+        embed = discord.Embed(title=f"{Emojis.playlist} Queue", color=EMBED_COLOR())
+        embed.description="\n".join(queue_list)
+        embed.set_footer(
+            text=f"Plus {len(queue)-counter} more queued..."
+        )
+
+        await itx.send(embed=embed)
+
+    @commands.command(name='history', description="Show the last 10 songs played.")
+    async def _history(self, itx):
+        await itx.send(music_utils.guild_player[itx.guild].track_history())
+
+    @commands.command(name='skip', description="Skip the current song")
+    async def _skip(self, itx):
+
+        player = music_utils.guild_player[itx.guild]
+        player.queue.loop = False
+
+        # await player.timer.restart()
+        player.timer.stop()
+        player.timer = Timer(player.timeout_handler)
+
+        if itx.guild.voice_client is None or (
+                not itx.guild.voice_client.is_paused() and not itx.guild.voice_client.is_playing()):
+            await itx.send(f"{Emojis.jar} Queue is empty!")
+            return
+
+        itx.guild.voice_client.stop()
+
+    @commands.command(name='prev', description="Play the previous song again.")
+    async def _prev(self, itx):
+
+        player = music_utils.guild_player[itx.guild]
+        player.queue.loop = False
+
+        player.timer.stop()
+        player.timer = Timer(player.timeout_handler)
+        # await player.timer.restart()
+
+        
+        await music_utils.guild_player[itx.guild].prev_song()
+        await itx.send(f"{Emojis.previous} Playing previous song")
+
+    @commands.command(name='skipto', description="Skips to the specified position in the queue")
+    async def _skip_to(self, itx, position: int):
+        pass
+
+    @commands.command(name='move', description="Move a track in the queue.")
+    async def _move(self, itx, oldposition: int, newposition: int):
+        
+        player = music_utils.guild_player[itx.guild]
+        
+        # could this just be "if len(playque) == 0" ???
+        if itx.guild.voice_client is None or (not itx.guild.voice_client.is_paused() and not itx.guild.voice_client.is_playing()):
+            await itx.send(f"{Emojis.jar} Queue is empty!")
+            return
+            
+        song = player.queue.playque[oldposition-1]
+        if song.title is None:
+            songname = f"[{song.webpage_url}]({song.webpage_url})"
+        else:
+            songname = f"[{song.title}]({song.webpage_url})"
+
+        try:
+            player.queue.move(oldposition - 1, newposition - 1)
+        except IndexError:
+            await itx.send("Invalid selection")
+            return
+        await itx.send(embed=discord.Embed(description=f"Moved track to position {newposition}: {songname}"))
+
+    @commands.command(name='remove', description="Remove the song at the given index.")
+    async def _remove(self, itx, position: int):
+        
+        player = music_utils.guild_player[itx.guild]
+        
+        queue = player.queue.playque
+        song = queue[position-1]
+        if song.title is None:
+            songname = f"{position}. [{song.webpage_url}]({song.webpage_url})"
+        else:
+            songname = f"{position}. [{song.title}]({song.webpage_url})"
+        
+        try:
+            del queue[position-1]
+            msg = f"Removed track from queue: {songname}"
+        except Exception as e:
+            msg = f"Error: Couldn't remove track from queue: {songname}\n```\n\n{e}\n```"
+        await itx.send(embed=discord.Embed(description=msg))
+
+    @commands.command(name='shuffle', description="Shuffle the queue (irreversible!)")
+    async def _shuffle(self, itx):
+        
+        player = music_utils.guild_player[itx.guild]
+
+        
+        if itx.guild.voice_client is None or not itx.guild.voice_client.is_playing():
+            await itx.send(f"{Emojis.jar} Queue is empty!")
+            return
+
+        player.queue.shuffle()
+        await itx.send(f"{Emojis.shuffle} Queue shuffled ")
+
+        for song in list(player.queue.playque)[:MAX_SONG_PRELOAD]:
+            asyncio.ensure_future(player.preload(song))
+
+    @commands.command(name='loop', description="Loop the currently playing song and locks the queue. Toggle on/off.")
+    async def _loop(self, itx):
+        return            
+        
+        player = music_utils.guild_player[itx.guild]
+
+        if len(player.queue.playque) < 1 and itx.guild.voice_client.is_playing() == False:
+            await itx.send("No songs in queue!")
+            return
+
+        if player.queue.loop == False:
+            player.queue.loop = True
+            await itx.send(f"{Emojis.loop} Loop enabled")
+        else:
+            player.queue.loop = False
+            await itx.send(":arrow_right: Loop disabled")
+
+    # @commands.command(name='pause', description="Pause playback (continue with `/resume`).")
+    # async def _pause(self, itx):
+        
+    #     if itx.guild.voice_client is None or not itx.guild.voice_client.is_playing():
+    #         return
+    #     itx.guild.voice_client.pause()
+    #     await itx.send("Playback Paused :pause_button:")
+
+    # @commands.command(name='resume', description="Resume playback.")
+    # async def _resume(self, itx):
+
+    #     itx.guild.voice_client.resume()
+    #     await itx.send(":arrow_forward: Resumed playback")
+
+    @commands.command(name='stop', description= "Clear the queue and stop playback.")
+    async def _stop(self, itx):
+
+        player = await self.get_player(itx)
+        player.queue.loop = False
+
+        player.timer.stop()
+        player.timer = Timer(player.timeout_handler)
+        # await player.timer.restart()
+        await player.stop_player()
+
+        await itx.send(":x: Stopped.")
+        return
+
+    @commands.command(name='clear', description="Clear the queue and skips the current song.")
+    async def _clear(self, itx):
+
+        player = await self.get_player(itx)
+        player.clear_queue()
+        player.queue.loop = False
+
+        player.timer.stop()
+        player.timer = Timer(player.timeout_handler)
+        # await player.timer.restart()
+        await itx.send(":jar: Cleared queue.")
+        return
+
+    @commands.command(name="join", description="Move Compass to the user's VC")
+    async def _join_vc(self, itx):
+        pass
+
+    @app_commands.command(name='leave', description="Disconnect bot from VC.")
+    async def _disconnect(self, itx):
+        player = await get_player(itx)  
+        await player.disconnect()
+        return
