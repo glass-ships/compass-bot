@@ -1,6 +1,6 @@
 # Compass
 [![GitLab](https://gitlab.com/glass-ships/compass-bot/badges/main/pipeline.svg)](https://gitlab.com/glass-ships/compass-bot/-/pipelines)
-[![License](https://img.shields.io/github/license/glass-ships/compass-bot)](https://gitlab.com/glass-ships/compass-bot/-/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/glass-ships/compass-bot)](https://gitlab.com/glass-ships/compass-bot/-/raw/main/LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/downloads/release/python-3110/)
 [![Poetry](https://img.shields.io/badge/poetry-1.1.11-blue)](https://python-poetry.org/docs/)
 [![Discord.py](https://img.shields.io/badge/discord.py-2.0.0a-blue)](https://discordpy.readthedocs.io/en/latest/)  
