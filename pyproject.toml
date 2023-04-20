@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "compass-bot"
-version = "0.9.0"
+version = "0.9.1"
 description = "A Discord bot in Python"
 authors = [
     "Glass Ships <contact@glass-ships.com>",
@@ -12,6 +12,7 @@ repository = "https://gitlab.com/glass-ships/compass-bot"
 packages = [
     { include = "compass_bot", from= "src" }
 ]
+
 
 [tool.poetry.dependencies]
 ## Core 
@@ -39,7 +40,11 @@ pynacl = "*"
 rich = "*"
 
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.3.0"
 mkdocs = "*"
 mkdocs-material = "*"
 mkdocstrings = { version = "*", extras = ["python"] }
@@ -47,7 +52,6 @@ mkdocstrings = { version = "*", extras = ["python"] }
 
 [tool.poetry.scripts]
 compass = "compass_bot.main:app"
-
 
 [build-system]
 requires = ["poetry-core>=1.5.2"]
