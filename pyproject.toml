@@ -1,52 +1,55 @@
-[project]
+[tool.poetry]
 name = "compass-bot"
-version = "1.0.0"
+version = "0.9.0"
 description = "A Discord bot in Python"
 authors = [
-    {name = "Glass Ships", email = "contact@glass-ships.com"},
-    {name = "fatcatnine", email = "fatcatnine@gmail.com"}
+    "Glass Ships <contact@glass-ships.com>",
+    "fatcatnine <fatcatnine@gmail.com>",
 ]
-readme = "README.md"
-requires-python = ">=3.11"
-
-dependencies = [
-	"discord.py@git+https://github.com/Rapptz/discord.py.git",
-	"httpx",
-	"xata",
-	"pymongo",
-	"pymongo[srv]",
-
-	"python-dateutil",
-	"pytz",
-	"GitPython",
-	"pillow",
-
-	"yt-dlp",
-	"spotipy@git+https://github.com/plamere/spotipy.git@master",
-	"pynacl",
-	"beautifulsoup4",
-
-    # Documentation
-    "mkdocs",
-	"mkdocs-material",
-	"mkdocstrings[python]"
-]
-
-[project.optional-dependencies]
-docs = [
-]
-
-[project.urls]
 homepage = "https://gitlab.com/glass-ships/compass-bot"
 documentation = "https://glass-ships.gitlab.io/compass-bot/"
 repository = "https://gitlab.com/glass-ships/compass-bot"
+packages = [
+    { include = "compass_bot", from= "src" }
+]
 
-[project.scripts]
-# poetry = "infer_pyproject.cli:main"
+[tool.poetry.dependencies]
+## Core 
+python = ">=3.11, <4.0"
+discord-py = { git = "https://github.com/Rapptz/discord.py.git" }
+typer = "*"
+loguru = "*"
+
+## Database
+pymongo = { version="*", extras = ["srv"] }
+# xata = "*"
+
+## For Commands
+httpx = "*"
+python-dateutil = "*"
+pytz = "*"
+GitPython = "*"
+pillow = "*"
+
+## For Music 
+yt-dlp = "*"
+spotipy = { git = "https://github.com/plamere/spotipy.git" }
+beautifulsoup4 = "*"
+pynacl = "*"
+rich = "*"
+
+
+[tool.poetry.dev-dependencies]
+mkdocs = "*"
+mkdocs-material = "*"
+mkdocstrings = { version = "*", extras = ["python"] }
+
+
+[tool.poetry.scripts]
+compass = "compass_bot.main:app"
+
 
 [build-system]
-requires = [
-    "setuptools >= 35.0.2",
-    "setuptools_scm >= 2.0.0, <3"
-]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.5.2"]
+build-backend = "poetry.core.masonry.api"
+

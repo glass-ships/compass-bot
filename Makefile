@@ -1,5 +1,3 @@
-# Note that you should be in your virtual environment of choice before running make
-
 MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-builtin-variables
@@ -11,14 +9,25 @@ endif
 
 .DEFAULT_GOAL := all
 SHELL := bash
+RUN = poetry run
 
 .PHONY: all
-all: install test clean
+# all: update install test clean
+all: update install clean
+
+.PHONY: install-linux-deps
+install-linux-deps:
+	sudo apt install -y libffi-dev libnacl-dev libopus0 build-essential libssl-dev libffi-dev libxml2-dev libxslt1-dev zlib1g-dev
+
 
 .PHONY: install
 install: 
-	# poetry install
-	pip install .
+	poetry install
+
+.PHONY: update
+update:
+	git pull
+	poetry update
 
 # .PHONY: build
 # build:
@@ -32,10 +41,8 @@ install:
 clean:
 	rm -rf `find . -name __pycache__`
 	rm -f `find . -type f -name '*.py[co]' `
-	rm -rf .pytest_cache \
-		*dist \
-		*build \
-		*egg-info
+	rm -rf `find . -type d -name '*.egg-info' `
+	rm -rf .pytest_cache *dist *build 
 
 # .PHONY: lint
 # lint:
