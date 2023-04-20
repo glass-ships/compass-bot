@@ -6,13 +6,13 @@ stages:
 
 before_script:
   - pip install poetry
-  - poetry install
+  - poetry install --with dev
   - source `poetry env info --path`/bin/activate
 
 test-deps:
   stage: test-deps
   script:
-    - poetry update
+    - poetry update --with dev
 
 pages:
   stage: pages
