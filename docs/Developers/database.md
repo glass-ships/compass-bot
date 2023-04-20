@@ -2,4 +2,4 @@
 
 Getters and setters for Compass's database (mongoDB)
 
-::: src.utils.database
+::: src.compass_bot.utils.database

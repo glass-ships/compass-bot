@@ -2,4 +2,4 @@
 
 General helper functions used by bot commands
 
-::: src.utils.utils
+::: src.compass_bot.utils.utils

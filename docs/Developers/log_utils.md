@@ -2,4 +2,4 @@
 
 Helper functions for setting up logging and retrieving loggers
 
-::: src.utils.log_utils
+::: src.compass_bot.utils.log_utils
