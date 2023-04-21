@@ -6,11 +6,11 @@ import spotipy
 from yt_dlp import YoutubeDL
 from loguru import logger
 
-from compass_bot.utils.bot_config import EMBED_COLOR, Emojis
-from compass_bot.utils.utils import send_embed
+from compass_bot.utils.bot_config import EMBED_COLOR, Emojis, CustomException#, FetchException, QueueException
+from compass_bot.utils.utils import send_embed, extract_url, ddict
 from compass_bot.music import music_utils
-from compass_bot.music.dataclasses import Playlist, PlaylistTypes, Sites, Song
-from compass_bot.music.music_config import ErrorMessages, COOKIE_PATH, VC_TIMEOUT, SPOTIFY_ID, SPOTIFY_SECRET, YTDL_OPTIONS
+from compass_bot.music.dataclasses import Playlist, PlaylistTypes, Search, Sites, Song
+from compass_bot.music.music_config import ErrorMessages, InfoMessages, COOKIE_PATH, VC_TIMEOUT, SPOTIFY_ID, SPOTIFY_SECRET, YTDL_OPTIONS, MAX_SONG_PRELOAD
 from compass_bot.music.queue import Queue
 # from compass_bot.utils.utils import console
 
@@ -90,133 +90,255 @@ class MusicPlayer(object):
     async def process_request(self, itx: discord.Interaction, query: str):
         """Process user search and returns a list of search strings"""
         
-        url = music_utils.extract_url(query)
-        playlist_type = music_utils.identify_playlist(url)
-        host = music_utils.identify_host(url)
-        
-        logger.debug(f"Processing search: {url or query}")
+        user_search = ddict({
+            "original": query,
+            "url": extract_url(query),
+            "playlist_type": music_utils.identify_playlist(query),
+            "host": music_utils.identify_host(query),
+        }) 
+        logger.debug(f"Processing user search: {user_search}")
+
+        # Possibly process Youtube separately
+        # if host == Sites.YouTube:
+        #     await self._process_youtube_search(itx, query, url, playlist_type)
+
         try:
-            if url is None: 
-                await self._add_to_queue([query], itx.user)
+            # Process single keyword search
+            if user_search.url is None: 
+                await self._add_to_queue(Search(query=user_search.original), itx.user)
                 await itx.followup.send(embed=discord.Embed(
-                    title=Emojis.cd,
-                    description=f"Queued: `{query}`.", 
+                    description=f"{Emojis.cd} Queued: `{query}`.", 
                     color=EMBED_COLOR()
                 ))
 
-            # If single track, get Song info and add to queue
-            elif playlist_type == PlaylistTypes.Not_Playlist:
-                search_str = await self._get_song_info(url, host)
-                await self._add_to_queue([search_str], itx.user)
+            # Process single URL
+            elif user_search.playlist_type == PlaylistTypes.Not_Playlist:
+                search = self._get_song_info(user_search.url, user_search.host)
+                await self._add_to_queue(search, itx.user)
                 await itx.followup.send(embed=discord.Embed(
-                    description=f"{Emojis.cd} Queued: `{search_str}.`",
+                    description=f"{Emojis.cd} Queued: `[{search.search}]({search.url}).`",
                     color=EMBED_COLOR()
                 ))
                 
-            # If Playlist, get Playlist info and add to queue
-            else:
-                playlist_info = await self._get_playlist_info(url, playlist_type)
-                if playlist_info is not None:
-                    await self._add_to_queue(playlist_info['tracks'], itx.user)
-                    await itx.followup.send(embed=discord.Embed(
-                        description=f"Queued {playlist_info['num_tracks']} from playlist **{playlist_info['title']}**"),
-                        color=EMBED_COLOR()
-                    )
+            # Process Playlist
+            else: 
+                playlist_info = self._get_playlist_info(user_search.url, user_search.playlist_type)
+                if playlist_info is None:
+                    raise CustomException("Could not find playlist.")
+                
+                await itx.followup.send(embed=discord.Embed(
+                    description=f"{Emojis.cd} Queued {playlist_info.total} items from playlist **{playlist_info.name}**",
+                    color=EMBED_COLOR()
+                ))
+                
+                # Queue and play first song immediately
+                await asyncio.wait([asyncio.create_task(self._add_to_queue(playlist_info.items[0], itx.user))], return_when=asyncio.ALL_COMPLETED)
+                if self.current_song is None:
+                    self._next_song(itx.channel)
+                    await asyncio.sleep(1)
+
+                # Queue the rest of the songs
+                for song in playlist_info.items[1:]:
+                    try:
+                        await self._add_to_queue(song, itx.user)
+                    except CustomException as e:
+                        logger.warning(e)
+                        await send_embed(channel=itx.channel, title=ErrorMessages.SEARCH_ERROR, description=f"```{e}```")
+                        continue
+        except CustomException as e:
+            logger.warning(e)
+            await send_embed(itx.channel, title=ErrorMessages.SEARCH_ERROR, description=f"```{e}```")
         except Exception as e:
             logger.warning(f"Could not process search: {e}")
             await itx.followup.send(embed=discord.Embed(
                 title=ErrorMessages.SEARCH_ERROR, 
-                description=f"Could not process search: {e}",
+                description=f"```{e}```",
                 color=EMBED_COLOR()) 
             )
             return False
 
-        if self.current_song == None:
-            self._next_song(itx.channel)
+        # if self.current_song == None: 
+        #     self._next_song(itx.channel)
         
         return
 
-    async def _get_song_info(self, url, host):
-        """Returns search string for single track"""
+    def _get_song_info(self, url, host) -> Search:
+        """Returns search for single track"""
 
         match host:
             case Sites.Spotify:
+                logger.info(f"Processing Spotify track: {url}")
+                search = music_utils.parse_spotify_track(self.sp, url)
+            case Sites.YouTube:
+                logger.info(f"Processing Youtube track: {url}")
+                pass
+            case Sites.Bandcamp:
+                pass
+            case _: # Twitter, Soundcloud, etc.
+                logger.info(f"Processing generic track: {url}")
+                pass
+        return search
+    
+    def _get_playlist_info(self, url, playlist_type) -> Playlist:
+        """Returns object containing playlist info"""
+
+        match playlist_type:
+            case PlaylistTypes.Spotify_Playlist:
+                logger.info(f"Processing Spotify playlist: {url}")
+                playlist_info = music_utils.parse_spotify_playlist(self.sp, url)
+                playlist_info = Playlist(
+                    name = playlist_info.name,
+                    total = playlist_info.total,
+                    items = playlist_info.items
+                )
+            case PlaylistTypes.YouTube_Playlist | PlaylistTypes.BandCamp_Playlist:
+                logger.info(f"Processing Youtube playlist: {url}")
+                # playlist_title, items = music_utils.parse_youtube_playlist(url)
+                # with YoutubeDL({"ignoreerrors": True, "quiet": True}) as ydl:
+                with YoutubeDL({"quiet": True}) as ydl:
+                    r = ydl.extract_info(url, download=False)
+
+                playlist_info = Playlist(
+                    name = r['title'],
+                    total = r['playlist_count'],
+                    items = [ddict({
+                        "search": item['title'],
+                        "url": item['original_url'],
+                        })
+                        for item in r['entries']]
+                )
+                print(playlist_info.items)
+            case _: # Twitter, Soundcloud, etc.
+                logger.warning(f"Could not process playlist: {url}")
+                playlist_info = None
+                
+        return playlist_info
+
+    async def _get_song_info_async(self, url, host):
+        """Returns search string for single track"""
+        return
+        match host:
+            case Sites.Spotify: # is async spotify worth it?
                 search_str = music_utils.parse_spotify_track(self.sp, url)
             case Sites.YouTube:
-                pass
+                pass # try manual async version
             case Sites.Bandcamp:
                 pass
             case _: # Twitter, Soundcloud, etc.
                 pass
         return search_str
-            
-    async def _get_playlist_info(self, url, playlist_type) -> Playlist:
-        """Returns object containing playlist info"""
 
+    async def _get_playlist_info_async(self, url, playlist_type) -> Playlist:
+        """Returns object containing playlist info"""
+        return
         match playlist_type:
             case PlaylistTypes.Spotify_Playlist:
-                playlist_title, items = music_utils.parse_spotify_playlist(self.sp, url)
+                logger.info(f"Processing Spotify playlist: {url}")
+                playlist_info = music_utils.parse_spotify_playlist(self.sp, url)
                 playlist_info = Playlist(
-                    name = playlist_title,
-                    total = len(items),
-                    items = items
+                    name = playlist_info.title,
+                    total = playlist_info.total,
+                    items = playlist_info.tracks
                 )
             case PlaylistTypes.YouTube_Playlist | PlaylistTypes.BandCamp_Playlist:
-                with YoutubeDL(YTDL_OPTIONS) as ydl:
-                    r = ydl.extract_info(f"ytsearch{url}", download=False)['entries'][0]
+                logger.info(f"Processing Youtube playlist: {url}")
+                # playlist_title, items = music_utils.parse_youtube_playlist(url)
+                # with YoutubeDL({"ignoreerrors": True, "quiet": True}) as ydl:
+                with YoutubeDL({"quiet": True}) as ydl:
+                    r = ydl.extract_info(url, download=False)
+                print(r.keys())
                 playlist_info = Playlist(
                     name = r['title'],
                     total = r['playlist_count'],
-                    items = r['entries']
+                    # items = r['entries'],)
+                    items = [ddict({
+                        "search": item['title'],
+                        "url": item['original_url'],
+                        })
+                        for item in r['entries']]
                 )
+                print(playlist_info.items)
             case _: # Twitter, Soundcloud, etc.
+                logger.warning(f"Could not process playlist: {url}")
                 playlist_info = None
                 
         return playlist_info
 
-    async def _add_to_queue(
-            self,  
-            searches: list,
-            requested_by,
+    async def _add_to_queue(self,  search: Search, requested_by, channel=None):
+        """Add list of searches to player queue"""
+                
+        # Get youtube URL 
+        # if search.url and "youtu" in search.url:
+        #     yt_url = search.url
+        # else:
+        #     try: 
+        #         search = music_utils.search_youtube(search.query)
+        #         yt_url = search.url
+        if not search.url or "youtu" not in search.url:
+            try:
+                search = music_utils.search_youtube(search.query)                
+            except Exception as e:
+                raise CustomException(f"Could not find youtube url for {search.query}: {e}.")
+        
+        # Get song info from youtube URL
+        data = music_utils.get_yt_metadata(search.url)
+        if data is None:
+            raise CustomException(f"Could not get metadata for {search.url}.")
+        
+        song = Song(
+            base_url = search.url,
+            requested_by = requested_by,
+            channel_name = data['channel_name'],
+            title = data['title'],
+            duration = data['duration'],
+            webpage_url = data['url'],
+            thumbnail=data['thumbnails']
+            # thumbnail = data['thumbnails'][-1]['url'] if data['thumbnails'] is not None else None
+        )
+        self.queue.add(song)
+        # if self.current_song is None: await self._next_song(channel)
+        return
+
+    async def _add_list_to_queue(
+        self,  
+        items: list,
+        requested_by,
         ):
         """Add list of searches to player queue"""
-        
-        for search in searches:
-            # Convert search string to YouTube URL
-            try: 
-                yt_url = music_utils.search_youtube(search)
-            except Exception as e:
-                logger.warning(f"Could not find youtube url for {search}: {e}")
-                raise Exception(f"Could not find youtube url for {search}: {e}")
-
-
-            try:
-                # downloader = YoutubeDL({'format': 'bestaudio', 'title': True, "cookiefile": COOKIE_PATH})
-                downloader = YoutubeDL(YTDL_OPTIONS)
-                try:
-                    r = downloader.extract_info(yt_url, download=False)
+        return
+        async for item in items:
+            
+            # Get youtube URL 
+            if "youtu" in item.url:
+                yt_url = item.url
+            else:
+                try: 
+                    yt_url = music_utils.search_youtube(item.search)
                 except Exception as e:
-                    if "ERROR: Sign in to confirm your age" in str(e):
-                        return None
-            except:
-                downloader = YoutubeDL({'title': True, "cookiefile": COOKIE_PATH})
-                r = downloader.extract_info(search, download=False)
-
-            thumbnail = r.get('thumbnails')[len(r.get('thumbnails')) - 1]['url'] if r.get('thumbnails') is not None else None
-
+                    logger.warning(f"Could not find youtube url for {item.search}: {e}")
+                    # yield CustomException(f"Could not find youtube url for {item.search}.")
+                    continue
+            
+            # Get song info from youtube URL
+            info = music_utils.get_yt_metadata(yt_url)
+            if info is None:
+                # raise Exception(f"Could not get metadata for {yt_url}.")
+                yield CustomException(f"Could not get metadata for {yt_url}.")
+                continue
+            
             song = Song(
-                # host = host,
-                base_url = r.get('url'),
+                base_url = yt_url,
                 requested_by = requested_by,
-                uploader = r.get('uploader'),
-                title = r.get('title'),
-                duration = r.get('duration'),
-                webpage_url = r.get('webpage_url'),
-                thumbnail = thumbnail
+                # base_url = info['url'],
+                uploader = info['uploader'],
+                title = info['title'],
+                duration = info['duration'],
+                webpage_url = info['webpage_url'],
+                thumbnail = info['thumbnails'][-1]['url'] if info['thumbnails'] is not None else None
             )
             self.queue.add(song)
 
-        return song
+        return
 
     def _next_song(self, channel):
         """Invoked after a song is finished. Plays the next song if there is one."""
@@ -226,18 +348,20 @@ class MusicPlayer(object):
         if next_song is None:
             coro = send_embed(
                 channel=channel,
-                description=f"{Emojis.jar} Queue is empty.",
+                description=InfoMessages.QUEUE_EMPTY,
                 )
             self.bot.loop.create_task(coro)
-            return None
         
         try:
             coro = self._play_song(channel, next_song)
             self.bot.loop.create_task(coro)
+            # fut = asyncio.run_coroutine_threadsafe(coro, self.bot.loop)
+            # fut.result()
         except Exception as e:
             logger.error(f"Error: Couldn't play the next song:\n{e}")
-        
 
+        return
+        
     async def _play_song(self, channel, song: Song):
         """Plays a song object"""
 
@@ -249,9 +373,9 @@ class MusicPlayer(object):
 
         try:
             with YoutubeDL(YTDL_OPTIONS) as ydl:
-                r = ydl.extract_info(song.webpage_url, download=False)
+                r = ydl.extract_info(song.base_url, download=False)
         except:
-            asyncio.wait(2)
+            await asyncio.sleep(2)
             downloader = YoutubeDL({'title': True, "cookiefile": COOKIE_PATH})
             r = downloader.extract_info(song, download=False)
         
@@ -264,16 +388,18 @@ class MusicPlayer(object):
         self.current_song = song
 
         logger.info(f"Playing song: {song.title} ({song.duration} seconds) requested by {song.requested_by}")
+        ffmpeg_options = {'options': '-vn'}
         self.guild.voice_client.play(
             discord.FFmpegPCMAudio(
                 source = song.base_url,
-                before_options = '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
+                before_options = '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+                **ffmpeg_options
             ), 
             after = lambda x: self._next_song(channel)
         )
         await channel.send(embed=song.now_playing_embed())
 
-        # loop = asyncio.get_event_loop()
+        # Download next X songs in background
         # for song in list(self.queue.playque)[:MAX_SONG_PRELOAD]:
         #     await asyncio.ensure_future(self.preload(song))
         return
@@ -322,3 +448,41 @@ class MusicPlayer(object):
         if self.guild.voice_client is not None:
             await self.guild.voice_client.disconnect(force=True)
         return
+
+
+    ####################
+    ### Misc Helpers ###
+    ####################
+
+    # async def preload(self, song):
+    #     import concurrent
+    #     import yt_dlp
+
+    #     if song.title != None:
+    #         return
+
+    #     def down(song):
+
+    #         if song.host == Sites.Spotify:
+    #             song.webpage_url = self.search_youtube(song.title)
+
+    #         if song.webpage_url == None:
+    #             return None
+
+    #         downloader = yt_dlp.YoutubeDL(
+    #             {'format': 'bestaudio', 'title': True, "cookiefile": COOKIE_PATH})
+    #         r = downloader.extract_info(
+    #             song.webpage_url, download=False)
+    #         song.base_url = r.get('url')
+    #         song.uploader = r.get('uploader')
+    #         song.title = r.get('title')
+    #         song.duration = r.get('duration')
+    #         song.webpage_url = r.get('webpage_url')
+    #         song.thumbnail = r.get('thumbnails')[0]['url']
+
+    #     if song.host == Sites.Spotify:
+    #         song.title = await music_utils.convert_spotify(song.webpage_url)
+
+    #     loop = asyncio.get_event_loop()
+    #     executor = concurrent.futures.ThreadPoolExecutor(max_workers=MAX_SONG_PRELOAD)
+    #     await asyncio.wait(fs={loop.run_in_executor(executor, down, song)}, return_when=asyncio.ALL_COMPLETED)

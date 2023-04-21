@@ -7,22 +7,19 @@ from dateutil import tz
 
 import discord
 import shlex
+from rich.console import Console
 
 from compass_bot.utils.bot_config import EMBED_COLOR
 
-URL_REGEX = re.compile("http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
-
-class URL(str):
-    def __eq__(self, other) -> bool:
-        return self.__contains__(other)
-
-
-from rich.console import Console
 console = Console(
     color_system="truecolor",
     stderr=True,
     style="blue1",
 )
+
+#### Variables and Classes
+
+URL_REGEX = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
 
 class ddict(dict):
@@ -30,6 +27,21 @@ class ddict(dict):
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
+    # def __len__(self):
+    #     return dict.__len__
+
+
+class URL(str):
+    """URL substring checking class
+
+    If URL contains "substring", equality returns True. For example:
+        URL("https://www.youtube.com/watch?v=1234567890") == youtube => True
+    """
+    def __eq__(self, other) -> bool:
+        return self.__contains__(other)
+
+
+#### Parsing Utils
 
 def parse_args(args: str) -> ddict:
     """Parse arguments from a string into a dictionary"""
@@ -41,6 +53,22 @@ def parse_args(args: str) -> ddict:
         if arg.startswith('--'):
             opts[arg.lstrip('-').replace('-','_')] = args[i+1]
     return ddict(opts)
+
+
+def extract_url(content):
+    """Extracts URL from message content, or returns as is"""
+
+    if re.search(URL_REGEX, content):
+        result = URL_REGEX.search(content)
+        url = result.group(0)
+        if url.startswith("https://m."):
+            url = url.replace("https://m.", "https://")
+        # logger.info(f"Extracted URL: {url}")
+        return url
+    return None
+
+
+#### File Utils
 
 def get_emojis(guild):
     """Returns lists of all static and animated emojis in a guild"""
@@ -70,6 +98,8 @@ def getfilepath(itx, fp) -> str:
     return f"downloads/{itx.guild.name}/{fp}"
 
 
+#### Date/Time Utils 
+
 def check_time_format(t):
     """Check that datetime input is in format `YYYY-MM-DD HH:MM AM/PM TZ`"""
 
@@ -91,17 +121,21 @@ def dt_to_epoch(t):
     et = int(time.mktime(dt.timetuple()))
     return et
 
+
+#### Discord Utils
+
 async def send_embed(*, channel: discord.TextChannel, title=None, description=None, image=None, thumbnail=None, footer=None, footer_image=None):
-        """Send embed to channel"""
+    """Send embed to channel"""
 
-        embed = discord.Embed(title=title, description=description, color = EMBED_COLOR())
+    embed = discord.Embed(title=title, description=description, color = EMBED_COLOR())
 
-        if image:
-            embed.set_image(url=image)
-        if thumbnail:
-            embed.set_thumbnail(url=thumbnail)
-        if footer or footer_image:
-            embed.set_footer(text=footer, icon_url=footer_image)
-        
-        await channel.send(embed=embed)
-        return
+    if image:
+        embed.set_image(url=image)
+    if thumbnail:
+        embed.set_thumbnail(url=thumbnail)
+    if footer or footer_image:
+        embed.set_footer(text=footer, icon_url=footer_image)
+    
+    await channel.send(embed=embed)
+    return
+
