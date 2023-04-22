@@ -1,6 +1,8 @@
-# Compass
+# Compass Bot
+
 [![GitLab](https://gitlab.com/glass-ships/compass-bot/badges/main/pipeline.svg)](https://gitlab.com/glass-ships/compass-bot/-/pipelines)
-[![License](https://img.shields.io/github/license/glass-ships/compass-bot)](https://gitlab.com/glass-ships/compass-bot/-/raw/main/LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://gitlab.com/glass-ships/compass-bot/-/raw/main/LICENSE)
+
 [![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/downloads/release/python-3110/)
 [![Poetry](https://img.shields.io/badge/poetry-1.1.11-blue)](https://python-poetry.org/docs/)
 [![Discord.py](https://img.shields.io/badge/discord.py-2.0.0a-blue)](https://discordpy.readthedocs.io/en/latest/)  
@@ -46,6 +48,8 @@ For more information, see the [documentation](https://glass-ships.gitlab.io/comp
 or run `poetry run compass --help` for a list of available commands.
 
 ### Contributing
+
+| [Issues](https://gitlab.com/glass-ships/compass-bot/-/issues/) |
 
 We'd love to have you contribute to Compass!  
 Feel free to create an issue or pull request if you have any questions, suggestions, or feedback.

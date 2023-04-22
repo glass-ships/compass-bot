@@ -9,7 +9,7 @@ from discord.ext import commands
 
 from compass_bot.music import music_utils
 from compass_bot.music.player import Timer
-from compass_bot.music.music_config import ErrorMessages, MAX_SONG_PRELOAD
+from compass_bot.music.music_config import ErrorMessages, InfoMessages, MAX_SONG_PRELOAD
 from compass_bot.utils.bot_config import EMBED_COLOR, Emojis
 
 
@@ -97,7 +97,7 @@ class Music(commands.Cog):
 
     # @play_check 
     @app_commands.command(name='play', description="Play a song or playlist (keyword search or supported link).")
-    async def _add_to_queue(self, itx, *, input: str):
+    async def _add_to_queue(self, itx: discord.Interaction, *, input: str):
         await itx.response.defer()
         player = await get_player(itx)
         if not await _play_check(itx): 
@@ -106,73 +106,87 @@ class Music(commands.Cog):
         return
 
     @play_check
+    @app_commands.command(name='queue', description="Show the current queue.")
+    async def _queue(self, itx: discord.Interaction):
+        await itx.response.defer()
+        player = await get_player(itx)
+        embed = player.queue.queue_embed()
+        await itx.followup.send(embed=embed)
+        return
+
+    @play_check
     @app_commands.command(name='pause', description="Pause playback (continue with `/resume`).")
-    async def _pause(self, itx):
-        
+    async def _pause(self, itx: discord.Interaction):
         if itx.guild.voice_client is None or not itx.guild.voice_client.is_playing():
             return
         itx.guild.voice_client.pause()
         await itx.send(f"{Emojis.pause} Playback Paused")
+        return
 
     @play_check
     @app_commands.command(name='resume', description="Resume playback.")
-    async def _resume(self, itx):
-
+    async def _resume(self, itx: discord.Interaction):
         itx.guild.voice_client.resume()
         await itx.send(f"{Emojis.musicNote} Resumed playback")
+        return
+
+    @play_check
+    @commands.command(name='nowplaying', description="Show info about current song.")
+    async def _songinfo(self, itx: discord.Interaction):
+       
+        if not await _play_check(itx):
+            return
+
+        song = music_utils.guild_player[itx.guild].current_song
+        if song is None:
+            await itx.response.send(InfoMessages.NOT_PLAYING)
+            return
+        await itx.response.send(embed=song.now_playing_embed())
+        return
 
 #################################################################################################################################
 
-    @play_check
-    @commands.command(name='songinfo', description="Show info about current song.")
-    async def _songinfo(self, itx):
-       
-        song = music_utils.guild_player[itx.guild].current_song
-        if song is None:
-            await itx.send(f"{Emojis.jar} No song is currently playing!")
-            return
-        await itx.send(embed=song.now_playing_embed())
+    
+    # @play_check
+    # @commands.command(name='queue', description="Show the current queue.")
+    # async def _queue(self, itx):
 
-    @play_check
-    @commands.command(name='queue', description="Show the current queue.")
-    async def _queue(self, itx):
+    #     player = music_utils.guild_player[itx.guild]
 
-        player = music_utils.guild_player[itx.guild]
+    #     # Alert if loop enabled
+    #     if player.queue.loop == True:
+    #         await itx.message.reply("Loop is enabled! Use {}loop to disable".format(bot.db.get_prefix(itx.guild.id)), mention_author=False)
+    #         return
 
-        # Alert if loop enabled
-        if player.queue.loop == True:
-            await itx.message.reply("Loop is enabled! Use {}loop to disable".format(bot.db.get_prefix(itx.guild.id)), mention_author=False)
-            return
+    #     queue = music_utils.guild_player[itx.guild].queue.playque
+    #     if (
+    #             itx.guild.voice_client is None or 
+    #             not itx.guild.voice_client.is_playing() or
+    #             len(queue) == 0
+    #         ):
+    #         await itx.send(f"{Emojis.jar} Queue is empty!")
+    #         return
 
-        queue = music_utils.guild_player[itx.guild].queue.playque
-        if (
-                itx.guild.voice_client is None or 
-                not itx.guild.voice_client.is_playing() or
-                len(queue) == 0
-            ):
-            await itx.send(f"{Emojis.jar} Queue is empty!")
-            return
-
-        queue_list = []
-        for counter, song in enumerate(list(queue), start=1):
-            if song.title is None:
-                queue_entry = f"{counter}. [{song.webpage_url}]({song.webpage_url})"
-            else:
-                queue_entry = f"{counter}. [{song.title}]({song.webpage_url})"
+    #     queue_list = []
+    #     for counter, song in enumerate(list(queue), start=1):
+    #         if song.title is None:
+    #             queue_entry = f"{counter}. [{song.webpage_url}]({song.webpage_url})"
+    #         else:
+    #             queue_entry = f"{counter}. [{song.title}]({song.webpage_url})"
             
-            queue_str = "\n".join(queue_list)
-            if len(queue_str) + len(queue_entry) < 4096 and len(queue_list) < 20:
-                queue_list.append(queue_entry)
-            else:
-                break
+    #         queue_str = "\n".join(queue_list)
+    #         if len(queue_str) + len(queue_entry) < 4096 and len(queue_list) < 20:
+    #             queue_list.append(queue_entry)
+    #         else:
+    #             break
 
-        embed = discord.Embed(title=f"{Emojis.playlist} Queue", color=EMBED_COLOR())
-        embed.description="\n".join(queue_list)
-        embed.set_footer(
-            text=f"Plus {len(queue)-counter} more queued..."
-        )
+    #     embed = discord.Embed(title=f"{Emojis.playlist} Queue", color=EMBED_COLOR())
+    #     embed.description="\n".join(queue_list)
+    #     embed.set_footer(
+    #         text=f"Plus {len(queue)-counter} more queued..."
+    #     )
 
-        await itx.send(embed=embed)
+    #     await itx.send(embed=embed)
 
     @commands.command(name='history', description="Show the last 10 songs played.")
     async def _history(self, itx):
@@ -190,7 +204,7 @@ class Music(commands.Cog):
 
         if itx.guild.voice_client is None or (
                 not itx.guild.voice_client.is_paused() and not itx.guild.voice_client.is_playing()):
-            await itx.send(f"{Emojis.jar} Queue is empty!")
+            await itx.send(InfoMessages.QUEUE_EMPTY)
             return
 
         itx.guild.voice_client.stop()
@@ -220,7 +234,7 @@ class Music(commands.Cog):
         
         # could this just be "if len(playque) == 0" ???
         if itx.guild.voice_client is None or (not itx.guild.voice_client.is_paused() and not itx.guild.voice_client.is_playing()):
-            await itx.send(f"{Emojis.jar} Queue is empty!")
+            await itx.send(InfoMessages.QUEUE_EMPTY)
             return
             
         song = player.queue.playque[oldposition-1]
@@ -262,7 +276,7 @@ class Music(commands.Cog):
 
         
         if itx.guild.voice_client is None or not itx.guild.voice_client.is_playing():
-            await itx.send(f"{Emojis.jar} Queue is empty!")
+            await itx.send(InfoMessages.QUEUE_EMPTY)
             return
 
         player.queue.shuffle()
@@ -326,7 +340,7 @@ class Music(commands.Cog):
         player.timer.stop()
         player.timer = Timer(player.timeout_handler)
         # await player.timer.restart()
-        await itx.send(":jar: Cleared queue.")
+        await itx.send(InfoMessages.QUEUE_CLEARED)
         return
 
     @commands.command(name="join", description="Move Compass to the user's VC")

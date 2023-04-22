@@ -78,3 +78,22 @@ class GuildData:
         self.chan_bot = self.default_channel
         self.chan_logs = self.default_channel
         self.chan_welcome = self.default_channel
+
+
+class CustomException(Exception):
+    pass
+
+
+class FetchException(CustomException):
+    pass
+
+
+class QueueException(CustomException):
+    pass
+
+# class CustomException(Exception):
+#     def __init__(self, message, errors):
+#         super().__init__(message)
+
+#         self.errors = errors
+
