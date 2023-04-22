@@ -24,6 +24,12 @@ class PlaylistTypes(StrEnum):
 
 
 @dataclass
+class Search():
+    query: str
+    url: str = None
+
+
+@dataclass
 class Playlist():
     name: str
     total: int
@@ -35,7 +41,7 @@ class Song():
     host: str = None
     base_url: str = None
     requested_by: str = None
-    uploader: str = None
+    channel_name: str = None
     title: str = None
     duration: str = None
     webpage_url: str = None
@@ -45,22 +51,22 @@ class Song():
     def queued_embed(self, pos: int = None):
         # TODO: Add estimated time until song is played
         embed = discord.Embed(
-            description=f"<a:_musicNote:1011101467576385556> Song queued: {pos}. [{self.title}]({self.webpage_url})", 
+            description=f"{Emojis.catChillin} Song queued: {pos}. [{self.title}]({self.webpage_url})", 
             color=EMBED_COLOR()
         )
         return embed
 
     def now_playing_embed(self) -> discord.Embed:
         embed = discord.Embed(
-            title="Now Playing", 
-            description=f"<a:_music:1011116507587162122> [{self.title}]({self.webpage_url})", 
+            title=f"{Emojis.eq} Now Playing", 
+            description=f"[{self.title}]({self.webpage_url})", 
             color=EMBED_COLOR()
         )
         if self.thumbnail is not None:
             embed.set_thumbnail(url=self.thumbnail)
         embed.add_field(
-            name="Song by:",
-            value=self.uploader,
+            name="Uploader:",
+            value=self.channel_name,
             inline=True
             )
         embed.add_field(

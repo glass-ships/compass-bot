@@ -10,7 +10,7 @@ import loguru
 
 from compass_bot.utils.bot_config import GuildData, DEFAULT_PREFIX, COMPASS_ROOT #, HELP
 from compass_bot.utils.custom_help_commands import CustomHelpCommand
-from compass_bot.utils.database import ServerDB
+from compass_bot.utils.db_utils import ServerDB
 from compass_bot.utils.log_utils import get_logger
 from compass_bot.utils.utils import console
 
@@ -141,6 +141,9 @@ class CompassBot():
         return
 
     async def shutdown(self):
+        """Gracefully shuts down the bot"""
+        self.bot.loop.stop()
+        # self.bot.loop.close()
         await self.bot.close()
         self.bot.logger.info(f'{self.bot.user.name} offline.')
         sys.exit(0)

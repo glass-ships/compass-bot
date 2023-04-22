@@ -1,7 +1,10 @@
 import random
 from collections import deque
 
-from compass_bot.music.music_config import MAX_HISTORY_LENGTH, MAX_TRACKNAME_HISTORY_LENGTH
+import discord
+
+from compass_bot.utils.bot_config import Emojis, EMBED_COLOR
+from compass_bot.music.music_config import InfoMessages, MAX_HISTORY_LENGTH, MAX_TRACKNAME_HISTORY_LENGTH
 from compass_bot.music.dataclasses import Song
 
 class Queue:
@@ -18,6 +21,33 @@ class Queue:
 
     def is_empty(self):
         return len(self.playque) == 0
+
+    def queue_embed(self):
+
+        if self.is_empty():
+            embed = discord.Embed(description=InfoMessages.QUEUE_EMPTY, color=EMBED_COLOR())
+        else:
+            queue_list = []
+            for counter, song in enumerate(list(self.playque), start=1):
+                # if song.title is None:
+                #     queue_entry = f"{counter}. [{song.webpage_url}]({song.webpage_url})"
+                # else:
+                #     queue_entry = f"{counter}. [{song.title if song.title else song.webpage_url}]({song.webpage_url})"
+                
+                queue_entry = f"{counter}. [{song.title if song.title else song.base_url}]({song.base_url})"
+                
+                queue_str = "\n".join(queue_list)
+                if len(queue_str) + len(queue_entry) < 4096 and len(queue_list) < 20:
+                    queue_list.append(queue_entry)
+                else:
+                    break
+
+            embed = discord.Embed(title=f"{Emojis.playlist} Queue", color=EMBED_COLOR())
+            embed.description="\n".join(queue_list)
+            embed.set_footer(text=f"Plus {self.__len__() - counter} more queued...")
+        # return queue_list, counter
+        return embed
+            
 
     def add(self, track: Song):
         self.playque.append(track)

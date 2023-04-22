@@ -24,6 +24,8 @@ class Admin(commands.Cog):
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
 
+    ########################################################################################################################
+
     @commands.command(name="sync")
     @commands.has_permissions(administrator=True)
     async def _sync(self, ctx: commands.Context, spec: Union[Literal['dev'], Literal["guild"], None]):
@@ -50,7 +52,6 @@ class Admin(commands.Cog):
             logger.warning("Error syncing ships! (Bad argument)")
         return
 
-     
     @app_commands.command(name='reload')
     @commands.has_permissions(administrator=True)
     @app_commands.autocomplete()
@@ -68,16 +69,19 @@ class Admin(commands.Cog):
         options = ['admin', 'destiny', 'listeners', 'main', 'moderation', 'music', 'utils']
         return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
     
-
-    ##################################
-    ### Bot Setting Config Methods ###
-    ##################################
+    ########################################################################################################################
 
     group_set = app_commands.Group(name="set",description="Group of commands to set bot settings")
     group_unset = app_commands.Group(name="unset",description="Group of commands to configure bot settings")
+
+    #####################
+    ### Role Settings ###
+    #####################
+
     
     @group_set.command(name="prefix")
-    @commands.has_permissions(administrator=True)
+    # @commands.has_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     async def _prefix(self, itx: discord.Interaction, new_prefix: str):
         """
         Changes the bot's prefix for your server
@@ -86,7 +90,8 @@ class Admin(commands.Cog):
         await itx.response.send_message(f"Prefix set to `{new_prefix}`")
 
     @group_set.command(name="mod_roles")
-    @commands.has_permissions(administrator=True)
+    # @commands.has_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(mod_roles="List of mod roles (ID or mention)")
     async def _mod_roles(self, itx: discord.Interaction, mod_roles: str):
         roles_list = mod_roles.split(" ")
@@ -100,19 +105,39 @@ class Admin(commands.Cog):
         await itx.response.send_message(f"Mod roles set: {mod_roles}")
 
     @group_set.command(name="member_role")
-    @commands.has_permissions(administrator=True)
+    # @commands.has_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     async def _member_role(self, itx: discord.Interaction, role: discord.Role):
         bot.db.update_mem_role(itx.guild_id, role.id)
         await itx.response.send_message(f"Member role set: {role}")
 
-    @group_set.command(name="dj_role")
+    @group_unset.command(name="role")
     @commands.has_permissions(administrator=True)
-    async def _dj_role(self, itx: discord.Interaction, role: discord.Role):
-        bot.db.update_dj_role(itx.guild_id, role.id)
-        await itx.response.send_message(f"DJ role set: {role}")
+    @app_commands.autocomplete()
+    async def _role(self, itx: discord.Interaction, option: str):  
+        match option:
+            case "mod":
+                bot.db.update_mod_roles(itx.guild_id, [0])
+            case "member":
+                bot.db.update_mem_role(itx.guild_id, 0)
+            case _:
+                await itx.response.send_message("Error: Unknown argument. Valid targets: mod, member, dj")
+                return False
+        await itx.response.send_message(f"{option.title()} role unset.")
+        return True
+
+    @_role.autocomplete('option')
+    async def _roles_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+        options = ['mod', 'member']
+        return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
+
+    ########################
+    ### Channel Settings ###
+    ########################
 
     @group_set.command(name="channel")
-    @commands.has_permissions(administrator=True)
+    # @commands.has_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(option='What to specify a channel for', channel='Which channel to send to')
     @app_commands.autocomplete()
     async def _channel_set(self, itx: discord.Interaction, option: str, channel: discord.TextChannel):  
@@ -166,35 +191,14 @@ class Admin(commands.Cog):
         await itx.response.send_message(f"{option.title()} channel unset.")
         return True
 
-    @group_unset.command(name="role")
-    @commands.has_permissions(administrator=True)
-    @app_commands.autocomplete()
-    async def _role(self, itx: discord.Interaction, option: str):  
-        match option:
-            case "mod":
-                bot.db.update_mod_roles(itx.guild_id, [0])
-            case "member":
-                bot.db.update_mem_role(itx.guild_id, 0)
-            case "dj":
-                bot.db.update_dj_role(itx.guild_id, 0)
-            case _:
-                await itx.response.send_message("Error: Unknown argument. Valid targets: mod, member, dj")
-                return False
-        await itx.response.send_message(f"{option.title()} role unset.")
-        return True
-
-    @_role.autocomplete('option')
-    async def _roles_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-        options = ['mod', 'member', 'dj']
-        return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
-
     
     ######################
     ### Video Settings ###
     ######################
 
     @app_commands.command(name="allowvideos")
-    @commands.has_permissions(administrator=True)
+    # @commands.has_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(channel="Which channel to allow/disallow videos in", switch="bool: True to allow videos")
     async def _allowvideos(self, itx: discord.Interaction, channel: discord.TextChannel, switch: bool):
         if switch == True:

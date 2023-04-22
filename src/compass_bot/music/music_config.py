@@ -1,9 +1,9 @@
 import os
 from dataclasses import dataclass
-from enum import StrEnum, auto
+# from enum import StrEnum, auto
 # from pathlib import Path
 
-from compass_bot.utils.bot_config import COMPASS_ROOT
+from compass_bot.utils.bot_config import COMPASS_ROOT, Emojis
 
 # Re-usable paths
 ABSOLUTE_PATH = '' # DO NOT MODIFY
@@ -52,6 +52,13 @@ class ErrorMessages():
     
     def WRONG_USER_VC(vc):
         return f":exclamation: Bot already connected to <#{vc.id}>. Please use the `/join` command, or move/disconnect Compass and try again."
+
+@dataclass
+class InfoMessages():
+    QUEUE_EMPTY = f"{Emojis.jar} The queue is empty!"
+    QUEUE_CLEARED = f"{Emojis.jar} The queue has been cleared!"
+    NOT_PLAYING = f"{Emojis.jar} Compass is not playing anything!"
+    # QUEUE_FINISHED = f"{Emojis.jar} The queue has finished!"
 
 # Track info formatting
 # class TrackInfo(StrEnum):

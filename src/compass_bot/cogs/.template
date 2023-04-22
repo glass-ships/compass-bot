@@ -1,15 +1,12 @@
-#import discord
-#from discord.utils import get
+import discord
+from discord import app_commands
 from discord.ext import commands
 
-# from compass_bot.bot import compass
-# logger = compass.bot.logger
 from loguru import logger
 
-### Setup Cog
 
-# Startup method
 async def setup(bot):
+    """Cog setup method"""
     await bot.add_cog(CogName(bot))
 
 # Define Class
@@ -21,3 +18,10 @@ class CogName(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
+
+    ########################################################################################################################
+
+    @app_commands.command(name='command_name')
+    async def _command_name(self, itx: discord.Interaction):
+        """Command description."""
+        pass

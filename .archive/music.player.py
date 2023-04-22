@@ -269,8 +269,7 @@ class MusicPlayer(object):
             song.title = await music_utils.convert_spotify(song.webpage_url)
 
         loop = asyncio.get_event_loop()
-        executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=MAX_SONG_PRELOAD)
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=MAX_SONG_PRELOAD)
         await asyncio.wait(fs={loop.run_in_executor(executor, down, song)}, return_when=asyncio.ALL_COMPLETED)
 
     async def play_song(self, ctx, song):
