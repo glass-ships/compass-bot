@@ -9,7 +9,6 @@ async def setup(bot):
     """Cog setup method"""
     await bot.add_cog(CogName(bot))
 
-# Define Class
 class CogName(commands.Cog):
     def __init__(self, bot_):
         global bot
