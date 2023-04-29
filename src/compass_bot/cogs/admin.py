@@ -3,11 +3,10 @@ from typing import List, Literal, Union
 import discord
 from discord import app_commands
 from discord.ext import commands
+from loguru import logger
 
 from compass_bot.utils.bot_config import GLASS_HARBOR
-# from compass_bot.bot import compass
-# logger = compass.logger
-from loguru import logger
+
 
 
 async def setup(bot):

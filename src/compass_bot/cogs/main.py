@@ -1,18 +1,17 @@
+from typing import List
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-# from compass_bot.bot import compass
-# logger = compass.bot.logger
 from loguru import logger
 
-### Setup Cog
 
-# Startup method
 async def setup(bot):
+    """Cog setup method"""
     await bot.add_cog(Main(bot))
 
-### Define Class
+
 class Main(commands.Cog):
     def __init__(self, bot_):
         global bot
@@ -27,28 +26,39 @@ class Main(commands.Cog):
         """Responds with "pong" and the ping latency"""
         await itx.response.defer(ephemeral=True)
         await itx.followup.send(f"Pong! Latency: {round(bot.latency, 2)} ms", ephemeral=True)
+        return
+
+    async def _profile_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+        options = ['User', 'Server']
+        return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
 
     @app_commands.command(name="avatar")
-    async def _avatar(self, itx: discord.Interaction, *, user: discord.Member=None):
+    @app_commands.autocomplete(profile=_profile_autocomplete)
+    async def _avatar(self, itx: discord.Interaction, user: discord.Member=None, profile: str="Server"):
         """Returns a user's Discord avatar"""
-        await itx.response.defer(ephemeral=True)
+        await itx.response.defer()
 
         u = user or itx.user
         mem = await itx.guild.fetch_member(u.id)
-        userAvatarUrl = mem.display_avatar.url
+        avatarURL = mem.avatar.url if profile == 'User' else mem.guild_avatar.url
         embed = discord.Embed(description=f"{mem.mention}'s avatar")
-        embed.set_image(url=f"{userAvatarUrl}")
+        embed.set_image(url=f"{avatarURL}")
         await itx.followup.send(embed=embed)
+        return
+
 
     @app_commands.command(name="banner")
-    async def _banner(self, itx: discord.Interaction, *, user: discord.Member=None):
+    @app_commands.autocomplete(profile=_profile_autocomplete)
+    async def _banner(self, itx: discord.Interaction, user: discord.Member=None, profile: str=None):
         """Returns a user's Discord banner"""
-        await itx.response.defer(ephemeral=True)
+        await itx.response.defer()
 
         u = user or itx.user
-        mem = await bot.fetch_user(u.id)
+        mem = await itx.guild.fetch_member(u.id)
         userBannerUrl = mem.banner
         embed = discord.Embed(description=f"{mem.mention}'s banner")
         embed.set_image(url=f"{userBannerUrl}")
         await itx.followup.send(embed=embed)
+        return
 
+    
