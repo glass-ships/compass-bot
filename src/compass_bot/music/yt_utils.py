@@ -39,6 +39,48 @@ class Data:
 			html = urllib.request.urlopen(res)
 			self.source = html.read().decode('utf8')
 	
+	    # Construct a dictionary of the data
+	def data(self):
+
+		videodetails = re.findall("\"videoDetails\":\{(.+?),\"isOwnerViewing", self.source)[0] or None
+		id = re.findall("\"videoId\":\"(\S{11})",videodetails)[0] or None
+		title = re.findall("\"title\":\"(.+?)\",",videodetails)[0] or None
+		duration = re.findall("\"lengthSeconds\":\"(\d+)", self.source)[0] or None
+		try:
+			thumbnail = re.findall("\"thumbnails\":\[\{\"url\":\"(.+?)\",\"width",self.source )[0]
+			thumbnail = thumbnail.replace("hqdefault.jpg","maxresdefault.webp")
+			thumbnail = thumbnail.replace("/vi/","/vi_webp/")
+			thumbnail = thumbnail.split("?")[0]
+		except:
+			thumbnail = None
+		try:
+			channelName = re.findall("\"channelName\":\"(.+?)\",", self.source)[0] or None
+		except:
+			try:
+				channelName = re.findall("\"ownerChannelName\":\"(.+?)\",\"uploadDate",self.source)[0] or None
+			except:
+				channelName = None
+		category = re.findall("\"category\":\"(.+?)\",", self.source)[0] or None
+		publish_date = re.findall("\"publishDate\":\"(\d{4}-\d{2}-\d{2})", self.source)[0] or None
+		tags = re.findall("\<meta name=\"keywords\" content=\"(.+?)\">",self.source)[0] or None
+		views = re.findall("\"viewCount\":\"(\d+)",self.source)[0] or None
+		
+		DATA = { 
+					"id": id,
+					"url": f"https://www.youtube.com/watch?v={id}",
+					"title": title,
+					"duration": int(duration),
+					"thumbnails": thumbnail,
+					"views": views,
+					"publishdate": publish_date,
+					"category": category,
+					"channel_name": channelName,
+					"keywords":tags      	             
+				}
+		for k, v in DATA.items():
+			DATA[k] = v.replace("\\u0026", "&") if isinstance(v, str) else v
+		return DATA
+
 	# # Get Video id 
 	# def id(self):
 	# 	try:
@@ -116,45 +158,3 @@ class Data:
 	# 		return tags
 	# 	except:
 	# 		return None
-			
-    # Construct a dictionary of the data
-	def data(self):
-
-		videodetails = re.findall("\"videoDetails\":\{(.+?),\"isOwnerViewing", self.source)[0] or None
-		id = re.findall("\"videoId\":\"(\S{11})",videodetails)[0] or None
-		title = re.findall("\"title\":\"(.+?)\",",videodetails)[0] or None
-		duration = re.findall("\"lengthSeconds\":\"(\d+)", self.source)[0] or None
-		try:
-			thumbnail = re.findall("\"thumbnails\":\[\{\"url\":\"(.+?)\",\"width",self.source )[0]
-			thumbnail = thumbnail.replace("hqdefault.jpg","maxresdefault.webp")
-			thumbnail = thumbnail.replace("/vi/","/vi_webp/")
-			thumbnail = thumbnail.split("?")[0]
-		except:
-			thumbnail = None
-		try:
-			channelName = re.findall("\"channelName\":\"(.+?)\",", self.source)[0] or None
-		except:
-			try:
-				channelName = re.findall("\"ownerChannelName\":\"(.+?)\",\"uploadDate",self.source)[0] or None
-			except:
-				channelName = None
-		category = re.findall("\"category\":\"(.+?)\",", self.source)[0] or None
-		publish_date = re.findall("\"publishDate\":\"(\d{4}-\d{2}-\d{2})", self.source)[0] or None
-		tags = re.findall("\<meta name=\"keywords\" content=\"(.+?)\">",self.source)[0] or None
-		views = re.findall("\"viewCount\":\"(\d+)",self.source)[0] or None
-		
-		DATA = { 
-					"id": id,
-					"url": f"https://www.youtube.com/watch?v={id}",
-					"title": title,
-					"duration": int(duration),
-					"thumbnails": thumbnail,
-					"views": views,
-					"publishdate": publish_date,
-					"category": category,
-					"channel_name": channelName,
-					"keywords":tags      	             
-				}
-		for k, v in DATA.items():
-			DATA[k] = v.replace("\\u0026", "&") if isinstance(v, str) else v
-		return DATA
