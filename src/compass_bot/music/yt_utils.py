@@ -155,5 +155,6 @@ class Data:
 					"channel_name": channelName,
 					"keywords":tags      	             
 				}
-		
+		for k, v in DATA.items():
+			DATA[k] = v.replace("\\u0026", "&") if isinstance(v, str) else v
 		return DATA
