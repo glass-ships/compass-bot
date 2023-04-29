@@ -122,6 +122,11 @@ def dt_to_epoch(t):
     return et
 
 
+def epoch_to_dt(t):
+    """Convert epoch time to datetime"""
+    return datetime.fromtimestamp(t)
+
+
 #### Discord Utils
 
 async def send_embed(*, channel: discord.TextChannel, title=None, description=None, image=None, thumbnail=None, footer=None, footer_image=None):

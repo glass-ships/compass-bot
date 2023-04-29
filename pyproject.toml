@@ -20,6 +20,7 @@ python = ">=3.11, <4.0"
 discord-py = { git = "https://github.com/Rapptz/discord.py.git" }
 typer = "*"
 loguru = "*"
+psutil = "*"
 
 ## Database
 pymongo = { version="*", extras = ["srv"] }
