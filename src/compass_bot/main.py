@@ -13,16 +13,16 @@ from compass_bot.utils.utils import console
 
 app = typer.Typer(name="compass")
 app_state = {
-    "verbose": None,
-    "quiet": None,
+    "verbose": 0,
+    "quiet": False,
     }
 
 
 @app.callback(invoke_without_command=True)
 def version_callback(
     version: Optional[bool] = typer.Option(None, "--version", is_eager=True),
-    verbose: int = typer.Option(None, "--verbose", "-v", count=True, help="Enable verbose logging"),
-    quiet: bool = typer.Option(None, "--quiet", "-q", help="Supress logging (except Errors)"),
+    verbose: int = typer.Option(0, "--verbose", "-v", count=True, help="Enable verbose logging"),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Supress logging (except Errors)"),
     ):
     if version:
         from compass_bot import __version__
@@ -91,13 +91,13 @@ def status():
             start_time = epoch_to_dt(p.create_time()).strftime("%Y-%m-%d at %H:%M:%S")
             uptime = timedelta(seconds=(datetime.now() - epoch_to_dt(p.create_time())).total_seconds())
             console.print(f"""
-    Compass is currently running:
-        PID: {p.pid}
-        Command: "{' '.join(p.cmdline())}"
-        Status: {p.status()}
-        Started: {start_time}
-        Uptime: {uptime.days} days, {uptime.seconds//3600} hours, {(uptime.seconds//60)%60} minutes, {uptime.seconds%60} seconds
-    """)
+Compass is currently running:
+    PID: {p.pid}
+    Command: "{' '.join(p.cmdline())}"
+    Status: {p.status()}
+    Started: {start_time}
+    Uptime: {uptime.days} days, {uptime.seconds//3600} hours, {(uptime.seconds//60)%60} minutes, {uptime.seconds%60} seconds
+""")
             raise typer.Exit()
     console.print("\nCompass is not currently running\n")
 
