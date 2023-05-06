@@ -12,19 +12,24 @@ from compass_bot.utils.utils import console
 
 
 app = typer.Typer(name="compass")
-app_state = {"verbose": None}
+app_state = {
+    "verbose": None,
+    "quiet": None,
+    }
 
 
 @app.callback(invoke_without_command=True)
 def version_callback(
     version: Optional[bool] = typer.Option(None, "--version", is_eager=True),
-    verbose: Optional[bool] = typer.Option(None, "--verbose/--quiet", "-v/-q", help="Use verbose to set logging level to DEBUG, quiet to suppress"),
+    verbose: int = typer.Option(None, "--verbose", "-v", count=True, help="Enable verbose logging"),
+    quiet: bool = typer.Option(None, "--quiet", "-q", help="Supress logging (except Errors)"),
     ):
     if version:
         from compass_bot import __version__
         console.print(f"\n:arrow_right: Compass Bot version: {__version__}")
         raise typer.Exit()
     app_state["verbose"] = verbose
+    app_state["quiet"] = quiet
 
 
 @app.command()
@@ -40,9 +45,11 @@ def start(
         update (bool, optional): Update the Bot's dependencies. Defaults to False.
         pull (bool, optional): Pull the latest version of the Bot from GitHub. Defaults to False.    
     """
-    # if app_state['verbose'] is None:
-
-    log_level = "INFO" if (app_state['verbose'] is None) else "DEBUG" if (app_state['verbose'] == True) else "WARNING"
+    log_level = "INFO" if (app_state['verbose'] == 1) else \
+        "DEBUG" if (app_state['verbose'] >= 2) else \
+        "ERROR" if (app_state['quiet'] == True) else \
+        "WARNING"
+        
     console.print(f"""
 :arrow_right: Starting {'main' if not dev else 'dev'} bot...
     :arrow_right: Setting Compass log level to {log_level}
@@ -92,9 +99,5 @@ def status():
         Uptime: {uptime.days} days, {uptime.seconds//3600} hours, {(uptime.seconds//60)%60} minutes, {uptime.seconds%60} seconds
     """)
             raise typer.Exit()
-    console.print("\n\tCompass is not currently running")
-
-
-# if __name__ == "__main__":
-#     app()
+    console.print("\nCompass is not currently running\n")
 

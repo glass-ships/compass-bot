@@ -1,4 +1,3 @@
-import argparse
 from typing import Optional, Union
 
 import asyncio
@@ -55,11 +54,8 @@ class Moderation(commands.Cog):
     
     @has_mod_ctx
     @commands.command(name='sendembed', aliases=['se'], description="Send an embed to a channel (fields not yet supported)")
-    async def _send_embed(self, ctx: commands.Context, channel: discord.TextChannel, *, embed_fields: str = None):
-        
-        if channel is None:
-            channel = ctx.channel
-        
+    async def _send_embed(self, ctx: commands.Context, target: Union[discord.User, discord.TextChannel], *, embed_fields: str = None):
+        target = target or ctx.channel
         args = parse_args(embed_fields)
 
         embed = discord.Embed(title = args.title, description = args.description, color = EMBED_COLOR())
@@ -71,8 +67,12 @@ class Moderation(commands.Cog):
         if args.footer or args.footer_image:
             embed.set_footer(text=args.footer, icon_url=args.footer_image)
         
-        await channel.send(embed=embed)
-        await ctx.channel.send(f"Embed sent to <#{channel.id}>.", delete_after=5.0)
+        await target.send(embed=embed)
+        if isinstance(target, discord.TextChannel):
+            await ctx.channel.send(f"Embed sent to <#{target.id}>.", delete_after=5.0)
+        elif isinstance(target, discord.User):
+            await ctx.channel.send(f"Embed sent to {target.mention}.", delete_after=5.0)
+
         return
 
 
@@ -88,6 +88,12 @@ class Moderation(commands.Cog):
         await channel.send(content=message)
         await itx.followup.send(f"Message sent to <#{channel.id}>.")
 
+    @has_mod_itx
+    @app_commands.command(name='dm', description="DM a user via the bot")
+    async def _send_dm(self, itx: discord.Interaction, user: discord.User, message: str):
+        await itx.response.defer(ephemeral=True)
+        await user.send(content=message)
+        await itx.followup.send(f"Message sent to {user.mention}.")
     
     @has_mod_itx
     @app_commands.command(name="getmodroles", description="Get a list of guild's mod roles")

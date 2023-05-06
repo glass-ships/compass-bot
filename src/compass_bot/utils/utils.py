@@ -17,7 +17,9 @@ console = Console(
     style="blue1",
 )
 
-#### Variables and Classes
+#############################
+### Variables and Classes ###
+#############################
 
 URL_REGEX = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
@@ -41,7 +43,9 @@ class URL(str):
         return self.__contains__(other)
 
 
-#### Parsing Utils
+#####################
+### Parsing Utils ###
+#####################
 
 def parse_args(args: str) -> ddict:
     """Parse arguments from a string into a dictionary"""
@@ -98,7 +102,9 @@ def getfilepath(itx, fp) -> str:
     return f"downloads/{itx.guild.name}/{fp}"
 
 
-#### Date/Time Utils 
+#######################
+### Date/Time Utils ### 
+#######################
 
 def check_time_format(t):
     """Check that datetime input is in format `YYYY-MM-DD HH:MM AM/PM TZ`"""
@@ -126,8 +132,9 @@ def epoch_to_dt(t):
     """Convert epoch time to datetime"""
     return datetime.fromtimestamp(t)
 
-
-#### Discord Utils
+#####################
+### Discord Utils ###
+#####################
 
 async def send_embed(*, channel: discord.TextChannel, title=None, description=None, image=None, thumbnail=None, footer=None, footer_image=None):
     """Send embed to channel"""
