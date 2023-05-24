@@ -6,7 +6,7 @@ import discord
 from discord.ext import commands
 from discord.utils import get
 
-from compass_bot.utils.bot_config import GLASS_HARBOR, GuildData
+from compass_bot.utils.bot_config import COMPASS_ROOT, GLASS_HARBOR, GuildData
 from compass_bot.utils.utils import download, getfilepath
 # from compass_bot.bot import compass
 # logger = compass.bot.logger
@@ -204,7 +204,7 @@ class Listeners(commands.Cog):
         
 
         av = httpx.get(member.display_avatar.url)
-        ocean = Image.open(f'{cog_path.parent.parent.parent}/docs/images/welcome_background.png')
+        ocean = Image.open(f'{COMPASS_ROOT}/images/welcome_background.png')
         pfp = Image.open(io.BytesIO(av.content))
         pfp = pfp.resize((650,650))
         
