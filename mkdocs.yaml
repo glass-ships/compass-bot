@@ -38,47 +38,47 @@ theme:
         code: 'Source Sans Pro Mono'
 
 
-# plugins:
-#   - search
-#   - mkdocstrings
-
 plugins:
-- search
-# - markdown-exec
-# - gen-files:
-#     scripts:
-#     - docs/gen_ref_nav.py
-# - literate-nav:
-#     nav_file: SUMMARY.md
-# - coverage
-# - section-index
-- mkdocstrings:
-    handlers:
-      python:
-        paths: [src]
-        import:
-        - https://docs.python.org/3/objects.inv
-        - https://mkdocstrings.github.io/objects.inv
-        - https://mkdocstrings.github.io/griffe/objects.inv
-        options:
-          # docstring_style: google
-          docstring_options:
-            ignore_init_summary: yes
-          merge_init_into_class: yes
-          separate_signature: yes
-          show_source: no
-          show_root_full_path: no
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [./backend]
+          import:
+            - https://docs.python.org/3/objects.inv
+            - https://mkdocstrings.github.io/objects.inv
+            - https://mkdocstrings.github.io/griffe/objects.inv
+          options:
+            docstring_style: google
+            docstring_options:
+              docstring_section_style: table
+              ignore_init_summary: yes
+            merge_init_into_class: yes
+            # separate_signature: yes
+            show_signature: no
+            show_source: no
+            show_root_full_path: no
+            show_root_toc_entry: False
+            filters:
+              - '!^_[^_]'
+              # - '^_[^_]'
 
 
 markdown_extensions:
   - admonition
   - pymdownx.details
+  - pymdownx.emoji
+  - pymdownx.keys
+  - pymdownx.magiclink
   - pymdownx.superfences
   - pymdownx.tabbed
-  - pymdownx.keys
   - attr_list
   - pymdownx.betterem:
       smart_enable: all
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.tabbed:
+      alternate_style: true
 
 
 extra:
@@ -89,4 +89,4 @@ extra:
       link: 'https://github.com/glass-ships'
 
 
-copyright: 'Copyright &copy; 2020 - 2022 [Glass](glass-ships.com)'
+copyright: 'Copyright &copy; 2020 - 2023 [Glass](glass-ships.com)'
