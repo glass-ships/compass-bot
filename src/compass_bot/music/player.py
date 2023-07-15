@@ -116,7 +116,7 @@ class MusicPlayer(object):
                 search = self._get_song_info(user_search.url, user_search.host)
                 await self._add_to_queue(search, itx.user)
                 await itx.followup.send(embed=discord.Embed(
-                    description=f"{Emojis.cd} Queued: `[{search.search}]({search.url}).`",
+                    description=f"{Emojis.cd} Queued: `[{search.query}]({search.url}).`",
                     color=EMBED_COLOR()
                 ))
                 
