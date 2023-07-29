@@ -44,20 +44,13 @@ clean:
 	rm -rf `find . -type d -name '*.egg-info' `
 	rm -rf .pytest_cache *dist *build 
 
-# .PHONY: lint
-# lint:
-# 	flake8 --exit-zero --max-line-length 120 src/
-# 	black --check --diff src
-# 	isort --check-only --diff src
+.PHONY: lint
+lint:
+	$(RUN) ruff check src
+	$(RUN) black --check --diff --color -l 120 src
 
-# .PHONY: format
-# format:
-# 	autoflake \
-# 		--recursive \
-# 		--remove-all-unused-imports \
-# 		--remove-unused-variables \
-# 		--ignore-init-module-imports \
-# 		--in-place \
-#		src
-# 	isort src
-# 	black src
+
+.PHONY: format
+format:
+	$(RUN) ruff --fix --exit-zero src
+	$(RUN) black -l 120 src

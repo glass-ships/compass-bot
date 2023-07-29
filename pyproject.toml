@@ -39,6 +39,7 @@ spotipy = { git = "https://github.com/plamere/spotipy.git" }
 beautifulsoup4 = "*"
 pynacl = "*"
 rich = "*"
+ruff = "*"
 
 
 [tool.poetry.group.dev]
@@ -55,7 +56,15 @@ pytest = "^7.3.1"
 [tool.poetry.scripts]
 compass = "compass_bot.main:app"
 
+
+[tool.ruff]
+line-length = 120
+ignore = [
+    "F541", # f-strings with no placeholders
+]
+# exclude = []
+
+
 [build-system]
 requires = ["poetry-core>=1.5.2"]
 build-backend = "poetry.core.masonry.api"
-

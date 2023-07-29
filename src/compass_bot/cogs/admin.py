@@ -8,7 +8,6 @@ from loguru import logger
 from compass_bot.utils.bot_config import GLASS_HARBOR
 
 
-
 async def setup(bot):
     """Cog setup method"""
     await bot.add_cog(Admin(bot))
@@ -27,11 +26,11 @@ class Admin(commands.Cog):
 
     @commands.command(name="sync")
     @commands.has_permissions(administrator=True)
-    async def _sync(self, ctx: commands.Context, spec: Union[Literal['dev'], Literal["guild"], None]):
+    async def _sync(self, ctx: commands.Context, spec: Union[Literal["dev"], Literal["guild"], None]):
         """Syncs the bot's command tree"""
-        
+
         logger.info("Syncing ships...")
-        if spec == 'dev':
+        if spec == "dev":
             g = bot.get_guild(GLASS_HARBOR)
             await ctx.send(embed=discord.Embed(description=f"Copying command tree to {g}"), delete_after=5.0)
             bot.tree.copy_global_to(guild=g)
@@ -51,10 +50,10 @@ class Admin(commands.Cog):
             logger.warning("Error syncing ships! (Bad argument)")
         return
 
-    @app_commands.command(name='reload')
+    @app_commands.command(name="reload")
     @commands.has_permissions(administrator=True)
     @app_commands.autocomplete()
-    async def _reload(self, itx: discord.Interaction, module : str):
+    async def _reload(self, itx: discord.Interaction, module: str):
         """Reloads a module."""
         try:
             await bot.reload_extension(f"cogs.{module}")
@@ -62,22 +61,23 @@ class Admin(commands.Cog):
             await itx.response.send_message(f"\nError: \n```{e}```")
         else:
             await itx.response.send_message(f"\nModule: `{module}` reloaded.")
-            
-    @_reload.autocomplete('module')
+
+    @_reload.autocomplete("module")
     async def _reload_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-        options = ['admin', 'destiny', 'listeners', 'main', 'moderation', 'music', 'utils']
-        return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
-    
+        options = ["admin", "gaming", "listeners", "main", "moderation", "music", "utils"]
+        return [
+            app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()
+        ]
+
     ########################################################################################################################
 
-    group_set = app_commands.Group(name="set",description="Group of commands to set bot settings")
-    group_unset = app_commands.Group(name="unset",description="Group of commands to configure bot settings")
+    group_set = app_commands.Group(name="set", description="Group of commands to set bot settings")
+    group_unset = app_commands.Group(name="unset", description="Group of commands to configure bot settings")
 
     #####################
     ### Role Settings ###
     #####################
 
-    
     @group_set.command(name="prefix")
     # @commands.has_permissions(administrator=True)
     @app_commands.checks.has_permissions(administrator=True)
@@ -113,7 +113,7 @@ class Admin(commands.Cog):
     @group_unset.command(name="role")
     @commands.has_permissions(administrator=True)
     @app_commands.autocomplete()
-    async def _role(self, itx: discord.Interaction, option: str):  
+    async def _role(self, itx: discord.Interaction, option: str):
         match option:
             case "mod":
                 bot.db.update_mod_roles(itx.guild_id, [0])
@@ -125,10 +125,12 @@ class Admin(commands.Cog):
         await itx.response.send_message(f"{option.title()} role unset.")
         return True
 
-    @_role.autocomplete('option')
+    @_role.autocomplete("option")
     async def _roles_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-        options = ['mod', 'member']
-        return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
+        options = ["mod", "member"]
+        return [
+            app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()
+        ]
 
     ########################
     ### Channel Settings ###
@@ -137,9 +139,9 @@ class Admin(commands.Cog):
     @group_set.command(name="channel")
     # @commands.has_permissions(administrator=True)
     @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.describe(option='What to specify a channel for', channel='Which channel to send to')
+    @app_commands.describe(option="What to specify a channel for", channel="Which channel to send to")
     @app_commands.autocomplete()
-    async def _channel_set(self, itx: discord.Interaction, option: str, channel: discord.TextChannel):  
+    async def _channel_set(self, itx: discord.Interaction, option: str, channel: discord.TextChannel):
         match option:
             case "bot":
                 bot.db.update_channel_bot(itx.guild_id, channel.id)
@@ -160,15 +162,17 @@ class Admin(commands.Cog):
         await itx.response.send_message(f"{option.title()} channel set to <#{channel.id}>.")
         return True
 
-    @_channel_set.autocomplete('option')
+    @_channel_set.autocomplete("option")
     async def _channel_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-        options = ['logs', 'bot', 'welcome', 'music', 'lfg', 'videos']#, 'pins']
-        return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
-    
+        options = ["logs", "bot", "welcome", "music", "lfg", "videos"]  # , 'pins']
+        return [
+            app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()
+        ]
+
     @group_unset.command(name="channel")
     @commands.has_permissions(administrator=True)
     @app_commands.autocomplete(option=_channel_autocomplete)
-    async def _channel_unset(self, itx: discord.Interaction, option: str):  
+    async def _channel_unset(self, itx: discord.Interaction, option: str):
         match option:
             case "bot":
                 bot.db.update_channel_bot(itx.guild_id, 0)
@@ -190,7 +194,6 @@ class Admin(commands.Cog):
         await itx.response.send_message(f"{option.title()} channel unset.")
         return True
 
-    
     ######################
     ### Video Settings ###
     ######################
@@ -200,10 +203,9 @@ class Admin(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(channel="Which channel to allow/disallow videos in", switch="bool: True to allow videos")
     async def _allowvideos(self, itx: discord.Interaction, channel: discord.TextChannel, switch: bool):
-        if switch == True:
+        if switch is True:
             bot.db.add_videos_whitelist(itx.guild_id, channel.id)
             await itx.response.send_message(f"Videos allowed in <#{channel.id}>.")
-        elif switch == False:
+        elif switch is False:
             bot.db.remove_videos_whitelist(itx.guild_id, channel.id)
             await itx.response.send_message(f"Videos not allowed in <#{channel.id}>.")
-

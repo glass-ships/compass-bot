@@ -10,3 +10,4 @@ logs/
 **.egg-info
 build/
 site/
+.ruff_cache

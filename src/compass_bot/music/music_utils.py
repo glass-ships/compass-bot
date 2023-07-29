@@ -14,6 +14,7 @@ guild_player = {}
 ### URL Parsing Methods ###
 ###########################
 
+
 def identify_host(url):
     """Returns Site type of url host"""
 
@@ -38,7 +39,7 @@ def identify_host(url):
 
 def identify_playlist(url):
     """Returns PlaylistType from url host"""
-    
+
     # url = URL(url)
     match URL(url):
         case "playlist?list=" | "&list=":
@@ -50,16 +51,18 @@ def identify_playlist(url):
         case _:
             return PlaylistTypes.Not_Playlist
 
+
 ################################
 ### Spotify Metadata Methods ###
 ################################
+
 
 def parse_spotify_track(sp, url: str) -> Search:
     """Returns the artist and title for a given Spotify URL"""
     if "track" in url:
         track = sp.track(url)
-        artists = [f"{a['name']}" for a in track['artists']]
-        search = Search(query=" - ".join([*artists, track['name']]), url=url)
+        artists = [f"{a['name']}" for a in track["artists"]]
+        search = Search(query=" - ".join([*artists, track["name"]]), url=url)
     return search
 
 
@@ -69,43 +72,53 @@ def parse_spotify_playlist(sp, url: str) -> Playlist:
     searches = []
 
     if "album" in url:
-        playlist_title = sp.album(url)['name']
-        album_tracks = sp.album_tracks(url)['items']
+        playlist_title = sp.album(url)["name"]
+        album_tracks = sp.album_tracks(url)["items"]
         for track in album_tracks:
-            artists = [f"{a['name']}" for a in track['artists']]
-            sp_url = track['external_urls']['spotify']
-            searches.append(Search(query=" ".join([*artists, track['name']]), url=sp_url))
+            artists = [f"{a['name']}" for a in track["artists"]]
+            sp_url = track["external_urls"]["spotify"]
+            searches.append(Search(query=" ".join([*artists, track["name"]]), url=sp_url))
 
     if "playlist" in url:
         offset = 0
         results = []
-        playlist_title = sp.playlist(url)['name']
+        playlist_title = sp.playlist(url)["name"]
         while True:
             response = sp.playlist_items(
                 playlist_id=url,
                 offset=offset,
-                fields='items.track.name, items.track.album.name, items.track.artists.name, items.track.external_urls.spotify, total',
-                additional_types=['track']
-                )
-            
-            if len(response['items']) == 0:
+                fields=",".join(
+                    [
+                        "items.track.name",
+                        "items.track.album.name",
+                        "items.track.artists.name",
+                        "items.track.external_urls.spotify",
+                        "total",
+                    ]
+                ),
+                additional_types=["track"],
+            )
+
+            if len(response["items"]) == 0:
                 break
-            
-            results.append(response['items'])
-            offset += len(response['items'])
-        
+
+            results.append(response["items"])
+            offset += len(response["items"])
+
         tracks = [i for sublist in results for i in sublist]
         for t in tracks:
-            track = t['track']
-            artists = [f"{a['name']}" for a in track['artists']]
-            sp_url = track['external_urls']['spotify']
-            searches.append(Search(query=" ".join([*artists, track['name']]), url=sp_url))
+            track = t["track"]
+            artists = [f"{a['name']}" for a in track["artists"]]
+            sp_url = track["external_urls"]["spotify"]
+            searches.append(Search(query=" ".join([*artists, track["name"]]), url=sp_url))
 
     return Playlist(name=playlist_title, total=len(searches), items=searches)
+
 
 ################################
 ### YouTube Metadata Methods ###
 ################################
+
 
 def search_youtube(query: str):
     """Searches youtube for the video title and returns the first result"""
@@ -113,7 +126,8 @@ def search_youtube(query: str):
     #     r = ydl.extract_info(f"ytsearch1:{search_str}", download=False)
     # return None if r is None else r['entries'][0]['original_url']
     video = yt_utils.SearchYT(query, limit=1).videos()[0]
-    return Search(query=video['title'], url=f"https://www.youtube.com/watch?v={video['id']}")
+    return Search(query=video["title"], url=f"https://www.youtube.com/watch?v={video['id']}")
+
 
 def get_yt_metadata(yt_url):
     """Returns the metadata for a given YouTube URL"""
@@ -122,6 +136,7 @@ def get_yt_metadata(yt_url):
     # return r
     data = yt_utils.Data(yt_url).data()
     return data
+
 
 # def download_video(url):
 #     if song.title != None:

@@ -7,12 +7,13 @@ from compass_bot.utils.bot_config import Emojis, EMBED_COLOR
 from compass_bot.music.music_config import InfoMessages, MAX_HISTORY_LENGTH, MAX_TRACKNAME_HISTORY_LENGTH
 from compass_bot.music.dataclasses import Song
 
+
 class Queue:
     """Stores the youtube links of songs to be played and already played and offers basic operation on the queues"""
 
     def __init__(self):
-        self.playque = deque()            # Stores the links of the songs to be played
-        self.playhistory = deque()        # Stores the links of the songs already played
+        self.playque = deque()  # Stores the links of the songs to be played
+        self.playhistory = deque()  # Stores the links of the songs already played
         self.trackname_history = deque()  # Stores the names of the songs already played
         self.loop = False
 
@@ -23,7 +24,6 @@ class Queue:
         return len(self.playque) == 0
 
     def queue_embed(self):
-
         if self.is_empty():
             embed = discord.Embed(description=InfoMessages.QUEUE_EMPTY, color=EMBED_COLOR())
         else:
@@ -33,9 +33,9 @@ class Queue:
                 #     queue_entry = f"{counter}. [{song.webpage_url}]({song.webpage_url})"
                 # else:
                 #     queue_entry = f"{counter}. [{song.title if song.title else song.webpage_url}]({song.webpage_url})"
-                
+
                 queue_entry = f"{counter}. [{song.title if song.title else song.base_url}]({song.base_url})"
-                
+
                 queue_str = "\n".join(queue_list)
                 if len(queue_str) + len(queue_entry) < 4096 and len(queue_list) < 20:
                     queue_list.append(queue_entry)
@@ -43,11 +43,10 @@ class Queue:
                     break
 
             embed = discord.Embed(title=f"{Emojis.playlist} Queue", color=EMBED_COLOR())
-            embed.description="\n".join(queue_list)
+            embed.description = "\n".join(queue_list)
             embed.set_footer(text=f"Plus {self.__len__() - counter} more queued...")
         # return queue_list, counter
         return embed
-            
 
     def add(self, track: Song):
         self.playque.append(track)
@@ -55,7 +54,7 @@ class Queue:
     def next(self, song_played: Song):
         """Returns the next song to be played"""
 
-        if self.loop == True:
+        if self.loop is True:
             self.playque.appendleft(self.playhistory[-1])
 
         self.playhistory.append(song_played)
@@ -70,14 +69,13 @@ class Queue:
         return self.playque.popleft() if self.playque else None
 
     def prev(self, current_song: Song):
-
         if current_song is None:
             self.playque.appendleft(self.playhistory[-1])
             return self.playque[0]
 
         ind = self.playhistory.index(current_song)
         self.playque.appendleft(self.playhistory[ind - 1])
-        if current_song != None:
+        if current_song is not None:
             self.playque.insert(1, current_song)
 
     def move(self, oldindex: int, newindex: int):
@@ -91,4 +89,3 @@ class Queue:
     def empty(self):
         self.playque.clear()
         self.playhistory.clear()
-

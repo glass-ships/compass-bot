@@ -16,7 +16,7 @@ class Main(commands.Cog):
     def __init__(self, bot_):
         global bot
         bot = bot_
-        
+
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
@@ -29,27 +29,28 @@ class Main(commands.Cog):
         return
 
     async def _profile_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
-        options = ['User', 'Server']
-        return [app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()]
+        options = ["User", "Server"]
+        return [
+            app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()
+        ]
 
     @app_commands.command(name="avatar")
     @app_commands.autocomplete(profile=_profile_autocomplete)
-    async def _avatar(self, itx: discord.Interaction, user: discord.Member=None, profile: str="Server"):
+    async def _avatar(self, itx: discord.Interaction, user: discord.Member = None, profile: str = "Server"):
         """Returns a user's Discord avatar"""
         await itx.response.defer()
 
         u = user or itx.user
         mem = await itx.guild.fetch_member(u.id)
-        avatarURL = mem.avatar.url if profile == 'User' else mem.guild_avatar.url
+        avatarURL = mem.avatar.url if profile == "User" else mem.guild_avatar.url
         embed = discord.Embed(description=f"{mem.mention}'s avatar")
         embed.set_image(url=f"{avatarURL}")
         await itx.followup.send(embed=embed)
         return
 
-
     @app_commands.command(name="banner")
     @app_commands.autocomplete(profile=_profile_autocomplete)
-    async def _banner(self, itx: discord.Interaction, user: discord.Member=None, profile: str=None):
+    async def _banner(self, itx: discord.Interaction, user: discord.Member = None, profile: str = None):
         """Returns a user's Discord banner"""
         await itx.response.defer()
 
@@ -60,5 +61,3 @@ class Main(commands.Cog):
         embed.set_image(url=f"{userBannerUrl}")
         await itx.followup.send(embed=embed)
         return
-
-    
