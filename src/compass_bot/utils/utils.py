@@ -1,5 +1,6 @@
 import os
-import time, re
+import re
+import time
 from pathlib import Path
 from typing import Optional, Union
 from datetime import datetime
@@ -26,6 +27,7 @@ URL_REGEX = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0
 
 class ddict(dict):
     """dot.notation access to dictionary attributes"""
+
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
@@ -39,6 +41,7 @@ class URL(str):
     If URL contains "substring", equality returns True. For example:
         URL("https://www.youtube.com/watch?v=1234567890") == youtube => True
     """
+
     def __eq__(self, other) -> bool:
         return self.__contains__(other)
 
@@ -47,15 +50,16 @@ class URL(str):
 ### Parsing Utils ###
 #####################
 
+
 def parse_args(args: str) -> ddict:
     """Parse arguments from a string into a dictionary"""
-    
+
     args = shlex.split(args)
     opts = {}
     for i in range(len(args)):
         arg = args[i]
-        if arg.startswith('--'):
-            opts[arg.lstrip('-').replace('-','_')] = args[i+1]
+        if arg.startswith("--"):
+            opts[arg.lstrip("-").replace("-", "_")] = args[i + 1]
     return ddict(opts)
 
 
@@ -74,16 +78,17 @@ def extract_url(content):
 
 #### File Utils
 
+
 def get_emojis(guild):
     """Returns lists of all static and animated emojis in a guild"""
 
-    emojis = {'anim': [], 'static': []}
+    emojis = {"anim": [], "static": []}
     for i in guild.emojis:
-        if i.animated == True:
-            emojis['anim'].append(i)
+        if i.animated is True:
+            emojis["anim"].append(i)
         else:
-            emojis['static'].append(i)
-    return emojis['static'], emojis['anim']
+            emojis["static"].append(i)
+    return emojis["static"], emojis["anim"]
 
 
 async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> None:
@@ -103,8 +108,9 @@ def getfilepath(itx, fp) -> str:
 
 
 #######################
-### Date/Time Utils ### 
+### Date/Time Utils ###
 #######################
+
 
 def check_time_format(t):
     """Check that datetime input is in format `YYYY-MM-DD HH:MM AM/PM TZ`"""
@@ -119,11 +125,11 @@ def dt_to_epoch(t):
 
     msg_split = t.split()
     temp = []
-    temp.extend(msg_split[0].split('-'))
-    temp.extend(msg_split[1].split(':'))
+    temp.extend(msg_split[0].split("-"))
+    temp.extend(msg_split[1].split(":"))
     temp.append(msg_split[2])
     stream_tz = tz.gettz(msg_split[3])
-    dt = datetime(int(temp[0]),int(temp[1]), int(temp[2]), int(temp[3]), int(temp[4]), tzinfo=stream_tz)
+    dt = datetime(int(temp[0]), int(temp[1]), int(temp[2]), int(temp[3]), int(temp[4]), tzinfo=stream_tz)
     et = int(time.mktime(dt.timetuple()))
     return et
 
@@ -132,14 +138,25 @@ def epoch_to_dt(t):
     """Convert epoch time to datetime"""
     return datetime.fromtimestamp(t)
 
+
 #####################
 ### Discord Utils ###
 #####################
 
-async def send_embed(*, channel: discord.TextChannel, title=None, description=None, image=None, thumbnail=None, footer=None, footer_image=None):
+
+async def send_embed(
+    *,
+    channel: discord.TextChannel,
+    title=None,
+    description=None,
+    image=None,
+    thumbnail=None,
+    footer=None,
+    footer_image=None,
+):
     """Send embed to channel"""
 
-    embed = discord.Embed(title=title, description=description, color = EMBED_COLOR())
+    embed = discord.Embed(title=title, description=description, color=EMBED_COLOR())
 
     if image:
         embed.set_image(url=image)
@@ -147,7 +164,6 @@ async def send_embed(*, channel: discord.TextChannel, title=None, description=No
         embed.set_thumbnail(url=thumbnail)
     if footer or footer_image:
         embed.set_footer(text=footer, icon_url=footer_image)
-    
+
     await channel.send(embed=embed)
     return
-

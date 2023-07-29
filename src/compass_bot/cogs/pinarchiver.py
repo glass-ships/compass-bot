@@ -1,11 +1,12 @@
-from random import randrange
+# from random import randrange
 
-import discord
+# import discord
 from discord.ext import commands
-#from discord.utils import get
-from loguru import logger
 
-from compass_bot.utils.bot_config import EMBED_COLOR
+# from discord.utils import get
+# from loguru import logger
+
+# from compass_bot.utils.bot_config import EMBED_COLOR
 
 
 mode = 1
@@ -16,9 +17,11 @@ blacklisted_channels = []
 
 ### Setup Cog
 
+
 # Startup method
 async def setup(bot):
     await bot.add_cog(PinArchiver(bot))
+
 
 # Define Class
 class PinArchiver(commands.Cog):
@@ -34,7 +37,7 @@ class PinArchiver(commands.Cog):
 
     Furthermore: the p.sendall feature described later in the code allows the user to set
     Passel so that all pinned messages get sent to the pins archive channel."""
-    
+
     def __init__(self, bot_):
         global bot
         bot = bot_
@@ -60,7 +63,6 @@ class PinArchiver(commands.Cog):
     #             await ctx.send("Error: Check black listed channels")
     #             return
     #     await ctx.send("done")
-
 
     # # The method that takes care of pin updates in a server
     # @commands.Cog.listener()
@@ -104,7 +106,7 @@ class PinArchiver(commands.Cog):
     #                 text="sent in: " + last_pinned.channel.name + " - at: " + str(last_pinned.created_at))
     #             pinEmbed.set_author(name='Sent by ' + last_pinned.author.name)
     #             await channel.guild.get_channel(int(pins_channel)).send(embed=pinEmbed)
-                
+
     #             # remove this message if you do not want the bot to send a message when you pin a message
     #             await last_pinned.channel.send(
     #                 "See pinned message in " + channel.guild.get_channel(int(pins_channel)).mention)
@@ -164,7 +166,6 @@ class PinArchiver(commands.Cog):
     #                 await last_pinned.unpin()
     #     except: # Message was unpinned, do nothing
     #         pass
-
 
     # @commands.command(name='pins', pass_context=True)
     # async def pins(self, ctx):

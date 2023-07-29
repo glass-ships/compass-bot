@@ -6,6 +6,7 @@ import discord
 
 from compass_bot.utils.bot_config import EMBED_COLOR, Emojis
 
+
 class Sites(StrEnum):
     Spotify = auto()
     YouTube = auto()
@@ -24,20 +25,20 @@ class PlaylistTypes(StrEnum):
 
 
 @dataclass
-class Search():
+class Search:
     query: str
     url: str = None
 
 
 @dataclass
-class Playlist():
+class Playlist:
     name: str
     total: int
     items: list
 
 
 @dataclass
-class Song():
+class Song:
     host: str = None
     base_url: str = None
     requested_by: str = None
@@ -51,35 +52,24 @@ class Song():
     def queued_embed(self, pos: int = None):
         # TODO: Add estimated time until song is played
         embed = discord.Embed(
-            description=f"{Emojis.catChillin} Song queued: {pos}. [{self.title}]({self.webpage_url})", 
-            color=EMBED_COLOR()
+            description=f"{Emojis.catChillin} Song queued: {pos}. [{self.title}]({self.webpage_url})",
+            color=EMBED_COLOR(),
         )
         return embed
 
     def now_playing_embed(self) -> discord.Embed:
         embed = discord.Embed(
-            title=f"{Emojis.eq} Now Playing", 
-            description=f"[{self.title}]({self.webpage_url})", 
-            color=EMBED_COLOR()
+            title=f"{Emojis.eq} Now Playing", description=f"[{self.title}]({self.webpage_url})", color=EMBED_COLOR()
         )
         if self.thumbnail is not None:
             embed.set_thumbnail(url=self.thumbnail)
+        embed.add_field(name="Uploader:", value=self.channel_name, inline=True)
         embed.add_field(
-            name="Uploader:",
-            value=self.channel_name,
-            inline=True
-            )
-        embed.add_field(
-            name="Length: ", 
-            value=f"`{str(timedelta(seconds=self.duration))}`" if self.duration is not None else "`Unknown`", 
-            inline=True
+            name="Length: ",
+            value=f"`{str(timedelta(seconds=self.duration))}`" if self.duration is not None else "`Unknown`",
+            inline=True,
         )
-        embed.add_field(
-            name="Requested by:",
-            value=self.requested_by.mention,
-            inline=True
-        )
+        embed.add_field(name="Requested by:", value=self.requested_by.mention, inline=True)
         embed.set_footer(icon_url=self.requested_by.avatar.url)
 
         return embed
-

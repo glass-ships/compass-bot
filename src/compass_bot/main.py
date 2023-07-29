@@ -15,7 +15,7 @@ app = typer.Typer(name="compass")
 app_state = {
     "verbose": 0,
     "quiet": False,
-    }
+}
 
 
 @app.callback(invoke_without_command=True)
@@ -23,9 +23,10 @@ def version_callback(
     version: Optional[bool] = typer.Option(None, "--version", is_eager=True),
     verbose: int = typer.Option(0, "--verbose", "-v", count=True, help="Enable verbose logging"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Supress logging (except Errors)"),
-    ):
+):
     if version:
         from compass_bot import __version__
+
         console.print(f"\n:arrow_right: Compass Bot version: {__version__}")
         raise typer.Exit()
     app_state["verbose"] = verbose
@@ -34,39 +35,60 @@ def version_callback(
 
 @app.command()
 def start(
-        dev: bool = typer.Option(False, "--dev", "-d", help="Run the development version of the Bot locally"),
-        update: bool = typer.Option(False, "--update", "-u", help="Update the Bot's dependencies"),
-        pull: bool = typer.Option(False, "--pull", "-p", help="Pull the latest version of the Bot from GitHub"),
-    ):
+    dev: bool = typer.Option(False, "--dev", "-d", help="Run the development version of the Bot locally"),
+    update: bool = typer.Option(False, "--update", "-u", help="Update the Bot's dependencies"),
+    pull: bool = typer.Option(False, "--pull", "-p", help="Pull the latest version of the Bot from GitHub"),
+):
     """Starts the Bot
 
     Args:
         dev (bool, optional): Run the development version of the Bot locally. Defaults to False.
         update (bool, optional): Update the Bot's dependencies. Defaults to False.
-        pull (bool, optional): Pull the latest version of the Bot from GitHub. Defaults to False.    
+        pull (bool, optional): Pull the latest version of the Bot from GitHub. Defaults to False.
     """
-    log_level = "INFO" if (app_state['verbose'] == 1) else \
-        "DEBUG" if (app_state['verbose'] >= 2) else \
-        "ERROR" if (app_state['quiet'] == True) else \
-        "WARNING"
-        
-    console.print(f"""
+    log_level = (
+        "INFO"
+        if (app_state["verbose"] == 1)
+        else "DEBUG"
+        if (app_state["verbose"] >= 2)
+        else "ERROR"
+        if (app_state["quiet"] is True)
+        else "WARNING"
+    )
+
+    console.print(
+        f"""
 :arrow_right: Starting {'main' if not dev else 'dev'} bot...
     :arrow_right: Setting Compass log level to {log_level}
     :arrow_right: To stop the bot, use: poetry run compass stop
     :arrow_right: For log output, see `logs/`
-""")
+"""
+    )
     cmd = ["python", "src/compass_bot/bot.py"]
-    if app_state['verbose'] == False: cmd.append("--quiet")
-    if app_state['verbose'] == True: cmd.append("--verbose")
-    if dev: cmd.append("--dev")
-    if update: cmd.append("--update")
-    # if pull: cmd.append("--pull")
-    if pull: subprocess.call(["git", "pull"], stdout=sys.stdout, stderr=sys.stderr,)
+    if app_state["verbose"] is False:
+        cmd.append("--quiet")
+    if app_state["verbose"] is True:
+        cmd.append("--verbose")
+    if dev:
+        cmd.append("--dev")
+    if update:
+        cmd.append("--update")
+    # if pull:
+    #     cmd.append("--pull")
+    if pull:
+        subprocess.call(
+            ["git", "pull"],
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+        )
 
     Path("logs").mkdir(parents=True, exist_ok=True)
     logfile = open("logs/all.log", "w")
-    subprocess.Popen(cmd, stdout=logfile, stderr=logfile,)
+    subprocess.Popen(
+        cmd,
+        stdout=logfile,
+        stderr=logfile,
+    )
     logfile.close()
 
 
@@ -85,19 +107,20 @@ def stop():
 @app.command()
 def status():
     """Checks the status of the Bot"""
-    processes = [p for p in psutil.process_iter(attrs=['name']) if 'python' in p.name()]
+    processes = [p for p in psutil.process_iter(attrs=["name"]) if "python" in p.name()]
     for p in processes:
-        if 'src/compass_bot/bot.py' in p.cmdline():
+        if "src/compass_bot/bot.py" in p.cmdline():
             start_time = epoch_to_dt(p.create_time()).strftime("%Y-%m-%d at %H:%M:%S")
             uptime = timedelta(seconds=(datetime.now() - epoch_to_dt(p.create_time())).total_seconds())
-            console.print(f"""
+            console.print(
+                f"""
 Compass is currently running:
     PID: {p.pid}
     Command: "{' '.join(p.cmdline())}"
     Status: {p.status()}
     Started: {start_time}
-    Uptime: {uptime.days} days, {uptime.seconds//3600} hours, {(uptime.seconds//60)%60} minutes, {uptime.seconds%60} seconds
-""")
+    Uptime: {uptime.days} days, {uptime.seconds//3600} hrs, {(uptime.seconds//60)%60} min, {uptime.seconds%60} sec
+"""
+            )
             raise typer.Exit()
     console.print("\nCompass is not currently running\n")
-
