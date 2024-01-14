@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional, Union
 from datetime import datetime
 from dateutil import tz
+from typing import List
 
 import discord
 import shlex
@@ -79,7 +80,7 @@ def extract_url(content):
 #### File Utils
 
 
-def get_emojis(guild):
+def get_emojis(guild: discord.Guild) -> (List[discord.Emoji], List[discord.Emoji]):
     """Returns lists of all static and animated emojis in a guild"""
 
     emojis = {"anim": [], "static": []}
@@ -103,7 +104,6 @@ async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> 
 
 def getfilepath(itx, fp) -> str:
     """Returns filepath with guild-specific download prefix"""
-
     return f"downloads/{itx.guild.name}/{fp}"
 
 

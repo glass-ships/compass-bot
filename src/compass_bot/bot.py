@@ -149,7 +149,7 @@ class CompassBot:
         self.bot.loop.stop()
         # self.bot.loop.close()
         await self.bot.close()
-        self.bot.logger.info(f"{self.bot.user.name} offline.")
+        self.bot.logger.info(f"{self.bot.user.name} offline.")  # type: ignore
         sys.exit(0)
 
 
