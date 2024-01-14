@@ -9,7 +9,7 @@ from discord import app_commands
 from discord.ext import commands
 from loguru import logger
 
-from compass_bot.utils.bot_config import GuildData, GLASS_HARBOR
+from compass_bot.utils.bot_config import GuildData, COMPASS_ROOT, GLASS_HARBOR
 from compass_bot.utils.utils import get_emojis
 
 
@@ -126,14 +126,6 @@ class Utils(commands.Cog):
         aliases=["dlemojis", "dle"],
     )
     async def _download_emojis(self, ctx) -> None:
-        # if ctx.guild.id != 393995277713014785:
-        #     await ctx.send(embed=discord.Embed(
-        #       description=f"Oops! This command can only be used in the Glass Harbor Discord server.")
-        # )
-        #     return
-        # mod_roles = bot.db.get_mod_roles(ctx.guild.id)
-        # if not await role_check(ctx, mod_roles):
-        #     return
         await ctx.message.delete()
         fp = f"./downloads/{ctx.guild.name}/emojis"
         Path(fp).mkdir(parents=True, exist_ok=True)
@@ -145,20 +137,19 @@ class Utils(commands.Cog):
             fn = f"gif/{e.name}.gif" if e.animated else f"png/{e.name}.png"
             await e.save(fp=os.path.join(fp, fn))
             count += 1
-        await ctx.send(f"{count} emoji's downloaded", delete_after=2.0)
+        await ctx.send(f"{count} emoji's downloaded")  # , delete_after=2.0)
         return
 
     @has_mod_ctx
     @commands.command(name="clearemojis")
     async def _clear_emojis(self, ctx, emojis=None) -> None:
-        if ctx.guild.id != 393995277713014785:
-            await ctx.send(
-                embed=discord.Embed(
-                    description=f"Oops! This command can only be used in the Glass Harbor Discord server."
-                )
-            )
-            return
-
+        # if ctx.guild.id != 393995277713014785:
+        #     await ctx.send(
+        #         embed=discord.Embed(
+        #             description=f"Oops! This command can only be used in the Glass Harbor Discord server."
+        #         )
+        #     )
+        #     return
         if emojis is None:
             guild_static, guild_anim = get_emojis(bot.get_guild(ctx.guild.id))
             for i in guild_static:
@@ -177,14 +168,13 @@ class Utils(commands.Cog):
             await ctx.send("Error: expected None or List[emoji names] as argument")
 
     async def _add_emojis(self, ctx, emojis: list = None) -> None:
-        if ctx.guild.id != 393995277713014785:
-            await ctx.send(
-                embed=discord.Embed(
-                    description=f"Oops! This command can only be used in the Glass Harbor Discord server."
-                )
-            )
-            return
-
+        # if ctx.guild.id != 393995277713014785:
+        #     await ctx.send(
+        #         embed=discord.Embed(
+        #             description=f"Oops! This command can only be used in the Glass Harbor Discord server."
+        #         )
+        #     )
+        #     return
         for e in emojis:
             with open(e, "rb") as image:
                 name = e.split("/")[-1]
@@ -197,19 +187,21 @@ class Utils(commands.Cog):
         await ctx.send(embed=discord.Embed(description=f"{len(emojis)} emojis added"))
 
     @has_mod_ctx
-    @commands.command(name="syncemojis", description="Clone glass' discord repo and sync Glass Harbor emojis")
+    @commands.command(name="syncemojis", description="Syncs emojis from resource repo or local backup")
     async def _sync_emojis(self, ctx, option: str = None):
-        if ctx.guild.id != GLASS_HARBOR:
-            await ctx.send(
-                embed=discord.Embed(
-                    description=f"Oops! This command can only be used in the Glass Harbor Discord server."
-                )
-            )
-            return
+        # if (ctx.guild.id != GLASS_HARBOR):
+        #     await ctx.send(
+        #         embed=discord.Embed(
+        #             description=f"Oops! This command can only be used in the Glass Harbor Discord server."
+        #         )
+        #     )
+        #     return
 
+        guild_static, guild_anim = get_emojis(bot.get_guild(ctx.guild.id))
+
+        # Check for / clone resource repo
         repo_url = f"https://glass-ships:{os.getenv('GITLAB_TOKEN')}@gitlab.com/glass-ships/discord-stuff.git"
-        repo_path = f"{cog_path.parent.parent.parent.parent}"
-
+        repo_path = f"{COMPASS_ROOT.parent.parent}"
         if not Path(f"{repo_path}/discord-stuff").is_dir():
             subprocess.call(["git", "clone", repo_url, f"{repo_path}/discord-stuff"])
         else:
@@ -217,11 +209,18 @@ class Utils(commands.Cog):
             await asyncio.sleep(7)
             logger.debug("Repo already exists - pulling repo")
 
-        guild_static, guild_anim = get_emojis(bot.get_guild(ctx.guild.id))
-
-        emoji_path = f"{repo_path}/discord-stuff/Glass Harbor/emojis"
-        backup_static = os.listdir(f"{emoji_path}/png")
-        backup_anim = os.listdir(f"{emoji_path}/gif")
+        # Check for local backup, else try repo
+        local_dir = f"{COMPASS_ROOT.parent.parent}/downloads/{ctx.guild.name}/emojis"
+        local_static_dir = os.listdir(f"{local_dir}/png")
+        local_anim_dir = os.listdir(f"{local_dir}/gif")
+        if (os.path.exists(local_dir)) and (len(local_static_dir) > 0 or len(local_anim_dir) > 0):
+            backup_dir = local_dir
+            backup_static = local_static_dir
+            backup_anim = local_anim_dir
+        else:
+            backup_dir = f"{repo_path}/discord-stuff/{ctx.guild.name}/emojis"
+            backup_static = os.listdir(f"{backup_dir}/png")
+            backup_anim = os.listdir(f"{backup_dir}/gif")
 
         added = []
         removed = []
@@ -236,12 +235,12 @@ class Utils(commands.Cog):
 
         for e in backup_static:
             if e[:-4] not in [i.name for i in guild_static]:
-                added.append(f"{emoji_path}/png/{e}")
+                added.append(f"{backup_dir}/png/{e}")
         for e in backup_anim:
             if e[:-4] not in [i.name for i in guild_anim]:
-                added.append(f"{emoji_path}/gif/{e}")
+                added.append(f"{backup_dir}/gif/{e}")
         await self._add_emojis(ctx, added)
-        await asyncio.sleep(5.0)
+        # await asyncio.sleep(5.0)
 
         await ctx.send(embed=discord.Embed(description="Emojis Synced!"))
 
@@ -263,6 +262,12 @@ class Utils(commands.Cog):
         name="download", description="Downloads all files in current channel (personal archiving tool)"
     )
     async def _download(self, itx: discord.Interaction):
+        glass_servers = [GLASS_HARBOR, 771161933301940224, 827388504232165386]
+        if itx.guild_id not in glass_servers:
+            await itx.response.send_message(
+                "This command is only available in the Glass Discord servers.", ephemeral=True
+            )
+            return
         download_dir = f"./downloads/{itx.guild.name}/{itx.channel.name}"
         if not os.path.exists(download_dir):
             os.makedirs(download_dir)

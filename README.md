@@ -9,6 +9,8 @@
 
 | [Documentation](https://glass-ships.gitlab.io/compass-bot) | [Invite Compass](https://discord.com/oauth2/authorize?client_id=932737557836468297&scope=bot&permissions=8&scope=applications.commands%20bot) |
 
+https://discord.com/oauth2/authorize?client_id=535346715297841172&scope=bot&permissions=8&scope=applications.commands%20bot
+
 Compass is a general Discord bot written in Python and hosted on DigitalOcean. 
 
 This repository contains the source code for Compass, as well as the documentation for the bot, 
