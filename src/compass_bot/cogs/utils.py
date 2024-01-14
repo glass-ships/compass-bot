@@ -10,7 +10,7 @@ from discord.ext import commands
 from loguru import logger
 
 from compass_bot.utils.bot_config import GuildData, COMPASS_ROOT, GLASS_HARBOR
-from compass_bot.utils.utils import get_emojis
+from compass_bot.utils.utils import get_emojis, send_embed
 
 
 cog_path = Path(__file__)
@@ -60,9 +60,6 @@ class Utils(commands.Cog):
     @has_mod_ctx
     @commands.command(name="test")
     async def _test(self, ctx):
-        data = GuildData(ctx.guild).__dict__
-        del data["guild"]
-        await ctx.send(data)
         pass
 
     @has_mod_ctx
@@ -141,62 +138,9 @@ class Utils(commands.Cog):
         return
 
     @has_mod_ctx
-    @commands.command(name="clearemojis")
-    async def _clear_emojis(self, ctx, emojis=None) -> None:
-        # if ctx.guild.id != 393995277713014785:
-        #     await ctx.send(
-        #         embed=discord.Embed(
-        #             description=f"Oops! This command can only be used in the Glass Harbor Discord server."
-        #         )
-        #     )
-        #     return
-        if emojis is None:
-            guild_static, guild_anim = get_emojis(bot.get_guild(ctx.guild.id))
-            for i in guild_static:
-                await ctx.guild.delete_emoji(i)
-                await asyncio.sleep(3.0)
-            for i in guild_anim:
-                await ctx.guild.delete_emoji(i)
-                await asyncio.sleep(3.0)
-            await ctx.send("All emojis removed")
-        elif isinstance(emojis, list):
-            for e in emojis:
-                await ctx.guild.delete_emoji(e)
-                await asyncio.sleep(3.0)
-            await ctx.send(embed=discord.Embed(description=f"{len(emojis)} emojis removed"))
-        else:
-            await ctx.send("Error: expected None or List[emoji names] as argument")
-
-    async def _add_emojis(self, ctx, emojis: list = None) -> None:
-        # if ctx.guild.id != 393995277713014785:
-        #     await ctx.send(
-        #         embed=discord.Embed(
-        #             description=f"Oops! This command can only be used in the Glass Harbor Discord server."
-        #         )
-        #     )
-        #     return
-        for e in emojis:
-            with open(e, "rb") as image:
-                name = e.split("/")[-1]
-                name = name[:-4]
-                try:
-                    await ctx.guild.create_custom_emoji(name=name, image=image.read())
-                except Exception as error:
-                    await ctx.send(f"Error uploading emoji `{e}`: {error}")
-            await asyncio.sleep(3.0)
-        await ctx.send(embed=discord.Embed(description=f"{len(emojis)} emojis added"))
-
-    @has_mod_ctx
     @commands.command(name="syncemojis", description="Syncs emojis from resource repo or local backup")
     async def _sync_emojis(self, ctx, option: str = None):
-        # if (ctx.guild.id != GLASS_HARBOR):
-        #     await ctx.send(
-        #         embed=discord.Embed(
-        #             description=f"Oops! This command can only be used in the Glass Harbor Discord server."
-        #         )
-        #     )
-        #     return
-
+        await send_embed(channel=ctx, description="Syncing emojis...")
         guild_static, guild_anim = get_emojis(bot.get_guild(ctx.guild.id))
 
         # Check for / clone resource repo
@@ -231,7 +175,7 @@ class Utils(commands.Cog):
             if f"{e.name}.gif" not in backup_anim:
                 removed.append(e)
         await self._clear_emojis(ctx, removed)
-        await asyncio.sleep(5.0)
+        await asyncio.sleep(3.0)
 
         for e in backup_static:
             if e[:-4] not in [i.name for i in guild_static]:
@@ -240,9 +184,61 @@ class Utils(commands.Cog):
             if e[:-4] not in [i.name for i in guild_anim]:
                 added.append(f"{backup_dir}/gif/{e}")
         await self._add_emojis(ctx, added)
-        # await asyncio.sleep(5.0)
 
         await ctx.send(embed=discord.Embed(description="Emojis Synced!"))
+
+    @has_mod_ctx
+    @commands.command(name="clearemojis", description="Clears all emojis in a guild")
+    async def _clear_emojis(self, ctx, emojis=None) -> None:
+        await send_embed(
+            channel=ctx.channel,
+            description="Warning: This command will delete all emojis in this server. Proceed? (y/n)",
+        )
+
+        def check(m):
+            return m.author == ctx.author and m.channel == ctx.channel
+
+        try:
+            msg = await bot.wait_for("message", check=check, timeout=30.0)
+        except asyncio.TimeoutError:
+            await ctx.send("Command timed out.")
+            return
+        if not msg.content.lower().startswith("y"):
+            await send_embed(channel=ctx, description="Command cancelled.")
+            return
+
+        if emojis is None:
+            guild_static, guild_anim = get_emojis(bot.get_guild(ctx.guild.id))
+            for i in guild_static:
+                await ctx.guild.delete_emoji(i)
+                await asyncio.sleep(3.0)
+            for i in guild_anim:
+                await ctx.guild.delete_emoji(i)
+                await asyncio.sleep(3.0)
+            await ctx.send("All emojis removed")
+        elif isinstance(emojis, list):
+            for e in emojis:
+                await ctx.guild.delete_emoji(e)
+                await asyncio.sleep(3.0)
+            await send_embed(channel=ctx, description=f"{len(emojis)} emojis removed")
+        else:
+            await ctx.send("Error: expected None or List[emoji names] as argument")
+        return
+
+    # Not a command, but a helper function for syncemojis
+    async def _add_emojis(self, ctx, emojis: list = None) -> None:
+        """Adds emojis to a guild from a list of filepaths"""
+        for e in emojis:
+            with open(e, "rb") as image:
+                name = e.split("/")[-1]
+                name = name[:-4]
+                try:
+                    await ctx.guild.create_custom_emoji(name=name, image=image.read())
+                except Exception as error:
+                    await ctx.send(f"Error uploading emoji `{e}`: {error}")
+            await asyncio.sleep(3.0)
+        await send_embed(channel=ctx, description=f"{len(emojis)} emojis added")
+        return
 
     #####################
     ### Misc Commands ###
@@ -257,32 +253,27 @@ class Utils(commands.Cog):
 
     # Purely academic / for personal usage if you want to host your own instance.
     # Not intended for scraping servers for content.
-    @has_mod_itx
-    @app_commands.command(
-        name="download", description="Downloads all files in current channel (personal archiving tool)"
-    )
-    async def _download(self, itx: discord.Interaction):
+    @has_mod_ctx
+    @commands.command(name="download", description="Downloads all attachments in a channel", aliases=["dl"])
+    async def _download(self, ctx: commands.Context):
         glass_servers = [GLASS_HARBOR, 771161933301940224, 827388504232165386]
-        if itx.guild_id not in glass_servers:
-            await itx.response.send_message(
+        if ctx.guild.id not in glass_servers:
+            await ctx.response.send_message(
                 "This command is only available in the Glass Discord servers.", ephemeral=True
             )
             return
-        download_dir = f"./downloads/{itx.guild.name}/{itx.channel.name}"
+        download_dir = f"./downloads/{ctx.guild.name}/{ctx.channel.name}"
         if not os.path.exists(download_dir):
             os.makedirs(download_dir)
         count = 0
-        await itx.response.defer(ephemeral=True)
-        async for msg in itx.channel.history():
+        async for msg in ctx.channel.history():
             if msg.attachments:
                 logger.debug("attachment(s) found")
                 for a in msg.attachments:
                     try:
                         await a.save(fp=f"{download_dir}/{a.filename}")
                     except Exception as e:
-                        await itx.followup.send(
-                            f"Error downloading attachment from {msg.id}:\n```\n{e}\n```", ephemeral=True
-                        )
+                        await ctx.send(f"Error downloading attachment from {msg.id}:\n```\n{e}\n```")
                     count += 1
-        await itx.followup.send(f"Success: Downloaded {count} items.", ephemeral=True)
+        await ctx.send(f"Success: Downloaded {count} items.")
         return
