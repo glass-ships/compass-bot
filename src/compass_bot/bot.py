@@ -6,14 +6,11 @@ from pathlib import Path
 import asyncio
 import discord
 from discord.ext import commands
-import loguru
 
-from compass_bot.utils.bot_config import GuildData, DEFAULT_PREFIX, COMPASS_ROOT  # , HELP
+from compass_bot.utils.bot_config import GuildData, DEFAULT_PREFIX, COMPASS_ROOT
 from compass_bot.utils.custom_help_commands import CustomHelpCommand
 from compass_bot.utils.db_utils import ServerDB
 from compass_bot.utils.log_utils import get_logger
-
-# from compass_bot.utils.utils import console
 
 
 #######################
@@ -23,19 +20,23 @@ from compass_bot.utils.log_utils import get_logger
 parser = argparse.ArgumentParser(prog="Compass Bot", description="A Discord bot in Python")
 parser.add_argument("--dev", action="store_true")
 parser.add_argument("--update", action="store_true")
-parser.add_argument("--verbose", action="store_true")
-parser.add_argument("--debug", action="store_true")
-parser.add_argument("--quiet", action="store_true")
+parser.add_argument("--log-level", "-l", choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
+parser.add_argument("--quiet", "-q", action="store_true")
 args = parser.parse_args()
 
 ### Setup logging and fetch Discord API token
 
-logger = get_logger(name="compass", verbose=True if args.verbose else False if args.quiet else None)
-# discord.utils.setup_logging(level = "INFO")
-discord.utils.setup_logging(
-    level="DEBUG" if args.debug else "CRITICAL" if args.quiet else "INFO" if args.verbose else "WARNING"
+logger = get_logger(name="compass", level=args.log_level)
+discord_log_level = (
+    "INFO"
+    if args.log_level == "DEBUG"
+    else "CRITICAL"
+    if args.quiet
+    else "WARNING"
+    # "DEBUG" if args.log_level == "DEBUG" else "CRITICAL" if args.log_level == "CRITICAL" else "INFO"
 )
-
+discord.utils.setup_logging(level="WARNING")#discord_log_level)
+logger.info(f"Logging initialized with level {logger.level}")
 DISCORD_TOKEN = os.getenv("DSC_DEV_TOKEN") if args.dev else os.getenv("DSC_API_TOKEN")
 
 ##################
@@ -56,7 +57,7 @@ def create_bot(id, prefix) -> commands.Bot:
 
 
 class CompassBot:
-    def __init__(self, logger: loguru._logger.Logger, dev: bool = False):
+    def __init__(self, logger, dev: bool = False):
         self.app_id = 535346715297841172 if dev else 932737557836468297
         self.prefix = "," if dev else self.get_prefix
         self.bot = create_bot(self.app_id, self.prefix)

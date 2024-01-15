@@ -35,8 +35,8 @@ class Admin(commands.Cog):
 
         logger.info("Syncing ships...")
         if spec == "dev":
-            g = bot.get_guild(GLASS_HARBOR)
-            await ctx.send(embed=discord.Embed(description=f"Copying command tree to {g}"), delete_after=5.0)
+            g = bot.get_guild(ctx.guild.id)
+            await ctx.send(embed=discord.Embed(description=f"Copying command tree to {g}"))
             bot.tree.copy_global_to(guild=g)
             fmt = await bot.tree.sync(guild=g)
             await ctx.send((f"Synced {len(fmt)} commands to dev guild."))
