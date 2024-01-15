@@ -18,7 +18,7 @@ class SearchYT:
         limit = self.limit
         source = self.source
         data = re.findall(
-            '{"videoRenderer":{"videoId":"(\S{11})","thumbnail":{"thumbnails":\[{"url":"(\S+)","width":360,"height":202},{"url":"(\S+)","width":720,"height":404}\]},"title":{"runs":\[{"text":"(.+?)"}\],"accessibility":{"accessibilityData":{"label":"(.+?)"}}},"longBylineText"',
+            r'{"videoRenderer":{"videoId":"(\S{11})","thumbnail":{"thumbnails":\[{"url":"(\S+)","width":360,"height":202},{"url":"(\S+)","width":720,"height":404}\]},"title":{"runs":\[{"text":"(.+?)"}\],"accessibility":{"accessibilityData":{"label":"(.+?)"}}},"longBylineText"',
             source,
         )[:limit]
         data_ = []
@@ -45,12 +45,12 @@ class Data:
         # Construct a dictionary of the data
 
     def data(self):
-        videodetails = re.findall('"videoDetails":\{(.+?),"isOwnerViewing', self.source)[0] or None
-        id = re.findall('"videoId":"(\S{11})', videodetails)[0] or None
-        title = re.findall('"title":"(.+?)",', videodetails)[0] or None
-        duration = re.findall('"lengthSeconds":"(\d+)', self.source)[0] or None
+        videodetails = re.findall(r'"videoDetails":\{(.+?),"isOwnerViewing', self.source)[0] or None
+        id = re.findall(r'"videoId":"(\S{11})', videodetails)[0] or None
+        title = re.findall(r'"title":"(.+?)",', videodetails)[0] or None
+        duration = re.findall(r'"lengthSeconds":"(\d+)', self.source)[0] or None
         try:
-            thumbnail = re.findall('"thumbnails":\[\{"url":"(.+?)","width', self.source)[0]
+            thumbnail = re.findall(r'"thumbnails":\[\{"url":"(.+?)","width', self.source)[0]
             thumbnail = thumbnail.replace("hqdefault.jpg", "maxresdefault.webp")
             thumbnail = thumbnail.replace("/vi/", "/vi_webp/")
             thumbnail = thumbnail.split("?")[0]
@@ -64,9 +64,9 @@ class Data:
             except Exception:  # get real exception later
                 channelName = None
         category = re.findall('"category":"(.+?)",', self.source)[0] or None
-        publish_date = re.findall('"publishDate":"(\d{4}-\d{2}-\d{2})', self.source)[0] or None
-        tags = re.findall('\<meta name="keywords" content="(.+?)">', self.source)[0] or None
-        views = re.findall('"viewCount":"(\d+)', self.source)[0] or None
+        publish_date = re.findall(r'"publishDate":"(\d{4}-\d{2}-\d{2})', self.source)[0] or None
+        tags = re.findall(r'\<meta name="keywords" content="(.+?)">', self.source)[0] or None
+        views = re.findall(r'"viewCount":"(\d+)', self.source)[0] or None
 
         DATA = {
             "id": id,

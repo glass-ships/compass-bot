@@ -158,27 +158,8 @@ class CompassBot:
 ###################
 
 compass = CompassBot(logger=logger, dev=args.dev)
-
-# compass.bot.add_listener(compass.on_ready)
 asyncio.run(compass.startup_tasks(args.dev))
-
 try:
     asyncio.run(compass.bot.start(DISCORD_TOKEN))
 except KeyboardInterrupt:
     asyncio.run(compass.shutdown())
-
-# try:
-#     loop = asyncio.get_running_loop()
-# except RuntimeError:  # 'RuntimeError: There is no current event loop...'
-#     loop = None
-
-# if loop and loop.is_running():
-#     print('Async event loop already running. Adding coroutine to the event loop.')
-#     tsk = loop.create_task(main())
-#     # ^-- https://docs.python.org/3/library/asyncio-task.html#task-object
-#     # Optionally, a callback function can be executed when the coroutine completes
-#     tsk.add_done_callback(
-#         lambda t: print(f'Task done with result={t.result()}  << return val of main()'))
-# else:
-#     print('Starting new event loop')
-#     result = asyncio.run(main())
