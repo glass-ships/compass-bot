@@ -29,7 +29,15 @@ def version_callback(
 
         console.print(f"\n:arrow_right: Compass Bot version: {__version__}")
         raise typer.Exit()
-    app_state["verbose"] = verbose
+    app_state["log-level"] = (
+        "INFO"
+        if (verbose == 1)
+        else "DEBUG"
+        if (verbose >= 2)
+        else "ERROR"
+        if (quiet is True)
+        else "WARNING"
+    )
     app_state["quiet"] = quiet
 
 
@@ -47,34 +55,24 @@ def start(
         update (bool, optional): Update the Bot's dependencies. Defaults to False.
         pull (bool, optional): Pull the latest version of the Bot from GitHub. Defaults to False.
     """
-    log_level = (
-        "INFO"
-        if (app_state["verbose"] == 1)
-        else "DEBUG"
-        if (app_state["verbose"] >= 2)
-        else "ERROR"
-        if (app_state["quiet"] is True)
-        else "WARNING"
-    )
 
     console.print(
         f"""
 :arrow_right: Starting {'main' if not dev else 'dev'} bot...
-    :arrow_right: Setting Compass log level to {log_level}
+    :arrow_right: Setting Compass log level to {app_state["log-level"]}
     :arrow_right: To stop the bot, use: poetry run compass stop
-""")
+"""
+    )
     if not debug:
         console.print(f":arrow_right: For log output, see `logs/`")
-        
-    cmd = ["python", "src/compass_bot/bot.py"]
-    if app_state["verbose"] is False:
-        cmd.append("--quiet")
-    if app_state["verbose"] is True:
-        cmd.append("--verbose")
+
+    cmd = ["python", "src/compass_bot/bot.py", "--log-level", app_state["log-level"]]
     if dev:
         cmd.append("--dev")
     if update:
         cmd.append("--update")
+    if app_state["quiet"]:
+        cmd.append("--quiet")
     if pull:
         subprocess.call(
             ["git", "pull"],
@@ -82,13 +80,13 @@ def start(
             stderr=sys.stderr,
         )
 
-    # cmd_options = {}
     if not debug:
         Path("logs").mkdir(parents=True, exist_ok=True)
         with open("logs/all.log", "w") as logfile:
             subprocess.Popen(cmd, stdout=logfile, stderr=logfile)
     else:
         subprocess.call(cmd)
+
 
 @app.command()
 def stop():

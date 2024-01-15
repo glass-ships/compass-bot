@@ -14,7 +14,7 @@ from compass_bot.utils.bot_config import EMBED_COLOR, Emojis
 ### Helpers and Checks ###
 
 
-async def get_player(itx):
+async def get_player(itx: discord.Interaction):
     """Get MusicPlayer for guild"""
     # TODO: maybe create player if one doesn't exist?
 
@@ -43,7 +43,7 @@ async def _play_check(itx: discord.Interaction):  # , player):
 
     # Check that command was sent in a guild
     if itx.guild is None:
-        await itx.send(ErrorMessages.NO_GUILD)
+        await itx.response.send_message(ErrorMessages.NO_GUILD)
         return
 
     player = await get_player(itx)
@@ -91,14 +91,14 @@ class Music(commands.Cog):
     # Slash Commands #
     ##################
 
-    # @play_check
+    @play_check
     @app_commands.command(name="play", description="Play a song or playlist (keyword search or supported link).")
-    async def _add_to_queue(self, itx: discord.Interaction, *, input: str):
+    async def _add_to_queue(self, itx: discord.Interaction, *, query: str):
         await itx.response.defer()
         player = await get_player(itx)
         if not await _play_check(itx):
             return
-        await player.process_request(itx, input)
+        await player.process_request(itx, query)
         return
 
     @play_check
@@ -106,24 +106,24 @@ class Music(commands.Cog):
     async def _queue(self, itx: discord.Interaction):
         await itx.response.defer()
         player = await get_player(itx)
-        embed = player.queue.queue_embed()
-        await itx.followup.send(embed=embed)
+        await itx.followup.send(embed=player.queue.queue_embed())
         return
 
     @play_check
     @app_commands.command(name="pause", description="Pause playback (continue with `/resume`).")
     async def _pause(self, itx: discord.Interaction):
-        if itx.guild.voice_client is None or not itx.guild.voice_client.is_playing():
+        await itx.response.defer()
+        if itx.guild.voice_client is None or not itx.guild.voice_client.is_playing():  # type: ignore
             return
-        itx.guild.voice_client.pause()
-        await itx.send(f"{Emojis.pause} Playback Paused")
+        itx.guild.voice_client.pause()  # type: ignore
+        await itx.followup.send(f"{Emojis.pause} Playback Paused")
         return
 
     @play_check
     @app_commands.command(name="resume", description="Resume playback.")
     async def _resume(self, itx: discord.Interaction):
-        itx.guild.voice_client.resume()
-        await itx.send(f"{Emojis.musicNote} Resumed playback")
+        itx.guild.voice_client.resume()  # type: ignore
+        await itx.response.send_message(f"{Emojis.musicNote} Resumed playback")
         return
 
     @play_check
@@ -141,12 +141,13 @@ class Music(commands.Cog):
 
     ############################################################################################################
 
-    @commands.command(name="history", description="Show the last 10 songs played.")
-    async def _history(self, itx):
-        await itx.send(music_utils.guild_player[itx.guild].track_history())
+    @app_commands.command(name="history", description="Show the last 10 songs played.")
+    async def _history(self, itx: discord.Interaction):
+        await itx.response.send_message(music_utils.guild_player[itx.guild].track_history())
 
-    @commands.command(name="skip", description="Skip the current song")
-    async def _skip(self, itx):
+    @app_commands.command(name="skip", description="Skip the current song")
+    async def _skip(self, itx: discord.Interaction):
+        await itx.response.defer()
         player = music_utils.guild_player[itx.guild]
         player.queue.loop = False
 
@@ -154,16 +155,17 @@ class Music(commands.Cog):
         player.timer.stop()
         player.timer = Timer(player.timeout_handler)
 
-        if itx.guild.voice_client is None or (
-            not itx.guild.voice_client.is_paused() and not itx.guild.voice_client.is_playing()
+        if itx.guild.voice_client is None or (  # type: ignore
+            not itx.guild.voice_client.is_paused() and not itx.guild.voice_client.is_playing()  # type: ignore
         ):
-            await itx.send(InfoMessages.QUEUE_EMPTY)
+            await itx.response.send_message(InfoMessages.QUEUE_EMPTY)
             return
 
-        itx.guild.voice_client.stop()
+        itx.guild.voice_client.stop()  # type: ignore
+        await itx.followup.send(f"Skipped")
 
     @commands.command(name="prev", description="Play the previous song again.")
-    async def _prev(self, itx):
+    async def _prev(self, itx: discord.Interaction):
         player = music_utils.guild_player[itx.guild]
         player.queue.loop = False
 
@@ -172,7 +174,7 @@ class Music(commands.Cog):
         # await player.timer.restart()
 
         await music_utils.guild_player[itx.guild].prev_song()
-        await itx.send(f"{Emojis.previous} Playing previous song")
+        await itx.response.send_message(f"{Emojis.previous} Playing previous song")
 
     @commands.command(name="skipto", description="Skips to the specified position in the queue")
     async def _skip_to(self, itx, position: int):
@@ -186,7 +188,7 @@ class Music(commands.Cog):
         if itx.guild.voice_client is None or (
             not itx.guild.voice_client.is_paused() and not itx.guild.voice_client.is_playing()
         ):
-            await itx.send(InfoMessages.QUEUE_EMPTY)
+            await itx.response.send_message(InfoMessages.QUEUE_EMPTY)
             return
 
         song = player.queue.playque[oldposition - 1]
@@ -198,9 +200,11 @@ class Music(commands.Cog):
         try:
             player.queue.move(oldposition - 1, newposition - 1)
         except IndexError:
-            await itx.send("Invalid selection")
+            await itx.response.send_message("Invalid selection")
             return
-        await itx.send(embed=discord.Embed(description=f"Moved track to position {newposition}: {songname}"))
+        await itx.response.send_message(
+            embed=discord.Embed(description=f"Moved track to position {newposition}: {songname}")
+        )
 
     @commands.command(name="remove", description="Remove the song at the given index.")
     async def _remove(self, itx, position: int):
@@ -218,55 +222,55 @@ class Music(commands.Cog):
             msg = f"Removed track from queue: {songname}"
         except Exception as e:
             msg = f"Error: Couldn't remove track from queue: {songname}\n```\n\n{e}\n```"
-        await itx.send(embed=discord.Embed(description=msg))
+        await itx.response.send_message(embed=discord.Embed(description=msg))
 
     @commands.command(name="shuffle", description="Shuffle the queue (irreversible!)")
-    async def _shuffle(self, itx):
+    async def _shuffle(self, itx: discord.Interaction):
         player = music_utils.guild_player[itx.guild]
 
-        if itx.guild.voice_client is None or not itx.guild.voice_client.is_playing():
-            await itx.send(InfoMessages.QUEUE_EMPTY)
+        if itx.guild.voice_client is None or not itx.guild.voice_client.is_playing():  # type: ignore
+            await itx.response.send_message(InfoMessages.QUEUE_EMPTY)
             return
 
         player.queue.shuffle()
-        await itx.send(f"{Emojis.shuffle} Queue shuffled ")
+        await itx.response.send_message(f"{Emojis.shuffle} Queue shuffled ")
 
         for song in list(player.queue.playque)[:MAX_SONG_PRELOAD]:
             asyncio.ensure_future(player.preload(song))
 
     @commands.command(name="loop", description="Loop the currently playing song and locks the queue. Toggle on/off.")
-    async def _loop(self, itx):
+    async def _loop(self, itx: discord.Interaction):
         return
 
         player = music_utils.guild_player[itx.guild]
 
         if len(player.queue.playque) < 1 and itx.guild.voice_client.is_playing() is False:
-            await itx.send("No songs in queue!")
+            await itx.response.send_message("No songs in queue!")
             return
 
         if player.queue.loop is False:
             player.queue.loop = True
-            await itx.send(f"{Emojis.loop} Loop enabled")
+            await itx.response.send_message(f"{Emojis.loop} Loop enabled")
         else:
             player.queue.loop = False
-            await itx.send(":arrow_right: Loop disabled")
+            await itx.response.send_message(":arrow_right: Loop disabled")
 
     # @commands.command(name='pause', description="Pause playback (continue with `/resume`).")
-    # async def _pause(self, itx):
+    # async def _pause(self, itx: discord.Interaction):
 
     #     if itx.guild.voice_client is None or not itx.guild.voice_client.is_playing():
     #         return
     #     itx.guild.voice_client.pause()
-    #     await itx.send("Playback Paused :pause_button:")
+    #     await itx.response.send_message("Playback Paused :pause_button:")
 
     # @commands.command(name='resume', description="Resume playback.")
-    # async def _resume(self, itx):
+    # async def _resume(self, itx: discord.Interaction):
 
     #     itx.guild.voice_client.resume()
-    #     await itx.send(":arrow_forward: Resumed playback")
+    #     await itx.response.send_message(":arrow_forward: Resumed playback")
 
     @commands.command(name="stop", description="Clear the queue and stop playback.")
-    async def _stop(self, itx):
+    async def _stop(self, itx: discord.Interaction):
         player = await self.get_player(itx)
         player.queue.loop = False
 
@@ -275,11 +279,11 @@ class Music(commands.Cog):
         # await player.timer.restart()
         await player.stop_player()
 
-        await itx.send(":x: Stopped.")
+        await itx.response.send_message(":x: Stopped.")
         return
 
     @commands.command(name="clear", description="Clear the queue and skips the current song.")
-    async def _clear(self, itx):
+    async def _clear(self, itx: discord.Interaction):
         player = await self.get_player(itx)
         player.clear_queue()
         player.queue.loop = False
@@ -287,15 +291,16 @@ class Music(commands.Cog):
         player.timer.stop()
         player.timer = Timer(player.timeout_handler)
         # await player.timer.restart()
-        await itx.send(InfoMessages.QUEUE_CLEARED)
+        await itx.response.send_message(InfoMessages.QUEUE_CLEARED)
         return
 
     @commands.command(name="join", description="Move Compass to the user's VC")
-    async def _join_vc(self, itx):
+    async def _join_vc(self, itx: discord.Interaction):
         pass
 
     @app_commands.command(name="leave", description="Disconnect bot from VC.")
-    async def _disconnect(self, itx):
+    async def _disconnect(self, itx: discord.Interaction):
         player = await get_player(itx)
         await player.disconnect()
+        await itx.response.send_message("Disconnected.")
         return

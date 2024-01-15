@@ -28,6 +28,13 @@ class PlaylistTypes(StrEnum):
 class Search:
     query: str
     url: str = None
+    original_url: str = None
+
+
+@dataclass
+class YouTubeSearchResults:
+    title: str
+    url: str
 
 
 @dataclass
@@ -40,6 +47,7 @@ class Playlist:
 @dataclass
 class Song:
     host: str = None
+    original_url: str = None
     base_url: str = None
     requested_by: str = None
     channel_name: str = None
@@ -59,7 +67,9 @@ class Song:
 
     def now_playing_embed(self) -> discord.Embed:
         embed = discord.Embed(
-            title=f"{Emojis.eq} Now Playing", description=f"[{self.title}]({self.webpage_url})", color=EMBED_COLOR()
+            title=f"{Emojis.eq} Now Playing",
+            description=f"[{self.title}]({self.original_url})" if self.original_url is not None else self.title,
+            color=EMBED_COLOR(),
         )
         if self.thumbnail is not None:
             embed.set_thumbnail(url=self.thumbnail)

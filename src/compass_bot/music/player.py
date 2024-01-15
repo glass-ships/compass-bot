@@ -10,7 +10,7 @@ from loguru import logger
 from compass_bot.utils.bot_config import EMBED_COLOR, Emojis, CustomException  # , FetchException, QueueException
 from compass_bot.utils.utils import send_embed, extract_url, ddict
 from compass_bot.music import music_utils
-from compass_bot.music.dataclasses import Playlist, PlaylistTypes, Search, Sites, Song
+from compass_bot.music.dataclasses import Playlist, PlaylistTypes, Search, Sites, Song, YouTubeSearchResults
 from compass_bot.music.music_config import (
     ErrorMessages,
     InfoMessages,
@@ -107,7 +107,8 @@ class MusicPlayer(object):
                 "host": music_utils.identify_host(query),
             }
         )
-        logger.debug(f"Processing user search: {user_search}")
+        # logger.debug(f"Processing user search: {user_search}")
+        logger.info(f"Processing user search: {user_search}")
 
         # Possibly process Youtube separately
         # if host == Sites.YouTube:
@@ -116,18 +117,18 @@ class MusicPlayer(object):
         try:
             # Process single keyword search
             if user_search.url is None:
-                await self._add_to_queue(Search(query=user_search.original), itx.user)
+                await self._add_to_queue(Search(query=user_search.original), itx.user, itx.channel)
                 await itx.followup.send(
-                    embed=discord.Embed(description=f"{Emojis.cd} Queued: `{query}`.", color=EMBED_COLOR())
+                    embed=discord.Embed(description=f"{Emojis.cd} Queued: `{query}`", color=EMBED_COLOR())
                 )
 
             # Process single URL
             elif user_search.playlist_type == PlaylistTypes.Not_Playlist:
                 search = self._get_song_info(user_search.url, user_search.host)
-                await self._add_to_queue(search, itx.user)
+                await self._add_to_queue(search, itx.user, itx.channel)
                 await itx.followup.send(
                     embed=discord.Embed(
-                        description=f"{Emojis.cd} Queued: `[{search.query}]({search.url}).`", color=EMBED_COLOR()
+                        description=f"{Emojis.cd} Queued: [{search.query}]({search.url})", color=EMBED_COLOR()
                     )
                 )
 
@@ -146,7 +147,7 @@ class MusicPlayer(object):
 
                 # Queue and play first song immediately
                 await asyncio.wait(
-                    [asyncio.create_task(self._add_to_queue(playlist.items[0], itx.user))],
+                    [asyncio.create_task(self._add_to_queue(playlist.items[0], itx.user, itx.channel))],
                     return_when=asyncio.ALL_COMPLETED,
                 )
                 if self.current_song is None:
@@ -156,7 +157,7 @@ class MusicPlayer(object):
                 # Queue the rest of the songs
                 for song in playlist.items[1:]:
                     try:
-                        await self._add_to_queue(song, itx.user)
+                        await self._add_to_queue(song, itx.user, itx.channel)
                     except CustomException as e:
                         logger.warning(e)
                         await send_embed(
@@ -165,16 +166,14 @@ class MusicPlayer(object):
                         continue
         except CustomException as e:
             logger.warning(e)
-            await send_embed(itx.channel, title=ErrorMessages.SEARCH_ERROR, description=f"```{e}```")
+            await send_embed(channel=itx.channel, title=ErrorMessages.SEARCH_ERROR, description=f"```{e}```")
         except Exception as e:
             logger.warning(f"Could not process search: {e}")
             await itx.followup.send(
                 embed=discord.Embed(title=ErrorMessages.SEARCH_ERROR, description=f"```{e}```", color=EMBED_COLOR())
             )
+            # raise Exception("Error processing search.").with_traceback(e.__traceback__)
             return False
-
-        # if self.current_song == None:
-        #     self._next_song(itx.channel)
 
         return
 
@@ -283,36 +282,35 @@ class MusicPlayer(object):
     async def _add_to_queue(self, search: Search, requested_by, channel=None):
         """Add list of searches to player queue"""
 
+        yt_search = YouTubeSearchResults(title=None, url=None)
+
         # Get youtube URL
-        # if search.url and "youtu" in search.url:
-        #     yt_url = search.url
-        # else:
-        #     try:
-        #         search = music_utils.search_youtube(search.query)
-        #         yt_url = search.url
         if not search.url or "youtu" not in search.url:
             try:
-                search = music_utils.search_youtube(search.query)
+                yt_search = music_utils.search_youtube(search.query)
             except Exception as e:
                 raise CustomException(f"Could not find youtube url for {search.query}: {e}.")
 
         # Get song info from youtube URL
-        data = music_utils.get_yt_metadata(search.url)
+        data = music_utils.get_yt_metadata(yt_search.url)
         if data is None:
             raise CustomException(f"Could not get metadata for {search.url}.")
 
         song = Song(
-            base_url=search.url,
+            base_url=yt_search.url,
+            original_url=search.url,
             requested_by=requested_by,
             channel_name=data["channel_name"],
-            title=data["title"],
+            title=yt_search.title,
             duration=data["duration"],
             webpage_url=data["url"],
             thumbnail=data["thumbnails"]
             # thumbnail = data['thumbnails'][-1]['url'] if data['thumbnails'] is not None else None
         )
+
         self.queue.add(song)
-        # if self.current_song is None: await self._next_song(channel)
+        if self.current_song is None:
+            self._next_song(channel)
         return
 
     async def _add_list_to_queue(
@@ -357,7 +355,6 @@ class MusicPlayer(object):
 
     def _next_song(self, channel):
         """Invoked after a song is finished. Plays the next song if there is one."""
-
         next_song = self.queue.next(self.current_song)
         self.current_song = None
         if next_song is None:
@@ -366,40 +363,33 @@ class MusicPlayer(object):
                 description=InfoMessages.QUEUE_EMPTY,
             )
             self.bot.loop.create_task(coro)
-
         try:
             coro = self._play_song(channel, next_song)
             self.bot.loop.create_task(coro)
-            # fut = asyncio.run_coroutine_threadsafe(coro, self.bot.loop)
-            # fut.result()
         except Exception as e:
             logger.error(f"Error: Couldn't play the next song:\n{e}")
-
         return
 
-    async def _play_song(self, channel, song: Song):
+    async def _play_song(self, channel: discord.channel, song: Song):
         """Plays a song object"""
 
         if not self.queue.loop:  # let timer run through if looping
             # await self.timer.restart()
             self.timer.stop()
             self.timer = Timer(self.timeout_handler)
-            logger.info(f"Timer restarted")
+            logger.debug(f"Timer restarted")
+        # song = song
+        # logger.info(f"Next song: {song}")
 
         try:
             with YoutubeDL(YTDL_OPTIONS) as ydl:
                 r = ydl.extract_info(song.base_url, download=False)
         except Exception:  # get actual exception later
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
             downloader = YoutubeDL({"title": True, "cookiefile": COOKIE_PATH})
             r = downloader.extract_info(song, download=False)
 
         song.base_url = r.get("url")
-        song.uploader = r.get("uploader")
-        song.title = r.get("title")
-        song.duration = r.get("duration")
-        song.webpage_url = r.get("webpage_url")
-        song.thumbnail = r.get("thumbnails")[0]["url"]
         self.current_song = song
 
         logger.info(f"Playing song: {song.title} ({song.duration} seconds) requested by {song.requested_by}")
@@ -417,6 +407,23 @@ class MusicPlayer(object):
         # Download next X songs in background
         # for song in list(self.queue.playque)[:MAX_SONG_PRELOAD]:
         #     await asyncio.ensure_future(self.preload(song))
+        return
+
+    async def stop_player(self):
+        """Stops the player and removes all songs from the queue"""
+        if self.guild.voice_client is None or (
+            not self.guild.voice_client.is_paused() and not self.guild.voice_client.is_playing()
+        ):
+            return
+
+        self.queue.loop = False
+        self.queue.next(self.current_song)
+        self.clear_queue()
+        self.guild.voice_client.stop()
+        return
+
+    def clear_queue(self):
+        self.queue.playque.clear()
         return
 
     ##########################
