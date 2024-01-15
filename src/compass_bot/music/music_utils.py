@@ -5,7 +5,7 @@
 
 from compass_bot.utils.utils import URL
 from compass_bot.music.music_config import SUPPORTED_EXTENSIONS
-from compass_bot.music.dataclasses import Sites, PlaylistTypes, Search, Playlist
+from compass_bot.music.dataclasses import Sites, Search, Playlist, PlaylistTypes, YouTubeSearchResults
 import compass_bot.music.yt_utils as yt_utils
 
 guild_player = {}
@@ -63,7 +63,7 @@ def parse_spotify_track(sp, url: str) -> Search:
         track = sp.track(url)
         artists = [f"{a['name']}" for a in track["artists"]]
         search = Search(query=" - ".join([*artists, track["name"]]), url=url)
-    return search
+        return search
 
 
 def parse_spotify_playlist(sp, url: str) -> Playlist:
@@ -78,8 +78,7 @@ def parse_spotify_playlist(sp, url: str) -> Playlist:
             artists = [f"{a['name']}" for a in track["artists"]]
             sp_url = track["external_urls"]["spotify"]
             searches.append(Search(query=" ".join([*artists, track["name"]]), url=sp_url))
-
-    if "playlist" in url:
+    elif "playlist" in url:
         offset = 0
         results = []
         playlist_title = sp.playlist(url)["name"]
@@ -111,7 +110,8 @@ def parse_spotify_playlist(sp, url: str) -> Playlist:
             artists = [f"{a['name']}" for a in track["artists"]]
             sp_url = track["external_urls"]["spotify"]
             searches.append(Search(query=" ".join([*artists, track["name"]]), url=sp_url))
-
+    else:
+        return None
     return Playlist(name=playlist_title, total=len(searches), items=searches)
 
 
@@ -125,8 +125,9 @@ def search_youtube(query: str):
     # with YoutubeDL({'skip_download': True}) as ydl:
     #     r = ydl.extract_info(f"ytsearch1:{search_str}", download=False)
     # return None if r is None else r['entries'][0]['original_url']
+    # query = (''.join(query)).encode('utf-8')
     video = yt_utils.SearchYT(query, limit=1).videos()[0]
-    return Search(query=video["title"], url=f"https://www.youtube.com/watch?v={video['id']}")
+    return YouTubeSearchResults(title=video["title"], url=f"https://www.youtube.com/watch?v={video['id']}")
 
 
 def get_yt_metadata(yt_url):
