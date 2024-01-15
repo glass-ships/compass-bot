@@ -1,4 +1,4 @@
-### Destiny Commands
+### Gaming Commands
 
 ???+ tldr "LFM"
     You can create an LFM post by sending a message to your servers LFG channel (see [Configuration](../Configuration/setup.md) for more info)  

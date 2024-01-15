@@ -38,6 +38,7 @@ def start(
     dev: bool = typer.Option(False, "--dev", "-d", help="Run the development version of the Bot locally"),
     update: bool = typer.Option(False, "--update", "-u", help="Update the Bot's dependencies"),
     pull: bool = typer.Option(False, "--pull", "-p", help="Pull the latest version of the Bot from GitHub"),
+    debug: bool = typer.Option(False, "--debug", "-D", help="Run the Bot in debug mode (logs to stdout)"),
 ):
     """Starts the Bot
 
@@ -61,9 +62,10 @@ def start(
 :arrow_right: Starting {'main' if not dev else 'dev'} bot...
     :arrow_right: Setting Compass log level to {log_level}
     :arrow_right: To stop the bot, use: poetry run compass stop
-    :arrow_right: For log output, see `logs/`
-"""
-    )
+""")
+    if not debug:
+        console.print(f":arrow_right: For log output, see `logs/`")
+        
     cmd = ["python", "src/compass_bot/bot.py"]
     if app_state["verbose"] is False:
         cmd.append("--quiet")
@@ -73,8 +75,6 @@ def start(
         cmd.append("--dev")
     if update:
         cmd.append("--update")
-    # if pull:
-    #     cmd.append("--pull")
     if pull:
         subprocess.call(
             ["git", "pull"],
@@ -82,15 +82,13 @@ def start(
             stderr=sys.stderr,
         )
 
-    Path("logs").mkdir(parents=True, exist_ok=True)
-    logfile = open("logs/all.log", "w")
-    subprocess.Popen(
-        cmd,
-        stdout=logfile,
-        stderr=logfile,
-    )
-    logfile.close()
-
+    # cmd_options = {}
+    if not debug:
+        Path("logs").mkdir(parents=True, exist_ok=True)
+        with open("logs/all.log", "w") as logfile:
+            subprocess.Popen(cmd, stdout=logfile, stderr=logfile)
+    else:
+        subprocess.call(cmd)
 
 @app.command()
 def stop():
