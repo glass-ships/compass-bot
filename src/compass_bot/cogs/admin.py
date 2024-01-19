@@ -7,7 +7,7 @@ from loguru import logger
 
 from compass_bot.utils.bot_config import GLASS_HARBOR
 
-MODULE_OPTIONS = ["admin", "gaming", "listeners", "main", "moderation", "music", "utils"]
+MODULE_OPTIONS = ["admin", "gaming", "listeners", "main", "moderation", "music", "utility" ]# "utils"]
 CHANNEL_OPTIONS = ["logs", "bot", "welcome", "music", "lfg", "videos"]  # , 'pins']
 ROLE_OPTIONS = ["mod", "member"]
 

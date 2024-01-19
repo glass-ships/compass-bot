@@ -1,3 +1,5 @@
+### This is a template for a cog file. Copy this file and rename the file and `CogName` for the cog you want to create.
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -8,6 +10,7 @@ from loguru import logger
 async def setup(bot):
     """Cog setup method"""
     await bot.add_cog(CogName(bot))
+
 
 class CogName(commands.Cog):
     def __init__(self, bot_):
@@ -20,7 +23,14 @@ class CogName(commands.Cog):
 
     ########################################################################################################################
 
-    @app_commands.command(name='command_name')
+    # For Slash Commands
+    @app_commands.command(name="command_name", description="Command description")
     async def _command_name(self, itx: discord.Interaction):
+        """Command description."""
+        pass
+
+    # For Regular Commands
+    @commands.command(name="command_name", description="Command description", aliases=[])
+    async def _command_name(self, ctx: commands.Context):
         """Command description."""
         pass

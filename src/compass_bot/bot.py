@@ -7,7 +7,7 @@ import asyncio
 import discord
 from discord.ext import commands
 
-from compass_bot.utils.bot_config import GuildData, DEFAULT_PREFIX, COMPASS_ROOT
+from compass_bot.utils.bot_config import GuildData, DEFAULT_PREFIX, COMPASS_SRC
 from compass_bot.utils.custom_help_commands import CustomHelpCommand
 from compass_bot.utils.db_utils import ServerDB
 from compass_bot.utils.log_utils import get_logger
@@ -36,7 +36,6 @@ discord_log_level = (
     # "DEBUG" if args.log_level == "DEBUG" else "CRITICAL" if args.log_level == "CRITICAL" else "INFO"
 )
 discord.utils.setup_logging(level="WARNING")#discord_log_level)
-logger.info(f"Logging initialized with level {logger.level}")
 DISCORD_TOKEN = os.getenv("DSC_DEV_TOKEN") if args.dev else os.getenv("DSC_API_TOKEN")
 
 ##################
@@ -76,7 +75,7 @@ class CompassBot:
         await self.connect_to_db(dev)
 
         self.bot.logger.info("Loading cogs...")
-        for f in Path(COMPASS_ROOT / "cogs").glob("*.py"):
+        for f in Path(COMPASS_SRC / "cogs").glob("*.py"):
             # print(f)
             await self.bot.load_extension(f"cogs.{f.stem}")
 

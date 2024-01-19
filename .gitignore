@@ -5,6 +5,7 @@ cookies.txt
 discord-stuff/
 downloads/
 logs/
+.archive/ 
 
 .venv
 **__pycache__

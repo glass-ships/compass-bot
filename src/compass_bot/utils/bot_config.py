@@ -5,7 +5,8 @@ from random import choice
 import discord
 
 # /path/to/compass-bot/src/compass_bot/
-COMPASS_ROOT = Path(__file__).parent.parent
+COMPASS_ROOT = Path(__file__).parent.parent.parent.parent
+COMPASS_SRC = Path(__file__).parent.parent
 
 DEFAULT_PREFIX = ";"
 
@@ -39,19 +40,20 @@ def EMBED_COLOR():
 
 @dataclass
 class Emojis:
-    eq = "<a:_eq:1011116489442598922>"
+    # Music Emojis
+    catChillin = "<a:catChillin:1011104612733952011>"
     cd = "<a:_music:1011116507587162122>"
+    eq = "<a:_eq:1011116489442598922>"
+    loop = "<:retweet:1011048385534496862>"
     musicNote = "<a:_musicNote:1011101467576385556>"
     playlist = "<:_playlist:1011048129111543880>"
     shuffle = ":twisted_rightwards_arrows:"
-    loop = "<:retweet:1011048385534496862>"
-    catChillin = "<a:catChillin:1011104612733952011>"
-    jar = ":jar:"
     compass = ":compass:"
+    jar = ":jar:"
+    next = ":track_next:"
     pause = ":pause_button:"
     play = ":arrow_forward:"
     previous = ":track_previous:"
-    next = ":track_next:"
 
 
 @dataclass
@@ -85,6 +87,9 @@ class GuildData:
 
 class CustomException(Exception):
     pass
+    # def __init__(self, message, errors):
+    #     super().__init__(message)
+    #     self.errors = errors
 
 
 class FetchException(CustomException):
@@ -93,10 +98,3 @@ class FetchException(CustomException):
 
 class QueueException(CustomException):
     pass
-
-
-# class CustomException(Exception):
-#     def __init__(self, message, errors):
-#         super().__init__(message)
-
-#         self.errors = errors

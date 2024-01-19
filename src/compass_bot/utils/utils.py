@@ -1,5 +1,6 @@
 import os
 import re
+import subprocess
 import time
 from pathlib import Path
 from typing import Optional, Union
@@ -9,9 +10,10 @@ from typing import List
 
 import discord
 import shlex
+from loguru import logger
 from rich.console import Console
 
-from compass_bot.utils.bot_config import EMBED_COLOR
+from compass_bot.utils.bot_config import COMPASS_ROOT, EMBED_COLOR
 
 console = Console(
     color_system="truecolor",
@@ -22,6 +24,9 @@ console = Console(
 #############################
 ### Variables and Classes ###
 #############################
+
+REPO_PATH = f"{COMPASS_ROOT.parent}/discord-stuff"
+REPO_URL = f"https://glass-ships:{os.getenv('GITLAB_TOKEN')}@gitlab.com/glass-ships/discord-stuff.git"
 
 URL_REGEX = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
@@ -40,7 +45,7 @@ class URL(str):
     """URL substring checking class
 
     If URL contains "substring", equality returns True. For example:
-        URL("https://www.youtube.com/watch?v=1234567890") == youtube => True
+        URL("https://www.youtube.com/watch?v=1234567890") == "youtube" => True
     """
 
     def __eq__(self, other) -> bool:
@@ -69,7 +74,7 @@ def extract_url(content):
 
     if re.search(URL_REGEX, content):
         result = URL_REGEX.search(content)
-        url = result.group(0)
+        url = result.group(0)  # type: ignore
         if url.startswith("https://m."):
             url = url.replace("https://m.", "https://")
         # logger.info(f"Extracted URL: {url}")
@@ -167,3 +172,38 @@ async def send_embed(
 
     await channel.send(embed=embed)
     return
+
+
+##################
+### Misc Utils ###
+##################
+
+
+def get_resource_repo() -> None:
+    """Clone or pull resource repo"""
+    if not Path(REPO_PATH).is_dir():
+        subprocess.call(["git", "clone", REPO_URL, REPO_PATH])
+    else:
+        logger.debug("Repo already exists - pulling repo")
+        subprocess.Popen(["git", "pull"], cwd=REPO_PATH)
+        time.sleep(5)
+
+
+def get_resource_path(guild_name: str, *resource: str) -> Union[str, None]:
+    """Returns path to resource
+
+    Args:
+        guild_name (str): Name of guild
+        resource (str): Resource path (can be nested, e.g. "emojis/png")
+    """
+    sub_path = "/".join(resource)
+    get_resource_repo()
+    if os.path.exists(f"{REPO_PATH}/{guild_name}/{sub_path}"):
+        resource_path = f"{REPO_PATH}/{guild_name}/{sub_path}"
+    elif os.path.exists(f"{COMPASS_ROOT}/downloads/{guild_name}"):
+        if not os.path.exists(f"{COMPASS_ROOT}/downloads/{guild_name}/{sub_path}"):
+            os.mkdir(f"{COMPASS_ROOT}/downloads/{guild_name}/{sub_path}", parents=True)
+        resource_path = f"{COMPASS_ROOT}/downloads/{guild_name}/{sub_path}"
+    else:
+        return None
+    return resource_path

@@ -7,11 +7,9 @@ import discord
 from discord.ext import commands
 from discord.utils import get
 
-from compass_bot.utils.bot_config import COMPASS_ROOT, GLASS_HARBOR, GuildData
+from compass_bot.utils.bot_config import COMPASS_SRC, GLASS_HARBOR, GuildData
 from compass_bot.utils.utils import download, getfilepath
 
-# from compass_bot.bot import compass
-# logger = compass.bot.logger
 from loguru import logger
 
 cog_path = Path(__file__)
@@ -36,9 +34,9 @@ class Listeners(commands.Cog):
         """A global error handler cog."""
         message = ""
         if isinstance(error, commands.CommandNotFound):
-            return  # Return because we don't want to show an error for every command not found
+            return  # We don't want to show an error for every command not found
         elif isinstance(error, commands.CommandOnCooldown):
-            message = f"This command is on cooldown. Please try again after {round(error.retry_after, 1)} seconds."
+            message = f"Please try again after {round(error.retry_after, 1)} seconds."
         elif isinstance(error, commands.MissingPermissions):
             message = "You are missing the required permissions to run this command!"
         elif isinstance(error, commands.MissingRequiredArgument):
@@ -54,11 +52,13 @@ class Listeners(commands.Cog):
                 if "The above exception" in i:
                     break
                 err_msg += i
-            message = f"Oh no! Something went wrong while running the command!\n```\n{err_msg}\n```"
+            message = (
+                f"Oh no! Something went wrong while running the command:\n`{ctx.message.content}`!\n```\n{err_msg}\n```"
+            )
             # message += f"```\n{exception_type}\n{filename}\n{line_number}```"
 
         await ctx.send(embed=discord.Embed(description=message))  # , delete_after=60)
-        await ctx.message.delete(delay=5)
+        # await ctx.message.delete(delay=5)
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -206,7 +206,7 @@ class Listeners(commands.Cog):
         channel = get(guild.text_channels, id=channel_id)
 
         av = httpx.get(member.display_avatar.url)
-        ocean = Image.open(f"{COMPASS_ROOT}/images/welcome_background.png")
+        ocean = Image.open(f"{COMPASS_SRC}/images/welcome_background.png")
         pfp = Image.open(io.BytesIO(av.content))
         pfp = pfp.resize((650, 650))
 
@@ -222,7 +222,7 @@ class Listeners(commands.Cog):
         with io.BytesIO() as image_binary:
             img.save(image_binary, "PNG")
             image_binary.seek(0)
-            await channel.send(
+            await channel.send(  # type: ignore
                 content=f"Welcome, {member.mention}!",
                 embed=discord.Embed(
                     title=f"Welcome to {guild.name}",
