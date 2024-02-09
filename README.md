@@ -33,7 +33,7 @@ For guided instructions on creating a Discord bot in C# or Python, see [Fatcatni
     `sudo apt install -y libffi-dev libnacl-dev libopus0 build-essential libssl-dev libffi-dev libxml2-dev libxslt1-dev zlib1g-dev`  
     (or equivalent for your system)
 
-- Install [Poetry](https://python-poetry.org/docs/#installation) and [Python](https://www.python.org/downloads/) (if you haven't already)
+- Install [Poetry](https://python-poetry.org/docs/#installation) and [Python](https://www.python.org/downloads/) if needed.
 
 - Clone the repository:  
     `git clone https://gitlab.com/glass-ships/compass-bot.git`
