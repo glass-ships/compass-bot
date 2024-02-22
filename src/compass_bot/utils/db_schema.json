@@ -1,24 +1,32 @@
 {
-    "tables": [
-      {
-        "name": "guilds",
-        "columns": [
-          {"name": "guild_id", "type": "int"},
-          {"name": "guild_name", "type": "string"},
-          {"name": "prefix", "type": "string"},
-          {"name": "mem_role", "type": "int"},
-          {"name": "dj_role", "type": "int"},
-          {"name": "mod_roles", "type": "multiple"},
-          {"name": "default_channel", "type": "int"},
-          {"name": "chan_bot", "type": "int"},
-          {"name": "chan_logs", "type": "int"},
-          {"name": "chan_welcome", "type": "int"},
-          {"name": "chan_music", "type": "int"},
-          {"name": "chan_lfg", "type": "int"},
-          {"name": "chan_vids", "type": "int"},
-          {"name": "lfg", "type": "multiple"},
-          {"name": "videos_whitelist", "type": "multiple"}
-        ]
-      }
-    ]
+  "db-schemas": {
+    "guild-schema": {
+      "columns": [
+        { "name": "guild_id", "type": "int" },
+        { "name": "guild_name", "type": "string" },
+        { "name": "prefix", "type": "string" },
+        { "name": "mem_role", "type": "int" },
+        { "name": "dj_role", "type": "int" },
+        { "name": "mod_roles", "type": "multiple" },
+        { "name": "required_roles", "type": "multiple" },
+        { "name": "default_channel", "type": "int" },
+        { "name": "chan_bot", "type": "int" },
+        { "name": "chan_logs", "type": "int" },
+        { "name": "chan_welcome", "type": "int" },
+        { "name": "chan_music", "type": "int" },
+        { "name": "chan_lfg", "type": "int" },
+        { "name": "chan_vids", "type": "int" },
+        { "name": "lfgs", "type": "multiple" },
+        { "name": "videos_whitelist", "type": "multiple" }
+      ]
+    },
+    "lfg-schema": {
+      "columns": [
+        { "name": "leader", "type": "int" },
+        { "name": "joined", "type": "multiple" },
+        { "name": "standby", "type": "multiple" },
+        { "name": "num_players", "type": "int" }
+      ]
+    }
+  }
 }

@@ -1,6 +1,7 @@
 from pathlib import Path
 from dataclasses import dataclass, field
 from random import choice
+from typing import List
 
 import discord
 
@@ -62,18 +63,19 @@ class GuildData:
     guild_id: int = None  # field(init=False)
     guild_name: str = None  # field(init=False)
     prefix: str = ";"
-    mem_role: int = 0
-    dj_role: int = 0
-    mod_roles: list = field(default_factory=list)
+    mem_role: int = None
+    dj_role: int = None
+    mod_roles: List[str] = field(default_factory=list)
+    required_roles: List[str] = field(default_factory=list)
     default_channel: discord.TextChannel = None
-    chan_bot: int = 0
-    chan_logs: int = 0
-    chan_welcome: int = 0
-    chan_music: int = 0
-    chan_lfg: int = 0
-    chan_vids: int = 0
-    videos_whitelist: list = field(default_factory=list)
-    lfg: list = field(default_factory=list)
+    chan_bot: int = None
+    chan_logs: int = None
+    chan_welcome: int = None
+    chan_music: int = None
+    chan_lfg: int = None
+    chan_vids: int = None
+    lfgs: List[str] = field(default_factory=list)
+    videos_whitelist: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         self.guild_id = self.guild.id

@@ -1,4 +1,5 @@
-from typing import Optional, Union
+from datetime import datetime, timedelta
+from typing import List, Optional, Union
 
 import asyncio
 import discord
@@ -6,7 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.utils import get
 
-from compass_bot.utils.utils import download, getfilepath, parse_args
+from compass_bot.utils.utils import download, getfilepath, parse_args, send_embed
 from compass_bot.utils.bot_config import EMBED_COLOR
 
 from loguru import logger
@@ -148,15 +149,31 @@ class Moderation(commands.Cog):
         await msg.delete()
         await itx.followup.send(f"Message moved to <#{channel.id}>")
 
-    async def _give_role():
-        pass
+    @has_mod_itx
+    @app_commands.command(name="give_role", description="Give a role to a user with optional duration")
+    async def _give_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: Optional[int]):
+        role = get(itx.guild.roles, id=role.id)
+        if not user:
+            target_user = itx.user
+        else:
+            target_user = user
+        roles = [x.id for x in target_user.roles]
+        if role.id not in roles:
+            await target_user.add_roles(role)
+            await itx.followup.send(
+                f"<@{target_user.id}> has been given the \"{role.name}\" role{' for '+str(dur)+' sec' if dur else ''}."
+            )
+            if dur:
+                await asyncio.sleep(dur)
+                await target_user.remove_roles(role)
+                await itx.channel.send(f'<@{target_user.id}> has had the "{role.name}" role removed.')
+        else:
+            await itx.followup.send("Cannot give role - user already has it!")
 
     @has_mod_itx
     @app_commands.command(name="removerole", description="Remove role from a user with optional duration")
     @app_commands.rename(dur="duration")
-    async def _remove_role(
-        self, itx: discord.interactions, role: discord.Role, user: discord.Member, dur: Optional[int]
-    ):
+    async def _take_role(self, itx: discord.interactions, role: discord.Role, user: discord.Member, dur: Optional[int]):
         await itx.response.defer()
         role = get(itx.guild.roles, id=role.id)
         if not user:
@@ -175,3 +192,86 @@ class Moderation(commands.Cog):
                 await itx.followup.send(f'<@{bonked.id}> has had the "{role.name}" role added back.')
         else:
             await itx.followup.send("Cannot remove role - user doesn't have it!")
+
+    @has_mod_itx
+    @app_commands.command(name="checkinactive", description="Check for inactive users")
+    async def _check_inactive(self, itx: discord.Interaction, days: int):
+        await itx.response.defer()
+        response = await itx.followup.send("Checking for inactive members...", wait=True)
+        inactive = []
+        for member in itx.guild.members:
+            if member.bot:
+                continue
+            await itx.channel.send(f"### Checking {member.name}")
+            for channel in itx.guild.channels:
+                if not isinstance(channel, discord.TextChannel):
+                    continue
+                # Get the latest message from the user in the channel, within the last x days
+                await itx.channel.send(f"Checking {channel.name}")
+                try:
+                    last_message = [
+                        msg async for msg in channel.history(limit=1, after=(datetime.now() - timedelta(days=days)))
+                    ]
+                    print(last_message)
+                except discord.Forbidden:
+                    continue
+                if last_message and last_message[0].author.id == member.id:
+                    break
+            else:
+                inactive.append(member.mention)
+
+        await response.edit(content=f"Found {len(inactive)} inactive members.")
+        inactive = "\n".join(inactive) if inactive else "No inactive members found."
+        await send_embed(
+            channel=itx.channel,
+            title="Inactive Members",
+            description=inactive,
+            image=None,
+        )
+
+    @has_mod_itx
+    @app_commands.command(name="checkroles", description="Check for users missing required roles")
+    async def _check_roles(self, itx: discord.Interaction):  # , roles: Optional[List[discord.Role]] = None):
+        await itx.response.defer()
+        required_roles = [id for id in bot.db.get_required_roles(itx.guild_id)]
+        role_mentions = [f"<@&{id}>" for id in required_roles]
+        if not required_roles:
+            await itx.followup.send("No required roles set.")
+            return
+        response = await itx.followup.send(
+            embed=discord.Embed(description=f"Checking for users without one of {' '.join(role_mentions)}")
+        )
+        missing = []
+        for member in itx.guild.members:
+            if member.bot:
+                continue
+            user_roles = [x.id for x in member.roles]
+            if not any(int(i) in user_roles for i in required_roles):
+                missing.append(member.mention)
+        await response.edit(content=f"Found {len(missing)} members missing required roles.")
+        missing = "\n".join(missing) if missing else "No members missing required roles."
+        await send_embed(
+            channel=itx.channel,
+            title="Members Missing Required Roles",
+            description=missing,
+            image=None,
+        )
+
+    @commands.command(name="lastmessage", description="Get the last message from a user")
+    async def lastMessage(self, ctx: commands.Context, users_id: int):
+        oldestMessage = None
+        for channel in ctx.guild.text_channels:
+            fetchMessage = await channel.history().find(lambda m: m.author.id == users_id)
+            if fetchMessage is None:
+                continue
+
+            if oldestMessage is None:
+                oldestMessage = fetchMessage
+            else:
+                if fetchMessage.created_at > oldestMessage.created_at:
+                    oldestMessage = fetchMessage
+
+        if oldestMessage is not None:
+            await ctx.send(f"Oldest message is {oldestMessage.content}")
+        else:
+            await ctx.send("No message found.")

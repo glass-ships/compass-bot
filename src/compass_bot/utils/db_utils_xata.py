@@ -1,20 +1,19 @@
 import os
-from pymongo import MongoClient
+from xata import XataClient
 
-mongo_url = os.getenv("MONGO_URL")
-
+db_url = os.getenv("XATA_DATABASE_URL")
+db_api_key = os.getenv("XATA_API_KEY")
 
 class ServerDB:
     """Class representing the bot's mongoDB collection"""
 
-    def __init__(self, mongo_url, dev: bool = False):
-        # Connect to MongoDB client
-        cluster = MongoClient(mongo_url)
+    def __init__(self, db_url, dev: bool = False):
+        # Connect to Xata client
+        xata = XataClient(db_url=db_url, api_key=db_api_key)
 
         # Connect to bot database
-        db = cluster["4D-Bot"] if dev else cluster["compass-bot"]
+        table = "test-guilds" if dev else "guilds"
 
-        self.collection = db["server-info"]
 
     def get_all_guilds(self):
         """Returns a list of all guild entries"""
@@ -25,7 +24,7 @@ class ServerDB:
         return guild_ids
 
     def get_guild_name(self, guild_id):
-        """ "Returns the name of a guild by id"""
+        """Returns the name of a guild by id"""
         a = self.collection.find({"guild_id": guild_id})
         doc = a[0]
         return doc["guild_name"]
@@ -53,12 +52,6 @@ class ServerDB:
         a = self.collection.find({"guild_id": guild_id})
         doc = a[0]
         return doc["mem_role"]
-    
-    def get_required_roles(self, guild_id):
-        """Returns the required roles associated with a guild id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["required_roles"]
 
     def get_channel_bot(self, guild_id):
         """Returns the bot channel associated with a guild id"""
@@ -108,9 +101,7 @@ class ServerDB:
         return result
 
     def get_videos_whitelist(self, guild_id):
-        """
-        Get videos whitelist associated with a guild id
-        """
+        """Get videos whitelist associated with a guild id"""
         a = self.collection.find({"guild_id": guild_id})
         doc = a[0]
         return doc["videos_whitelist"]
@@ -132,9 +123,7 @@ class ServerDB:
         return
 
     def update_guild_id(self, guild_id, new_value):
-        """
-        Get guild id from name
-        """
+        """Get guild id from name"""
         filter = {"guild_id": guild_id}
         newval = {"$set": {"guild_id": new_value}}
         self.collection.update_one(filter, newval, upsert=True)
