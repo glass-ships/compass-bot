@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Union
 
 import asyncio
@@ -16,7 +16,7 @@ from loguru import logger
 async def mod_check_ctx(ctx):
     mod_roles = bot.db.get_mod_roles(ctx.guild.id)
     user_roles = [x.id for x in ctx.author.roles]
-    if any(i in user_roles for i in mod_roles):
+    if any(int(i) in user_roles for i in mod_roles):
         return True
     await ctx.send("You do not have permission to use this command.", delete_after=5.0)
     await asyncio.sleep(3)
@@ -27,7 +27,7 @@ async def mod_check_ctx(ctx):
 async def mod_check_itx(itx: discord.Interaction):
     mod_roles = bot.db.get_mod_roles(itx.guild_id)
     user_roles = [x.id for x in itx.user.roles]
-    if any(i in user_roles for i in mod_roles):
+    if any(int(i) in user_roles for i in mod_roles):
         return True
     await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
     return False
@@ -194,42 +194,6 @@ class Moderation(commands.Cog):
             await itx.followup.send("Cannot remove role - user doesn't have it!")
 
     @has_mod_itx
-    @app_commands.command(name="checkinactive", description="Check for inactive users")
-    async def _check_inactive(self, itx: discord.Interaction, days: int):
-        await itx.response.defer()
-        response = await itx.followup.send("Checking for inactive members...", wait=True)
-        inactive = []
-        for member in itx.guild.members:
-            if member.bot:
-                continue
-            await itx.channel.send(f"### Checking {member.name}")
-            for channel in itx.guild.channels:
-                if not isinstance(channel, discord.TextChannel):
-                    continue
-                # Get the latest message from the user in the channel, within the last x days
-                await itx.channel.send(f"Checking {channel.name}")
-                try:
-                    last_message = [
-                        msg async for msg in channel.history(limit=1, after=(datetime.now() - timedelta(days=days)))
-                    ]
-                    print(last_message)
-                except discord.Forbidden:
-                    continue
-                if last_message and last_message[0].author.id == member.id:
-                    break
-            else:
-                inactive.append(member.mention)
-
-        await response.edit(content=f"Found {len(inactive)} inactive members.")
-        inactive = "\n".join(inactive) if inactive else "No inactive members found."
-        await send_embed(
-            channel=itx.channel,
-            title="Inactive Members",
-            description=inactive,
-            image=None,
-        )
-
-    @has_mod_itx
     @app_commands.command(name="checkroles", description="Check for users missing required roles")
     async def _check_roles(self, itx: discord.Interaction):  # , roles: Optional[List[discord.Role]] = None):
         await itx.response.defer()
@@ -258,20 +222,37 @@ class Moderation(commands.Cog):
         )
 
     @commands.command(name="lastmessage", description="Get the last message from a user")
-    async def lastMessage(self, ctx: commands.Context, users_id: int):
-        oldestMessage = None
-        for channel in ctx.guild.text_channels:
-            fetchMessage = await channel.history().find(lambda m: m.author.id == users_id)
-            if fetchMessage is None:
-                continue
-
-            if oldestMessage is None:
-                oldestMessage = fetchMessage
-            else:
-                if fetchMessage.created_at > oldestMessage.created_at:
-                    oldestMessage = fetchMessage
-
-        if oldestMessage is not None:
-            await ctx.send(f"Oldest message is {oldestMessage.content}")
+    async def lastMessage(self, ctx: commands.Context, user: discord.Member):
+        last_message = bot.db.get_user_log(ctx.guild.id, user.id)
+        if last_message:
+            await ctx.send(
+                embed=discord.Embed(
+                    description=f"{user.mention}'s last message on:\n<t:{int(last_message.timestamp())}:f>"
+                )
+            )
         else:
-            await ctx.send("No message found.")
+            await ctx.send(embed=discord.Embed(description=f"No messages found for {user.mention}"))
+
+    @has_mod_itx
+    @app_commands.command(name="checkinactive", description="Check for inactive users")
+    async def _check_inactive(self, itx: discord.Interaction, days: int):
+        await itx.response.defer()
+        response = await itx.followup.send("Checking for inactive members...", wait=True)
+        inactive = []
+        for member in itx.guild.members:
+            if member.bot:
+                continue
+            last_message = bot.db.get_user_log(itx.guild_id, member.id)
+            if not last_message or (last_message and datetime.now(timezone.utc) - last_message > timedelta(days=days)):
+                inactive.append((member.mention, last_message))
+        await response.edit(content=f"Found {len(inactive)} inactive members.")
+        inactive = "\n".join(
+            [f"{m[0]} - last message: <t:{int(m[1].timestamp())}:f>" if m[1] else f"{m[0]} - No messages found" for m in inactive]
+        )
+        await send_embed(
+            channel=itx.channel,
+            title="Inactive Members",
+            description=inactive,
+            image=None,
+        )
+        return

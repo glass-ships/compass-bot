@@ -23,8 +23,8 @@ class Gaming(commands.Cog):
         logger.info(f"Cog Online: {self.qualified_name}")
 
     # LFM Create
-    @commands.Cog.listener()
-    async def on_message(self, message):
+    @commands.Cog.listener("on_message")
+    async def create_lfg(self, message):
         if message.author.bot:
             return
 
@@ -33,7 +33,7 @@ class Gaming(commands.Cog):
             return
 
         msg = message.content
-        lfm_format = r"[Ll][Ff]\d[Mm]"
+        lfm_format = r"[Ll][Ff]\d+[Mm]"
         search = re.search(lfm_format, msg)
         if search is None:
             return

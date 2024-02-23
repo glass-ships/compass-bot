@@ -20,7 +20,7 @@ cog_path = Path(__file__)
 async def mod_check_ctx(ctx):
     mod_roles = bot.db.get_mod_roles(ctx.guild.id)
     user_roles = [x.id for x in ctx.author.roles]
-    if any(i in user_roles for i in mod_roles):
+    if any(int(i) in user_roles for i in mod_roles):
         return True
     await ctx.send("You do not have permission to use this command.", delete_after=5.0)
     await asyncio.sleep(3)
@@ -31,7 +31,7 @@ async def mod_check_ctx(ctx):
 async def mod_check_itx(itx: discord.Interaction):
     mod_roles = bot.db.get_mod_roles(itx.guild_id)
     user_roles = [x.id for x in itx.user.roles]
-    if any(i in user_roles for i in mod_roles):
+    if any(int(i) in user_roles for i in mod_roles):
         return True
     await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
     return False
@@ -61,7 +61,8 @@ class Utility(commands.Cog):
     @has_mod_ctx
     @commands.command(name="test")
     async def _test(self, ctx):
-        pass
+        await ctx.send("Test command")
+
 
     @has_mod_ctx
     @commands.command(name="getcommands", aliases=["gc", "getcmds"])

@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import sys
 from pathlib import Path
@@ -9,7 +10,9 @@ from discord.ext import commands
 
 from compass_bot.utils.bot_config import GuildData, DEFAULT_PREFIX, COMPASS_SRC
 from compass_bot.utils.custom_help_commands import CustomHelpCommand
-from compass_bot.utils.db_utils import ServerDB
+
+# from compass_bot.utils.db_utils import ServerDB
+from compass_bot.utils.db_utils_xata import ServerDB
 from compass_bot.utils.log_utils import get_logger
 
 
@@ -28,14 +31,10 @@ args = parser.parse_args()
 
 logger = get_logger(name="compass", level=args.log_level)
 discord_log_level = (
-    "INFO"
-    if args.log_level == "DEBUG"
-    else "CRITICAL"
-    if args.quiet
-    else "WARNING"
-    # "DEBUG" if args.log_level == "DEBUG" else "CRITICAL" if args.log_level == "CRITICAL" else "INFO"
+    logging.INFO if args.log_level == logging.DEBUG else logging.CRITICAL if args.quiet else logging.WARNING
+    # logging.DEBUG if args.log_level == "DEBUG" else logging.CRITICAL if args.log_level == "CRITICAL" else logging.INFO
 )
-discord.utils.setup_logging(level="WARNING")#discord_log_level)
+discord.utils.setup_logging(level=logging.WARNING)  # discord_log_level)
 DISCORD_TOKEN = os.getenv("DSC_DEV_TOKEN") if args.dev else os.getenv("DSC_API_TOKEN")
 
 ##################
@@ -64,24 +63,24 @@ class CompassBot:
         self.bot.logger = logger
 
     async def on_ready(self):
-        await self.prune_db()
-        await self.patch_db()
+        # await self.prune_db()
+        # await self.patch_db()
         for guild in self.bot.guilds:
             await self.set_guild_music_config(guild)
         self.bot.logger.info(f"{self.bot.user} is online.")
 
     async def startup_tasks(self, dev):
+        """Tasks to run on bot startup"""
+        # Connect to database
         self.bot.logger.info("Connecting to database...")
         await self.connect_to_db(dev)
-
+        # Load cogs
         self.bot.logger.info("Loading cogs...")
         for f in Path(COMPASS_SRC / "cogs").glob("*.py"):
-            # print(f)
             await self.bot.load_extension(f"cogs.{f.stem}")
 
     async def get_prefix(self, bot, ctx):
         """Returns a guild's bot prefix, or default if none"""
-
         if not ctx.guild:
             return commands.when_mentioned_or(DEFAULT_PREFIX)(bot, ctx)
         prefix = self.bot.db.get_prefix(ctx.guild.id)
@@ -92,7 +91,6 @@ class CompassBot:
 
     async def set_guild_music_config(self, guild_id):
         """Set a guild's music configs"""
-
         from compass_bot.music.player import MusicPlayer
         from compass_bot.music.music_utils import guild_player
 
@@ -102,11 +100,11 @@ class CompassBot:
     ### Database Methods
 
     async def connect_to_db(self, dev: bool = False):
-        """Connects to Mongo database"""
-
-        mongo_url = os.getenv("MONGO_URL")
+        """Connects to database"""
+        # mongo_url = os.getenv("MONGO_URL")
         try:
-            self.bot.db = ServerDB(mongo_url, dev=dev)
+            # self.bot.db = ServerDB(mongo_url, dev=dev)
+            self.bot.db = ServerDB(dev=dev)
             self.bot.logger.info("Connected to database.")
         except Exception as e:
             self.bot.logger.error(f"Error connecting to database: {e}")
@@ -143,6 +141,12 @@ class CompassBot:
                 del data["guild"]
                 self.bot.db.add_guild_table(guild.id, data)
         return
+
+    ### Misc
+    
+    
+
+    ### Shutdown
 
     async def shutdown(self):
         """Gracefully shuts down the bot"""

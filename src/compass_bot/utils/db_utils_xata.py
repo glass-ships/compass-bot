@@ -1,110 +1,89 @@
 import os
+from datetime import datetime, timedelta
+from typing import Union
+
 from xata import XataClient
 
-db_url = os.getenv("XATA_DATABASE_URL")
-db_api_key = os.getenv("XATA_API_KEY")
+DB_URL = os.getenv("XATA_DATABASE_URL")
+DB_API_KEY = os.getenv("XATA_API_KEY")
+
 
 class ServerDB:
     """Class representing the bot's mongoDB collection"""
 
-    def __init__(self, db_url, dev: bool = False):
-        # Connect to Xata client
-        xata = XataClient(db_url=db_url, api_key=db_api_key)
+    def __init__(self, db_url=None, dev: bool = False):
+        if not DB_URL or not DB_API_KEY:
+            raise ValueError("Xata database url or api key not found")
 
-        # Connect to bot database
-        table = "test-guilds" if dev else "guilds"
+        self.xata = XataClient(db_url=DB_URL, api_key=DB_API_KEY)
+        self.table = "test-guilds" if dev else "guilds"
+        self.data = self.xata.data()
+        self.records = self.xata.records()
+        self._cache = {}
 
+    ####################
+    ### Get methods ###
+    ####################
+
+    def _add_to_cache(self, guild_id: int, data):
+        self._cache[guild_id] = (datetime.now(), data)
+
+    def get_field(self, guild_id: int, field: str):
+        """Get specified field from a guild entry"""
+        cached = self._cache.get(guild_id, ())
+        if (not cached) or (datetime.now() - self._cache[guild_id][0] > timedelta(minutes=1)):
+            response = self.data.query(self.table, {"filter": {"guild_id": guild_id}})
+            records: dict = response["records"][0]
+            self._cache[guild_id] = (datetime.now(), records)
+            cached = self._cache[guild_id]
+        try:
+            return cached[1][field]
+        except KeyError:
+            return None
 
     def get_all_guilds(self):
-        """Returns a list of all guild entries"""
-        a = self.collection.find({})
-        guild_ids = []
-        for doc in a:
-            guild_ids.append(int(doc["guild_id"]))
-        return guild_ids
+        """Returns a list of all guild IDs in the table"""
+        response = self.data.query(self.table, {"columns": ["guild_id"], "filter": {}})
+        records: list = response["records"]
+        guilds = [record["guild_id"] for record in records]
+        return guilds
 
     def get_guild_name(self, guild_id):
-        """Returns the name of a guild by id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["guild_name"]
+        return self.get_field(guild_id, "guild_name")
 
     def get_prefix(self, guild_id):
-        """Returns the prefix associated with a guild id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["prefix"]
+        return self.get_field(guild_id, "prefix")
 
     def get_mod_roles(self, guild_id):
         """Returns a list of mod roles associated with a guild id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["mod_roles"]
+        return self.get_field(guild_id, "mod_roles")
 
     def get_dj_role(self, guild_id):
-        """Returns the DJ role associated with a guild id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["dj_role"]
+        return self.get_field(guild_id, "dj_role")
 
     def get_mem_role(self, guild_id):
-        """Returns the member role associated with a guild id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["mem_role"]
+        return self.get_field(guild_id, "mem_role")
 
     def get_channel_bot(self, guild_id):
-        """Returns the bot channel associated with a guild id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["chan_bot"]
+        return self.get_field(guild_id, "chan_bot")
 
     def get_channel_logs(self, guild_id):
-        """Returns the log channel associated with a guild id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["chan_logs"]
+        return self.get_field(guild_id, "chan_logs")
 
     def get_channel_music(self, guild_id):
-        """Returns the music channel associated with a guild id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["chan_music"]
+        return self.get_field(guild_id, "chan_music")
 
     def get_channel_vids(self, guild_id):
-        """Returns the videos channel associated with a guild id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["chan_vids"]
+        return self.get_field(guild_id, "chan_vids")
 
     def get_channel_lfg(self, guild_id):
-        """Returns the LFG channel associated with a guild id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["chan_lfg"]
+        return self.get_field(guild_id, "chan_lfg")
 
     def get_channel_welcome(self, guild_id):
-        """Returns the welcome channel associated with a guild id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["chan_welcome"]
-
-    def get_lfg(self, guild_id, lfg_id):
-        """Finds LFG session with given id in given guild"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        lfg = doc["lfg"]
-        try:
-            result = lfg[str(lfg_id)]
-        except KeyError:
-            result = None
-        return result
+        return self.get_field(guild_id, "chan_welcome")
 
     def get_videos_whitelist(self, guild_id):
-        """Get videos whitelist associated with a guild id"""
-        a = self.collection.find({"guild_id": guild_id})
-        doc = a[0]
-        return doc["videos_whitelist"]
+        return self.get_field(guild_id, "videos_whitelist")
 
     ##########################
     ### Add/Update methods ###
@@ -200,13 +179,34 @@ class ServerDB:
         self.collection.update_one(filter, newval, upsert=True)
         return
 
-    # LFG methods
+    ####################
+    ### Drop methods ###
+    ####################
+
+    def drop_field(self, guild_id, field):
+        ...
+
+    def drop_guild_table(self, guild_id):
+        self.records.delete(self.table, guild_id)
+
+    def drop_videos_whitelist(self, guild_id, channel_id):
+        filter = {"guild_id": guild_id}
+        result = self.collection.update_one(filter, {"$pull": {"videos_whitelist": channel_id}})
+        return result
+
+    ###################
+    ### LFG methods ###
+    ###################
 
     def add_lfg(self, guild_id, lfg_id, user_id, num_players):
-        filter = {"guild_id": guild_id}
-        session = {f"lfg.{lfg_id}": {"leader": user_id, "joined": [], "standby": [], "num_players": num_players}}
-        self.collection.update_one(filter, {"$set": session})
-        return
+        ...
+
+    def get_lfg(self, guild_id, lfg_id):
+        """Finds LFG session with given id in given guild"""
+        ...
+
+    def drop_lfg(self, guild_id, lfg_id):
+        ...
 
     def update_lfg_join(self, guild_id, lfg_id, user_id):
         filter = {"guild_id": guild_id}
@@ -241,26 +241,24 @@ class ServerDB:
             self.collection.update_one(filter, {"$set": {f"lfg.{lfg_id}.standby": standby}})
         return
 
-    ####################
-    ### Drop methods ###
-    ####################
+    #################################
+    ### User Activity Log Methods ###
+    #################################
 
-    def drop_field(self, guild_id, field):
-        filter = {"guild_id": guild_id}
-        result = self.collection.update_one(filter, {"$unset": {field: ""}})
-        return result
+    def upsert_user_log(self, guild_id: int, user_id: int, timestamp: datetime):
+        id = id = str(f"{guild_id}-{user_id}")
+        ts = timestamp.isoformat(timespec="minutes")
+        self.records.insert_with_id("activity-log", id, {"guild_id": guild_id, "user_id": user_id, "timestamp": ts})
 
-    def drop_guild_table(self, guild_id):
-        filter = {"guild_id": guild_id}
-        result = self.collection.find_one_and_delete(filter)
-        return result
+    def get_user_log(self, guild_id: int, user_id: int) -> Union[datetime, None]:
+        id = str(f"{guild_id}-{user_id}")
+        record = self.records.get("activity-log", id)
+        if "not found" in record.get("message", ""):
+            return None
+        last_message = record["timestamp"]
+        fmt = "%Y-%m-%dT%H:%M%z"
+        return datetime.strptime(last_message, fmt)
 
-    def drop_lfg(self, guild_id, lfg_id):
-        filter = {"guild_id": guild_id}
-        result = self.collection.update_one(filter, {"$unset": {f"lfg.{lfg_id}": {}}})
-        return result
-
-    def drop_videos_whitelist(self, guild_id, channel_id):
-        filter = {"guild_id": guild_id}
-        result = self.collection.update_one(filter, {"$pull": {"videos_whitelist": channel_id}})
-        return result
+    def remove_user_log(self, guild_id: int, user_id: int):
+        id = str(f"{guild_id}-{user_id}")
+        self.records.delete("activity-log", id)
