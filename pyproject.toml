@@ -23,8 +23,8 @@ loguru = "*"
 psutil = "*"
 
 ## Database
-pymongo = { version="*", extras = ["srv"] }
-# xata = "*"
+# pymongo = { version="*", extras = ["srv"] }
+xata = "*"
 
 ## For Commands
 httpx = "*"
