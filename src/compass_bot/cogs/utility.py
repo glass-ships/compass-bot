@@ -20,7 +20,7 @@ cog_path = Path(__file__)
 async def mod_check_ctx(ctx):
     mod_roles = bot.db.get_mod_roles(ctx.guild.id)
     user_roles = [x.id for x in ctx.author.roles]
-    if any(i in user_roles for i in mod_roles):
+    if any(int(i) in user_roles for i in mod_roles):
         return True
     await ctx.send("You do not have permission to use this command.", delete_after=5.0)
     await asyncio.sleep(3)
@@ -31,7 +31,7 @@ async def mod_check_ctx(ctx):
 async def mod_check_itx(itx: discord.Interaction):
     mod_roles = bot.db.get_mod_roles(itx.guild_id)
     user_roles = [x.id for x in itx.user.roles]
-    if any(i in user_roles for i in mod_roles):
+    if any(int(i) in user_roles for i in mod_roles):
         return True
     await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
     return False
@@ -46,7 +46,7 @@ async def setup(bot):
 
 
 class Utility(commands.Cog):
-    def __init__(self, bot_):
+    def __init__(self, bot_: commands.Bot):
         global bot
         bot = bot_
 
@@ -60,8 +60,10 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(name="test")
-    async def _test(self, ctx):
-        pass
+    async def _test(self, ctx, channel_id: int):
+        # await ctx.send("Test command")
+        await ctx.send(f"Testing channel: {bot.get_channel(channel_id).jump_url}")
+
 
     @has_mod_ctx
     @commands.command(name="getcommands", aliases=["gc", "getcmds"])
@@ -73,6 +75,8 @@ class Utility(commands.Cog):
         global_fetch_cmds = await bot.tree.fetch_commands()
 
         def cmds_to_str(list):
+            if not list:
+                return "No commands found"
             for i in list:
                 if isinstance(i, discord.app_commands.Command):
                     result = f"/{i.name}\n"

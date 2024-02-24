@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import sys
 from pathlib import Path
@@ -28,14 +29,10 @@ args = parser.parse_args()
 
 logger = get_logger(name="compass", level=args.log_level)
 discord_log_level = (
-    "INFO"
-    if args.log_level == "DEBUG"
-    else "CRITICAL"
-    if args.quiet
-    else "WARNING"
-    # "DEBUG" if args.log_level == "DEBUG" else "CRITICAL" if args.log_level == "CRITICAL" else "INFO"
+    logging.INFO if args.log_level == logging.DEBUG else logging.CRITICAL if args.quiet else logging.WARNING
+    # logging.DEBUG if args.log_level == "DEBUG" else logging.CRITICAL if args.log_level == "CRITICAL" else logging.INFO
 )
-discord.utils.setup_logging(level="WARNING")#discord_log_level)
+discord.utils.setup_logging(level=logging.WARNING)  # discord_log_level)
 DISCORD_TOKEN = os.getenv("DSC_DEV_TOKEN") if args.dev else os.getenv("DSC_API_TOKEN")
 
 ##################
@@ -71,17 +68,17 @@ class CompassBot:
         self.bot.logger.info(f"{self.bot.user} is online.")
 
     async def startup_tasks(self, dev):
+        """Tasks to run on bot startup"""
+        # Connect to database
         self.bot.logger.info("Connecting to database...")
         await self.connect_to_db(dev)
-
+        # Load cogs
         self.bot.logger.info("Loading cogs...")
         for f in Path(COMPASS_SRC / "cogs").glob("*.py"):
-            # print(f)
             await self.bot.load_extension(f"cogs.{f.stem}")
 
     async def get_prefix(self, bot, ctx):
         """Returns a guild's bot prefix, or default if none"""
-
         if not ctx.guild:
             return commands.when_mentioned_or(DEFAULT_PREFIX)(bot, ctx)
         prefix = self.bot.db.get_prefix(ctx.guild.id)
@@ -92,7 +89,6 @@ class CompassBot:
 
     async def set_guild_music_config(self, guild_id):
         """Set a guild's music configs"""
-
         from compass_bot.music.player import MusicPlayer
         from compass_bot.music.music_utils import guild_player
 
@@ -102,11 +98,9 @@ class CompassBot:
     ### Database Methods
 
     async def connect_to_db(self, dev: bool = False):
-        """Connects to Mongo database"""
-
-        mongo_url = os.getenv("MONGO_URL")
+        """Connects to database"""
         try:
-            self.bot.db = ServerDB(mongo_url, dev=dev)
+            self.bot.db = ServerDB(dev=dev)
             self.bot.logger.info("Connected to database.")
         except Exception as e:
             self.bot.logger.error(f"Error connecting to database: {e}")
@@ -114,17 +108,19 @@ class CompassBot:
 
     async def prune_db(self):
         """Prunes unused database entries"""
-
         self.bot.logger.info("Pruning unused database entries...")
-
         db_guilds = self.bot.db.get_all_guilds()
         bot_guilds = [i.id for i in self.bot.guilds]
-        self.bot.logger.debug(f"Bot guilds: {self.bot.guilds}\nDB Guilds: {db_guilds}")
-
+        self.bot.logger.debug(f"Bot guilds: {[(g.name, g.id) for g in self.bot.guilds]}")
+        self.bot.logger.debug(f"DB Guilds: {db_guilds}")
         for guild_id in db_guilds:
             if guild_id not in bot_guilds:
                 self.bot.logger.debug(f"Bot not in guild with id {guild_id}. Removing database entry.")
-                self.bot.db.drop_guild_table(guild_id)
+                result = self.bot.db.drop_guild_table(guild_id)
+                if result:
+                    self.bot.logger.debug(f"Database entry for guild {guild_id} removed.")
+                else:
+                    self.bot.logger.error(f"Error removing database entry for guild {guild_id}.")
         return
 
     async def patch_db(self):
@@ -134,20 +130,27 @@ class CompassBot:
 
         db_guilds = self.bot.db.get_all_guilds()
         bot_guilds = [i for i in self.bot.guilds]
-        self.bot.logger.debug(f"Bot guilds: {self.bot.guilds}\nDB Guilds: {db_guilds}")
-
+        self.bot.logger.debug(f"Bot guilds: {[(g.name, g.id) for g in self.bot.guilds]}")
+        self.bot.logger.debug(f"DB Guilds: {db_guilds}")
         for guild in bot_guilds:
             if guild.id not in db_guilds:
                 self.bot.logger.debug(f"Guild: {guild.name} not found in database. Adding default entry.")
                 data = GuildData(guild).__dict__
                 del data["guild"]
-                self.bot.db.add_guild_table(guild.id, data)
+                result = self.bot.db.add_guild(guild.id, data)
+                if result:
+                    self.bot.logger.debug(f"Database entry for guild {guild.id} added.")
+                else:
+                    self.bot.logger.error(f"Error adding database entry for guild {guild.id}.")
         return
+
+    ### Misc
+
+    ### Shutdown
 
     async def shutdown(self):
         """Gracefully shuts down the bot"""
         self.bot.loop.stop()
-        # self.bot.loop.close()
         await self.bot.close()
         self.bot.logger.info(f"{self.bot.user.name} offline.")  # type: ignore
         sys.exit(0)

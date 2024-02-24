@@ -7,9 +7,9 @@ from loguru import logger
 
 from compass_bot.utils.bot_config import GLASS_HARBOR
 
-MODULE_OPTIONS = ["admin", "gaming", "listeners", "main", "moderation", "music", "utility" ]# "utils"]
+MODULE_OPTIONS = ["admin", "gaming", "listeners", "main", "moderation", "music", "utility"]  # "utils"]
 CHANNEL_OPTIONS = ["logs", "bot", "welcome", "music", "lfg", "videos"]  # , 'pins']
-ROLE_OPTIONS = ["mod", "member"]
+ROLE_OPTIONS = ["mod", "member", "required"]
 
 
 async def setup(bot):
@@ -69,7 +69,9 @@ class Admin(commands.Cog):
     @_reload.autocomplete("module")
     async def _reload_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
         return [
-            app_commands.Choice(name=option, value=option) for option in MODULE_OPTIONS if current.lower() in option.lower()
+            app_commands.Choice(name=option, value=option)
+            for option in MODULE_OPTIONS
+            if current.lower() in option.lower()
         ]
 
     ########################################################################################################################
@@ -80,7 +82,6 @@ class Admin(commands.Cog):
     ####################
     ### Set Commands ###
     ####################
-
 
     @group_set.command(name="prefix", description="Set the bot's prefix for your server")
     @app_commands.checks.has_permissions(administrator=True)
@@ -102,7 +103,7 @@ class Admin(commands.Cog):
                 roles.append(int(role[3:-1]))
             else:
                 roles.append(int(role))
-        bot.db.update_mod_roles(itx.guild_id, roles)
+        bot.db.update_mod_roles(itx.guild_id, [str(role) for role in roles])
         await itx.response.send_message(f"Mod roles set: {mod_roles}")
 
     @group_set.command(name="member_role", description="Set the member role for your server")
@@ -111,15 +112,33 @@ class Admin(commands.Cog):
         bot.db.update_mem_role(itx.guild_id, role.id)
         await itx.response.send_message(f"Member role set: {role}")
 
+    @group_set.command(name="required_roles", description="Set the required roles for your server")
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.describe(required_roles="List of required roles (ID or mention)")
+    async def _required_roles(self, itx: discord.Interaction, required_roles: str):
+        roles_list = required_roles.split(" ")
+        roles = []
+        for role in roles_list:
+            if role.startswith("<"):
+                roles.append(int(role[3:-1]))
+            else:
+                roles.append(int(role))
+        bot.db.update_required_roles(itx.guild_id, [str(role) for role in roles])
+        await itx.response.send_message(f"Required roles set: {required_roles}")
+
+    ### Unset Commands ###
+
     @group_unset.command(name="role", description="Unset a role")
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.autocomplete()
     async def _role(self, itx: discord.Interaction, option: str):
         match option:
             case "mod":
-                bot.db.update_mod_roles(itx.guild_id, [0])
+                bot.db.update_mod_roles(itx.guild_id, None)
             case "member":
-                bot.db.update_mem_role(itx.guild_id, 0)
+                bot.db.update_mem_role(itx.guild_id, None)
+            case "required":
+                bot.db.update_required_roles(itx.guild_id, None)
             case _:
                 await itx.response.send_message("Error: Unknown argument. Valid targets: mod, member")
                 return False
@@ -129,7 +148,9 @@ class Admin(commands.Cog):
     @_role.autocomplete("option")
     async def _roles_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
         return [
-            app_commands.Choice(name=option, value=option) for option in ROLE_OPTIONS if current.lower() in option.lower()
+            app_commands.Choice(name=option, value=option)
+            for option in ROLE_OPTIONS
+            if current.lower() in option.lower()
         ]
 
     ########################
@@ -164,7 +185,9 @@ class Admin(commands.Cog):
     @_channel_set.autocomplete("option")
     async def _channel_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
         return [
-            app_commands.Choice(name=option, value=option) for option in CHANNEL_OPTIONS if current.lower() in option.lower()
+            app_commands.Choice(name=option, value=option)
+            for option in CHANNEL_OPTIONS
+            if current.lower() in option.lower()
         ]
 
     @group_unset.command(name="channel")
@@ -173,19 +196,19 @@ class Admin(commands.Cog):
     async def _channel_unset(self, itx: discord.Interaction, option: str):
         match option:
             case "bot":
-                bot.db.update_channel_bot(itx.guild_id, 0)
+                bot.db.update_channel_bot(itx.guild_id, None)
             case "logs":
-                bot.db.update_channel_logs(itx.guild_id, 0)
+                bot.db.update_channel_logs(itx.guild_id, None)
             case "welcome":
-                bot.db.update_channel_welcome(itx.guild_id, 0)
+                bot.db.update_channel_welcome(itx.guild_id, None)
             case "music":
-                bot.db.update_channel_music(itx.guild_id, 0)
+                bot.db.update_channel_music(itx.guild_id, None)
             case "lfg":
-                bot.db.update_channel_lfg(itx.guild_id, 0)
+                bot.db.update_channel_lfg(itx.guild_id, None)
             case "videos":
-                bot.db.update_channel_vids(itx.guild_id, 0)
+                bot.db.update_channel_vids(itx.guild_id, None)
             # case "pins":
-            #     bot.db.update_channel_pins(itx.guild_id, 0)
+            #     bot.db.update_channel_pins(itx.guild_id, None)
             case _:
                 await itx.response.send_message("Error: Unknown argument. Valid targets: logs, bot, music, videos")
                 return False

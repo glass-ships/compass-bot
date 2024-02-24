@@ -55,9 +55,13 @@ class Main(commands.Cog):
         await itx.response.defer()
 
         u = user or itx.user
-        mem = await itx.guild.fetch_member(u.id)
-        userBannerUrl = mem.banner
-        embed = discord.Embed(description=f"{mem.mention}'s banner")
+        # mem = await itx.guild.fetch_member(u.id)
+        mem = await bot.fetch_user(u.id)
+        userBannerUrl = mem.banner.url
+        description = f"{mem.mention}'s banner"
+        if profile == "Server":
+            description += "\n(server banners are not currently supported by discord.py)"
+        embed = discord.Embed(description=description)
         embed.set_image(url=f"{userBannerUrl}")
         await itx.followup.send(embed=embed)
         return
