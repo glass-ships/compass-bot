@@ -39,7 +39,7 @@ class Gaming(commands.Cog):
             return
 
         num_players = int(search.group()[2])
-        bot.db.add_lfg(guild_id=message.guild.id, lfg_id=message.id, user_id=message.author.id, num_players=num_players)
+        bot.db.add_lfg(lfg_id=message.id, user_id=message.author.id, num_players=num_players)
 
         await message.add_reaction("<:_plus:1011101343030726687>")
         await message.add_reaction("<:_minus:1011101369245106176>")
@@ -75,7 +75,7 @@ React with 📖 to see your active roster.
 
         emojis = {"join": "_plus", "leave": "_minus", "book": "📖", "full": "🇫"}
 
-        lfg = bot.db.get_lfg(guild_id=guild.id, lfg_id=payload.message_id)
+        lfg = bot.db.get_lfg(lfg_id=payload.message_id)
 
         if payload.emoji.name == emojis["join"]:
             await message.remove_reaction(payload.emoji, user)
@@ -87,9 +87,15 @@ React with 📖 to see your active roster.
                 return
             if user.id == lfg["leader"]:
                 return
+            if str(user.id) in lfg["joined"] or str(user.id) in lfg["standby"]:
+                await channel.send(
+                    f"{user.mention} You are already in the fireteam or on standby for this LFG post.",
+                    delete_after=10.0,
+                )
+                return
             if len(lfg["joined"]) + 1 == lfg["num_players"]:
                 await message.add_reaction(emojis["full"])
-            bot.db.update_lfg_join(guild_id=guild.id, lfg_id=payload.message_id, user_id=payload.user_id)
+            bot.db.update_lfg_join(lfg_id=payload.message_id, user_id=payload.user_id)
             embed = discord.Embed()
             embed.add_field(
                 name=f"{user.nick or user.name} has joined your LFG",
@@ -108,7 +114,7 @@ React with 📖 to see your active roster.
                 return
             if len(lfg["joined"]) - 1 < lfg["num_players"]:
                 await message.remove_reaction(emojis["full"], guild.get_member(bot.user.id))
-            bot.db.update_lfg_leave(guild_id=guild.id, lfg_id=payload.message_id, user_id=payload.user_id)
+            bot.db.update_lfg_leave(lfg_id=payload.message_id, user_id=payload.user_id)
             embed = discord.Embed()
             embed.add_field(
                 name=f"{user.nick or user.name} has left your LFG",

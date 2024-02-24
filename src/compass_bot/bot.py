@@ -10,9 +10,7 @@ from discord.ext import commands
 
 from compass_bot.utils.bot_config import GuildData, DEFAULT_PREFIX, COMPASS_SRC
 from compass_bot.utils.custom_help_commands import CustomHelpCommand
-
-# from compass_bot.utils.db_utils import ServerDB
-from compass_bot.utils.db_utils_xata import ServerDB
+from compass_bot.utils.db_utils import ServerDB
 from compass_bot.utils.log_utils import get_logger
 
 
@@ -63,8 +61,8 @@ class CompassBot:
         self.bot.logger = logger
 
     async def on_ready(self):
-        # await self.prune_db()
-        # await self.patch_db()
+        await self.prune_db()
+        await self.patch_db()
         for guild in self.bot.guilds:
             await self.set_guild_music_config(guild)
         self.bot.logger.info(f"{self.bot.user} is online.")
@@ -101,9 +99,7 @@ class CompassBot:
 
     async def connect_to_db(self, dev: bool = False):
         """Connects to database"""
-        # mongo_url = os.getenv("MONGO_URL")
         try:
-            # self.bot.db = ServerDB(mongo_url, dev=dev)
             self.bot.db = ServerDB(dev=dev)
             self.bot.logger.info("Connected to database.")
         except Exception as e:
@@ -112,17 +108,19 @@ class CompassBot:
 
     async def prune_db(self):
         """Prunes unused database entries"""
-
         self.bot.logger.info("Pruning unused database entries...")
-
         db_guilds = self.bot.db.get_all_guilds()
         bot_guilds = [i.id for i in self.bot.guilds]
-        self.bot.logger.debug(f"Bot guilds: {self.bot.guilds}\nDB Guilds: {db_guilds}")
-
+        self.bot.logger.debug(f"Bot guilds: {[(g.name, g.id) for g in self.bot.guilds]}")
+        self.bot.logger.debug(f"DB Guilds: {db_guilds}")
         for guild_id in db_guilds:
             if guild_id not in bot_guilds:
                 self.bot.logger.debug(f"Bot not in guild with id {guild_id}. Removing database entry.")
-                self.bot.db.drop_guild_table(guild_id)
+                result = self.bot.db.drop_guild_table(guild_id)
+                if result:
+                    self.bot.logger.debug(f"Database entry for guild {guild_id} removed.")
+                else:
+                    self.bot.logger.error(f"Error removing database entry for guild {guild_id}.")
         return
 
     async def patch_db(self):
@@ -132,26 +130,27 @@ class CompassBot:
 
         db_guilds = self.bot.db.get_all_guilds()
         bot_guilds = [i for i in self.bot.guilds]
-        self.bot.logger.debug(f"Bot guilds: {self.bot.guilds}\nDB Guilds: {db_guilds}")
-
+        self.bot.logger.debug(f"Bot guilds: {[(g.name, g.id) for g in self.bot.guilds]}")
+        self.bot.logger.debug(f"DB Guilds: {db_guilds}")
         for guild in bot_guilds:
             if guild.id not in db_guilds:
                 self.bot.logger.debug(f"Guild: {guild.name} not found in database. Adding default entry.")
                 data = GuildData(guild).__dict__
                 del data["guild"]
-                self.bot.db.add_guild_table(guild.id, data)
+                result = self.bot.db.add_guild(guild.id, data)
+                if result:
+                    self.bot.logger.debug(f"Database entry for guild {guild.id} added.")
+                else:
+                    self.bot.logger.error(f"Error adding database entry for guild {guild.id}.")
         return
 
     ### Misc
-    
-    
 
     ### Shutdown
 
     async def shutdown(self):
         """Gracefully shuts down the bot"""
         self.bot.loop.stop()
-        # self.bot.loop.close()
         await self.bot.close()
         self.bot.logger.info(f"{self.bot.user.name} offline.")  # type: ignore
         sys.exit(0)

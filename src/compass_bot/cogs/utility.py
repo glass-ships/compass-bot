@@ -46,7 +46,7 @@ async def setup(bot):
 
 
 class Utility(commands.Cog):
-    def __init__(self, bot_):
+    def __init__(self, bot_: commands.Bot):
         global bot
         bot = bot_
 
@@ -60,8 +60,9 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(name="test")
-    async def _test(self, ctx):
-        await ctx.send("Test command")
+    async def _test(self, ctx, channel_id: int):
+        # await ctx.send("Test command")
+        await ctx.send(f"Testing channel: {bot.get_channel(channel_id).jump_url}")
 
 
     @has_mod_ctx
@@ -74,6 +75,8 @@ class Utility(commands.Cog):
         global_fetch_cmds = await bot.tree.fetch_commands()
 
         def cmds_to_str(list):
+            if not list:
+                return "No commands found"
             for i in list:
                 if isinstance(i, discord.app_commands.Command):
                     result = f"/{i.name}\n"

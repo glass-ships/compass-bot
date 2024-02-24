@@ -90,9 +90,7 @@ class Listeners(commands.Cog):
                 newmessage += "`Plus some files too large to resend`"
             # Move the message
             chan = await bot.fetch_channel(vid_channel)
-            movedmessage = await chan.send(
-                content=newmessage, embed=discord.Embed(title="Test title", description="Some description"), files=files
-            )
+            movedmessage = await chan.send(content=newmessage, files=files)
             # Delete original and notify author
             await message.delete()
             await message.channel.send(
@@ -109,7 +107,7 @@ class Listeners(commands.Cog):
         if message.author.bot:
             return
         if message.guild:
-            bot.db.upsert_user_log(message.guild.id, message.author.id, message.created_at)
+            bot.db.add_or_update_user_log(message.guild.id, message.author.id, message.created_at)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):  # reaction, user):
@@ -132,7 +130,7 @@ class Listeners(commands.Cog):
             # Check for mod role
             mod_roles = bot.db.get_mod_roles(payload.guild_id)
             roles = [x.id for x in user.roles]
-            if any(r in roles for r in mod_roles):
+            if any(int(r) in roles for r in mod_roles):
                 # Remove the reaction
                 await message.remove_reaction("🔍", user)
 
@@ -175,9 +173,9 @@ class Listeners(commands.Cog):
         channel = get(glass_guild.text_channels, id=chan_id)
 
         data = GuildData(guild).__dict__
-        del data["Guild"]
+        del data["guild"]
 
-        if bot.db.add_guild_table(guild.id, data):
+        if bot.db.add_guild(guild.id, data):
             await channel.send(embed=discord.Embed(description=f'Guild "{guild.name}" added to database.'))
         else:
             await channel.send(embed=discord.Embed(description=f'Guild "{guild.name}" already in database.'))
@@ -212,6 +210,9 @@ class Listeners(commands.Cog):
         import httpx
 
         guild = member.guild
+        if guild.id != GLASS_HARBOR:
+            return
+
         channel_id = bot.db.get_channel_welcome(guild_id=guild.id)
         if channel_id == 0:
             return
@@ -221,14 +222,11 @@ class Listeners(commands.Cog):
         ocean = Image.open(f"{COMPASS_SRC}/images/welcome_background.png")
         pfp = Image.open(io.BytesIO(av.content))
         pfp = pfp.resize((650, 650))
-
         ocean_w, ocean_h = ocean.size
         pfp_w, pfp_h = pfp.size
         offset = ((ocean_w - pfp_w) // 2, (ocean_h - pfp_h) // 2)
-
         base = Image.new("RGBA", ocean.size)
         base.paste(pfp, offset)
-
         img = Image.alpha_composite(base, ocean)
 
         with io.BytesIO() as image_binary:
@@ -252,11 +250,11 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member) -> None:
         guild = member.guild
-        channel_id = bot.db.get_channel_welcome(guild_id=guild.id)
-        if channel_id is None:
-            return
-        channel = get(guild.text_channels, id=channel_id)
-        await channel.send(
-            embed=discord.Embed(title=f"Goodbye, {member.name}!", description=f"{member.mention} has left the server.")
-        )
+        # channel_id = bot.db.get_channel_welcome(guild_id=guild.id)
+        # if channel_id is None:
+        #     return
+        # channel = get(guild.text_channels, id=channel_id)
+        # await channel.send(
+        #     embed=discord.Embed(title=f"Goodbye, {member.name}!", description=f"{member.mention} has left the server.")
+        # )
         bot.db.remove_user_log(guild.id, member.id)

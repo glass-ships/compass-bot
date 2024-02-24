@@ -106,7 +106,7 @@ class Moderation(commands.Cog):
         mod_roles = bot.db.get_mod_roles(itx.guild_id)
         r = ""
         for i in mod_roles:
-            r += f"<@&{i}>\n"
+            r += f"<@&{int(i)}>\n"
         await itx.response.send_message(embed=discord.Embed(description=f"Mod roles:\n{r}"))
 
     @has_mod_itx
@@ -130,7 +130,6 @@ class Moderation(commands.Cog):
 
 {msg.content}
 """
-
         # Get any attachments
         files = []
         if msg.attachments:
@@ -222,7 +221,7 @@ class Moderation(commands.Cog):
         )
 
     @commands.command(name="lastmessage", description="Get the last message from a user")
-    async def lastMessage(self, ctx: commands.Context, user: discord.Member):
+    async def _lastMessage(self, ctx: commands.Context, user: discord.Member):
         last_message = bot.db.get_user_log(ctx.guild.id, user.id)
         if last_message:
             await ctx.send(
@@ -247,7 +246,7 @@ class Moderation(commands.Cog):
                 inactive.append((member.mention, last_message))
         await response.edit(content=f"Found {len(inactive)} inactive members.")
         inactive = "\n".join(
-            [f"{m[0]} - last message: <t:{int(m[1].timestamp())}:f>" if m[1] else f"{m[0]} - No messages found" for m in inactive]
+            [f"{m[0]} - <t:{int(m[1].timestamp())}:f>" if m[1] else f"{m[0]} - No messages found" for m in inactive]
         )
         await send_embed(
             channel=itx.channel,

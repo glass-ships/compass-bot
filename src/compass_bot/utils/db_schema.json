@@ -6,7 +6,6 @@
         { "name": "guild_name", "type": "string" },
         { "name": "prefix", "type": "string" },
         { "name": "mem_role", "type": "int" },
-        { "name": "dj_role", "type": "int" },
         { "name": "mod_roles", "type": "multiple" },
         { "name": "required_roles", "type": "multiple" },
         { "name": "default_channel", "type": "int" },

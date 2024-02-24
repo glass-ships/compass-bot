@@ -60,31 +60,28 @@ class Emojis:
 @dataclass
 class GuildData:
     guild: discord.Guild
+    chan_bot: int = None
+    chan_lfg: int = None
+    chan_logs: int = None
+    chan_music: int = None
+    chan_vids: int = None
+    chan_welcome: int = None
+    default_channel: discord.TextChannel = None
     guild_id: int = None  # field(init=False)
     guild_name: str = None  # field(init=False)
-    prefix: str = ";"
     mem_role: int = None
-    dj_role: int = None
     mod_roles: List[str] = field(default_factory=list)
+    prefix: str = ";"
     required_roles: List[str] = field(default_factory=list)
-    default_channel: discord.TextChannel = None
-    chan_bot: int = None
-    chan_logs: int = None
-    chan_welcome: int = None
-    chan_music: int = None
-    chan_lfg: int = None
-    chan_vids: int = None
-    lfgs: List[str] = field(default_factory=list)
     videos_whitelist: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         self.guild_id = self.guild.id
         self.guild_name = self.guild.name
-
         self.default_channel = self.guild.system_channel.id if self.guild.system_channel else None
-        self.chan_bot = self.default_channel
-        self.chan_logs = self.default_channel
-        self.chan_welcome = self.default_channel
+        self.chan_bot = self.chan_bot if self.chan_bot else self.default_channel
+        self.chan_logs = self.chan_logs if self.chan_logs else self.default_channel
+        self.chan_welcome = self.chan_welcome if self.chan_welcome else self.default_channel
 
 
 class CustomException(Exception):
