@@ -162,18 +162,56 @@ async def send_embed(
     footer_image=None,
 ):
     """Send embed to channel"""
-
     embed = discord.Embed(title=title, description=description, color=EMBED_COLOR())
-
     if image:
         embed.set_image(url=image)
     if thumbnail:
         embed.set_thumbnail(url=thumbnail)
     if footer or footer_image:
         embed.set_footer(text=footer, icon_url=footer_image)
-
     await channel.send(embed=embed)
     return
+
+
+async def send_embed_long(
+    *,
+    channel: discord.TextChannel,
+    title=None,
+    description=None, # Union[str, List[str]]
+    image=None,
+    thumbnail=None,
+    footer=None,
+    footer_image=None,
+):
+    """Send potentially too-long embed to channel"""
+    if description and len(description) < 4000:
+        embed = discord.Embed(title=title, description=description, color=EMBED_COLOR())
+        if image:
+            embed.set_image(url=image)
+        if thumbnail:
+            embed.set_thumbnail(url=thumbnail)
+        if footer or footer_image:
+            embed.set_footer(text=footer, icon_url=footer_image)
+        await channel.send(embed=embed)
+        return
+    elif description and len(description) >= 4000:
+        # split into multiple messages
+        num_msgs = len(description) // 4000 + 1
+        chunked = list(chunk_list(description, len(description) // num_msgs))
+        page = 1
+        for sublist in chunked:
+            embed = discord.Embed(
+                title=f"{title} (Page {page}/{num_msgs})",
+                description="\n".join(sublist),
+            )
+            page += 1
+            if image:
+                embed.set_image(url=image)
+            if thumbnail:
+                embed.set_thumbnail(url=thumbnail)
+            if footer or footer_image:
+                embed.set_footer(text=footer, icon_url=footer_image)
+            await channel.send(embed=embed)
 
 
 ##################

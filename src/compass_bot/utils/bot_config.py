@@ -10,7 +10,7 @@ COMPASS_ROOT = Path(__file__).parent.parent.parent.parent
 COMPASS_SRC = Path(__file__).parent.parent
 
 DEFAULT_PREFIX = ";"
-
+GLASS = 357738904591532033
 GLASS_HARBOR = 393995277713014785
 
 
@@ -79,9 +79,9 @@ class GuildData:
         self.guild_id = self.guild.id
         self.guild_name = self.guild.name
         self.default_channel = self.guild.system_channel.id if self.guild.system_channel else None
-        self.chan_bot = self.chan_bot if self.chan_bot else self.default_channel
-        self.chan_logs = self.chan_logs if self.chan_logs else self.default_channel
-        self.chan_welcome = self.chan_welcome if self.chan_welcome else self.default_channel
+        # self.chan_bot = self.chan_bot if self.chan_bot else self.default_channel
+        # self.chan_logs = self.chan_logs if self.chan_logs else self.default_channel
+        # self.chan_welcome = self.chan_welcome if self.chan_welcome else self.default_channel
 
 
 class CustomException(Exception):

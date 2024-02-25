@@ -253,10 +253,11 @@ class Moderation(commands.Cog):
 
         inactive_formatted = [
             f"{m[0]} - <t:{int(m[1].timestamp())}:f>" if m[1] else f"{m[0]} - No messages found " for m in inactive
-        ] * 11
+        ]
         desc = "\n".join(inactive_formatted) if inactive_formatted else "No inactive members found."
+        title = f"Inactive Members - {days} Days"
         if len(desc) < 4000:
-            await itx.followup.send(embed=discord.Embed(title="Inactive Members", description=desc))
+            await itx.followup.send(embed=discord.Embed(title=title, description=desc))
         else:
             # split into multiple messages
             num_msgs = len(desc) // 4000 + 1
@@ -265,7 +266,7 @@ class Moderation(commands.Cog):
             for sublist in chunked:
                 await itx.followup.send(
                     embed=discord.Embed(
-                        title=f"Inactive Members - Page {page}",
+                        title=f"{title} (Page {page}/{num_msgs+1})",
                         description="\n".join(sublist),
                     )
                 )

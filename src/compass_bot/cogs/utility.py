@@ -3,14 +3,14 @@ import os
 import requests
 import shutil
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 from loguru import logger
 
-from compass_bot.utils.bot_config import COMPASS_ROOT, GLASS_HARBOR
+from compass_bot.utils.bot_config import COMPASS_ROOT, GLASS, GLASS_HARBOR
 from compass_bot.utils.utils import get_emojis, send_embed, get_resource_repo, get_resource_path, REPO_PATH
 
 
@@ -64,14 +64,30 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(name="test")
-    async def _test(self, ctx, channel_id: int):
+    async def _test(self, ctx: commands.Context, channel_id: int):
         # await ctx.send("Test command")
         await ctx.send(f"Testing channel: {bot.get_channel(channel_id).jump_url}")
 
+    @has_mod_ctx
+    @commands.command(name="broadcast", aliases=["announce", "sendall"])
+    async def broadcast(self, ctx: commands.Context, *, msg: str):
+        if ctx.author.id != GLASS:
+            return
+        for server in bot.guilds:
+            log_channel = bot.db.get_channel_logs(ctx.guild.id)
+            if not log_channel:
+                log_channel = ctx.guild.system_channel
+            for channel in server.text_channels:
+                try:
+                    await channel.send(msg)
+                except Exception:
+                    continue
+                else:
+                    break
 
     @has_mod_ctx
     @commands.command(name="getcommands", aliases=["gc", "getcmds"])
-    async def _get_commands(self, ctx, guild_id=None):
+    async def _get_commands(self, ctx: commands.Context, guild_id=None):
         g = bot.get_guild(int(guild_id) if guild_id else ctx.guild.id)
         global_get_cmds = bot.tree.get_commands()
         guild_get_cmds = bot.tree.get_commands(guild=g)
@@ -104,7 +120,7 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(name="clearcommands", aliases=["cc"])
-    async def _clear_commands(self, ctx, guild_id=None):
+    async def _clear_commands(self, ctx: commands.Context, guild_id=None):
         g = bot.get_guild(int(guild_id) if guild_id else ctx.guild.id)
         bot.tree.clear_commands(guild=g)
         fmt = await bot.tree.sync(guild=g)
@@ -122,7 +138,7 @@ class Utility(commands.Cog):
         description="Get a list of guild's emojis (Used in Glass Harbor - can be safely ignored)",
         aliases=["emojis"],
     )
-    async def _get_emojis(self, ctx):
+    async def _get_emojis(self, ctx: commands.Context):
         emojis_static, emojis_anim = get_emojis(guild=bot.get_guild(ctx.guild.id))
         emojis_anim = [i.name for i in emojis_anim]
         emojis_static = [i.name for i in emojis_static]
@@ -135,7 +151,7 @@ class Utility(commands.Cog):
         description="Downloads a guild's emojis (Used in Glass Harbor - can be safely ignored)",
         aliases=["dlemojis", "dle"],
     )
-    async def _download_emojis(self, ctx) -> None:
+    async def _download_emojis(self, ctx: commands.Context) -> None:
         get_resource_repo()
         if os.path.exists(f"{REPO_PATH}/{ctx.guild.name}/emojis"):
             fp = f"{REPO_PATH}/{ctx.guild.name}/emojis"
@@ -155,8 +171,8 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(name="syncemojis", description="Syncs emojis from resource repo or local backup")
-    async def _sync_emojis(self, ctx, option: str = None):
-        await send_embed(channel=ctx, description="Syncing emojis...")
+    async def _sync_emojis(self, ctx: commands.Context, option: Optional[str] = None):
+        await send_embed(channel=ctx.channel, description="Syncing emojis...")
         backup_dir_static = get_resource_path(ctx.guild.name, "emojis", "png")
         backup_dir_anim = get_resource_path(ctx.guild.name, "emojis", "gif")
         if not (backup_dir_static and backup_dir_anim):
@@ -171,13 +187,19 @@ class Utility(commands.Cog):
         to_remove = [e for e in guild_static if f"{e.name}.png" not in backup_static] + [
             e for e in guild_anim if f"{e.name}.gif" not in backup_anim
         ]
+        if not to_add and not to_remove:
+            await ctx.send(embed=discord.Embed(description="Emojis already synced!"))
+            return
+        await ctx.send(
+            embed=discord.Embed(description=f"Adding {len(to_add)} emojis and removing {len(to_remove)} emojis")
+        )
         await self._clear_emojis(ctx, to_remove)
         await self._add_emojis(ctx, to_add)
         await ctx.send(embed=discord.Embed(description="Emojis Synced!"))
 
     @has_mod_ctx
     @commands.command(name="clearemojis", description="Clears all emojis in a guild")
-    async def _clear_emojis(self, ctx, emojis: List[discord.Emoji] = None) -> None:
+    async def _clear_emojis(self, ctx: commands.Context, emojis: List[discord.Emoji] = None) -> None:
         def _check(m):
             return m.author == ctx.author and m.channel == ctx.channel
 
@@ -201,7 +223,7 @@ class Utility(commands.Cog):
         return
 
     # Not a command, but a helper function for syncemojis
-    async def _add_emojis(self, ctx, emojis: list = None) -> None:
+    async def _add_emojis(self, ctx: commands.Context, emojis: list = None) -> None:
         """Adds emojis to a guild from a list of filepaths"""
         for e in emojis:
             with open(e, "rb") as image:
@@ -212,20 +234,20 @@ class Utility(commands.Cog):
                 except Exception as error:
                     await ctx.send(f"Error uploading emoji `{e}`: {error}")
             await asyncio.sleep(1)
-        await send_embed(channel=ctx, description=f"{len(emojis)} emojis added")
+        await send_embed(channel=ctx.channel, description=f"{len(emojis)} emojis added")
         return
 
     ### Sticker Commands
 
     @has_mod_ctx
     @commands.command(name="getstickers", description="Get a list of guild's stickers", aliases=["stickers"])
-    async def _get_stickers(self, ctx):
+    async def _get_stickers(self, ctx: commands.Context):
         stickers = bot.get_guild(ctx.guild.id).stickers
         await ctx.send(f"__**Guild stickers:**__\n```\n{[i.name for i in stickers]}\n```")
 
     @has_mod_ctx
     @commands.command(name="downloadstickers", description="Downloads a guild's stickers", aliases=["dlstickers"])
-    async def _download_stickers(self, ctx) -> None:
+    async def _download_stickers(self, ctx: commands.Context) -> None:
         dir = get_resource_path(ctx.guild.name, "stickers")
         if not dir:
             dir = f"{COMPASS_ROOT}/downloads/{ctx.guild.name}/stickers"
@@ -245,7 +267,7 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(name="syncstickers", description="Syncs stickers from resource repo or local backup")
-    async def _sync_stickers(self, ctx, option: str = None):
+    async def _sync_stickers(self, ctx: commands.Context, option: str = None):
         await send_embed(channel=ctx, description="Syncing stickers...")
         backup_dir = get_resource_path(ctx.guild.name, "stickers")
         if not backup_dir:
@@ -253,7 +275,9 @@ class Utility(commands.Cog):
             return
         backup = os.listdir(backup_dir)
         guild_stickers = bot.get_guild(ctx.guild.id).stickers
-        to_add = [f"{backup_dir}/{e}" for e in backup if e.split(".")[0].split("_")[0] not in [i.name for i in guild_stickers]]
+        to_add = [
+            f"{backup_dir}/{e}" for e in backup if e.split(".")[0].split("_")[0] not in [i.name for i in guild_stickers]
+        ]
         to_remove = [e for e in guild_stickers if f"{e.name}.{e.format.name}" not in backup]
         await self._clear_stickers(ctx, to_remove)
         await self._add_stickers(ctx, to_add)
@@ -261,7 +285,7 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(name="clearstickers", description="Clears all stickers in a guild")
-    async def _clear_stickers(self, ctx, stickers: List[discord.Sticker] = None) -> None:
+    async def _clear_stickers(self, ctx: commands.Context, stickers: List[discord.Sticker] = None) -> None:
         def _check(m):
             return m.author == ctx.author and m.channel == ctx.channel
 
@@ -286,7 +310,7 @@ class Utility(commands.Cog):
         return
 
     # Not a command, but a helper function for syncstickers
-    async def _add_stickers(self, ctx, stickers: list = None) -> None:
+    async def _add_stickers(self, ctx: commands.Context, stickers: list = None) -> None:
         """Adds stickers to a guild from a list of filepaths"""
         for s in stickers:
             parts = s.split("/")[-1].split(".")[0].split("_")
@@ -320,7 +344,7 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(name="clearfilecache", aliases=["cfc", "rm -rf"])
-    async def _clear_file_cache(self, ctx, option: str):
+    async def _clear_file_cache(self, ctx: commands.Context, option: str):
         shutil.rmtree(f"downloads/")
         await ctx.message.delete()
         await ctx.send(f"File cache cleared!", delete_after=2.0)

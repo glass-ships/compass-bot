@@ -55,7 +55,7 @@ React with 📖 to see your active roster.
         )
         embed.set_footer(text=f"Fireteam Leader: {message.author.nick}", icon_url=message.author.avatar.url)
         await message.channel.send(embed=embed, delete_after=7.0)
-        await asyncio.sleep(10800)
+        await asyncio.sleep(3600)
         bot.db.drop_lfg(message.guild.id, message.id)
 
     # LFM Update (Join/Leave/Check)
