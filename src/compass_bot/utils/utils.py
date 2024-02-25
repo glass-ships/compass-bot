@@ -82,7 +82,9 @@ def extract_url(content):
     return None
 
 
-#### File Utils
+##################
+### File Utils ###
+##################
 
 
 def get_emojis(guild: discord.Guild) -> (List[discord.Emoji], List[discord.Emoji]):
@@ -177,6 +179,12 @@ async def send_embed(
 ##################
 ### Misc Utils ###
 ##################
+
+
+def chunk_list(l, n):
+    # looping till length l
+    for i in range(0, len(l), n):
+        yield l[i : i + n]
 
 
 def get_resource_repo() -> None:

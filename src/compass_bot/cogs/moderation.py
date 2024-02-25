@@ -7,7 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.utils import get
 
-from compass_bot.utils.utils import download, getfilepath, parse_args, send_embed
+from compass_bot.utils.utils import download, chunk_list, getfilepath, parse_args, send_embed
 from compass_bot.utils.bot_config import EMBED_COLOR
 
 from loguru import logger
@@ -253,23 +253,22 @@ class Moderation(commands.Cog):
 
         inactive_formatted = [
             f"{m[0]} - <t:{int(m[1].timestamp())}:f>" if m[1] else f"{m[0]} - No messages found " for m in inactive
-        ] * 10
+        ] * 11
         desc = "\n".join(inactive_formatted) if inactive_formatted else "No inactive members found."
         if len(desc) < 4000:
             await itx.followup.send(embed=discord.Embed(title="Inactive Members", description=desc))
         else:
             # split into multiple messages
             num_msgs = len(desc) // 4000 + 1
-            chunks = len(inactive_formatted) // num_msgs
-            print(f"Splitting into {num_msgs} messages with chunk size {chunks}")
-            for i in range(num_msgs):
-                print(f"Chunk {i+1} - {i*chunks} to {(i+1)*chunks}")
-                # continue
+            chunked = list(chunk_list(inactive_formatted, len(inactive_formatted) // num_msgs))
+            page = 1
+            for sublist in chunked:
                 await itx.followup.send(
                     embed=discord.Embed(
-                        title=f"Inactive Members - Page {i+1}",
-                        description="\n".join(inactive_formatted[i * chunks : (i + 1) * chunks]),
+                        title=f"Inactive Members - Page {page}",
+                        description="\n".join(sublist),
                     )
                 )
-
+                page += 1
         return
+
