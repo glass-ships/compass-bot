@@ -74,16 +74,19 @@ class Utility(commands.Cog):
         if ctx.author.id != GLASS:
             return
         for server in bot.guilds:
+            # for channel in server.text_channels:
+            #     try:
+            #         await channel.send(msg)
+            #     except Exception:
+            #         continue
+            #     else:
+            #         break
             log_channel = bot.db.get_channel_logs(ctx.guild.id)
             if not log_channel:
-                log_channel = ctx.guild.system_channel
-            for channel in server.text_channels:
-                try:
-                    await channel.send(msg)
-                except Exception:
-                    continue
-                else:
-                    break
+                # log_channel = ctx.guild.system_channel
+                return
+            channel = bot.get_channel(log_channel)
+            await channel.send(msg)
 
     @has_mod_ctx
     @commands.command(name="getcommands", aliases=["gc", "getcmds"])
