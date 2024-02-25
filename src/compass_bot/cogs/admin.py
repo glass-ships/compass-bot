@@ -31,8 +31,6 @@ class Admin(commands.Cog):
     @commands.command(name="sync", description="Syncs the bot's command tree")
     @commands.has_permissions(administrator=True)
     async def _sync(self, ctx: commands.Context, spec: Union[Literal["dev"], Literal["guild"], None]):
-        """Syncs the bot's command tree"""
-
         logger.info("Syncing ships...")
         if spec == "dev":
             g = bot.get_guild(ctx.guild.id)

@@ -13,9 +13,11 @@ from compass_bot.utils.bot_config import EMBED_COLOR
 from loguru import logger
 
 
-async def mod_check_ctx(ctx):
+async def mod_check_ctx(ctx: commands.Context):
     mod_roles = bot.db.get_mod_roles(ctx.guild.id)
     user_roles = [x.id for x in ctx.author.roles]
+    if ctx.author.guild_permissions.administrator:
+        return True
     if any(int(i) in user_roles for i in mod_roles):
         return True
     await ctx.send("You do not have permission to use this command.", delete_after=5.0)
@@ -27,6 +29,8 @@ async def mod_check_ctx(ctx):
 async def mod_check_itx(itx: discord.Interaction):
     mod_roles = bot.db.get_mod_roles(itx.guild_id)
     user_roles = [x.id for x in itx.user.roles]
+    if itx.user.guild_permissions.administrator:
+        return True
     if any(int(i) in user_roles for i in mod_roles):
         return True
     await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
@@ -149,7 +153,7 @@ class Moderation(commands.Cog):
         await itx.followup.send(f"Message moved to <#{channel.id}>")
 
     @has_mod_itx
-    @app_commands.command(name="give_role", description="Give a role to a user with optional duration")
+    @app_commands.command(name="giverole", description="Give a role to a user with optional duration")
     async def _give_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: Optional[int]):
         role = get(itx.guild.roles, id=role.id)
         if not user:
@@ -244,14 +248,28 @@ class Moderation(commands.Cog):
             last_message = bot.db.get_user_log(itx.guild_id, member.id)
             if not last_message or (last_message and datetime.now(timezone.utc) - last_message > timedelta(days=days)):
                 inactive.append((member.mention, last_message))
+
         await response.edit(content=f"Found {len(inactive)} inactive members.")
-        inactive = "\n".join(
-            [f"{m[0]} - <t:{int(m[1].timestamp())}:f>" if m[1] else f"{m[0]} - No messages found" for m in inactive]
-        )
-        await send_embed(
-            channel=itx.channel,
-            title="Inactive Members",
-            description=inactive,
-            image=None,
-        )
+
+        inactive_formatted = [
+            f"{m[0]} - <t:{int(m[1].timestamp())}:f>" if m[1] else f"{m[0]} - No messages found " for m in inactive
+        ] * 10
+        desc = "\n".join(inactive_formatted) if inactive_formatted else "No inactive members found."
+        if len(desc) < 4000:
+            await itx.followup.send(embed=discord.Embed(title="Inactive Members", description=desc))
+        else:
+            # split into multiple messages
+            num_msgs = len(desc) // 4000 + 1
+            chunks = len(inactive_formatted) // num_msgs
+            print(f"Splitting into {num_msgs} messages with chunk size {chunks}")
+            for i in range(num_msgs):
+                print(f"Chunk {i+1} - {i*chunks} to {(i+1)*chunks}")
+                # continue
+                await itx.followup.send(
+                    embed=discord.Embed(
+                        title=f"Inactive Members - Page {i+1}",
+                        description="\n".join(inactive_formatted[i * chunks : (i + 1) * chunks]),
+                    )
+                )
+
         return

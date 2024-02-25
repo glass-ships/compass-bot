@@ -107,7 +107,7 @@ class Listeners(commands.Cog):
         if message.author.bot:
             return
         if message.guild:
-            bot.db.add_or_update_user_log(message.guild.id, message.author.id, message.created_at)
+            bot.db.add_or_update_user_log(message.guild.id, message.author.id, message.author.name, message.created_at)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):  # reaction, user):

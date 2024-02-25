@@ -217,10 +217,12 @@ class ServerDB:
     ### User Activity Log Methods ###
     #################################
 
-    def add_or_update_user_log(self, guild_id: int, user_id: int, timestamp: datetime):
+    def add_or_update_user_log(self, guild_id: int, user_id: int, user_name: str, timestamp: datetime):
         id = id = str(f"{guild_id}-{user_id}")
         ts = timestamp.isoformat(timespec="minutes")
-        self.records.insert_with_id("activity-log", id, {"guild_id": guild_id, "user_id": user_id, "timestamp": ts})
+        self.records.insert_with_id(
+            "activity-log", id, {"guild_id": guild_id, "user_id": user_id, "user_name": user_name, "timestamp": ts}
+        )
 
     def get_user_log(self, guild_id: int, user_id: int) -> Union[datetime, None]:
         id = str(f"{guild_id}-{user_id}")

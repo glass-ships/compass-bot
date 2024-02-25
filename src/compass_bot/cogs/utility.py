@@ -17,9 +17,11 @@ from compass_bot.utils.utils import get_emojis, send_embed, get_resource_repo, g
 cog_path = Path(__file__)
 
 
-async def mod_check_ctx(ctx):
+async def mod_check_ctx(ctx: commands.Context):
     mod_roles = bot.db.get_mod_roles(ctx.guild.id)
     user_roles = [x.id for x in ctx.author.roles]
+    if ctx.author.guild_permissions.administrator:
+        return True
     if any(int(i) in user_roles for i in mod_roles):
         return True
     await ctx.send("You do not have permission to use this command.", delete_after=5.0)
@@ -31,6 +33,8 @@ async def mod_check_ctx(ctx):
 async def mod_check_itx(itx: discord.Interaction):
     mod_roles = bot.db.get_mod_roles(itx.guild_id)
     user_roles = [x.id for x in itx.user.roles]
+    if itx.user.guild_permissions.administrator:
+        return True
     if any(int(i) in user_roles for i in mod_roles):
         return True
     await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
