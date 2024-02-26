@@ -9,7 +9,7 @@ DB_API_KEY = os.getenv("XATA_API_KEY")
 
 
 class ServerDB:
-    """Class representing the bot's mongoDB collection"""
+    """Class representing the bot's server database"""
 
     def __init__(self, db_url=None, dev: bool = False):
         if not DB_URL or not DB_API_KEY:
@@ -29,7 +29,11 @@ class ServerDB:
     ####################
 
     def get_field(self, guild_id: int, field: str):
-        """Get specified field from a guild entry"""
+        """Get specified field from a guild entry
+        Args:
+            guild_id (int): Guild ID
+            field (str): Field to retrieve
+        """
         cached = self._cache.get(guild_id, ())
         if (not cached) or (datetime.now() - self._cache[guild_id][0] > timedelta(minutes=1)):
             records = self.records.get(self.table, str(guild_id))
@@ -88,6 +92,11 @@ class ServerDB:
     ##########################
 
     def add_guild(self, guild_id: int, data: dict):
+        """Add a new guild to the table
+        Args:
+            guild_id (int): Guild ID
+            data (dict): Data to add to the table
+        """
         guild_entry = self.records.get(self.table, str(guild_id))
         if guild_entry.get("records", None) is None:
             self.records.insert_with_id(self.table, str(guild_id), data)
@@ -95,7 +104,7 @@ class ServerDB:
         return False
 
     def add_or_update_field(self, guild_id: int, field, value):
-        """Column must exist in table"""
+        # Column must exist in table
         self.records.update(self.table, str(guild_id), {field: value})
 
     def update_guild_id(self, guild_id: int, new_value: int):
@@ -147,7 +156,7 @@ class ServerDB:
     ####################
 
     def drop_field(self, guild_id: int, field):
-        """Sets field to None"""
+        # Sets field to None
         self.records.update(self.table, str(guild_id), {field: None})
 
     def drop_guild_table(self, guild_id: int):

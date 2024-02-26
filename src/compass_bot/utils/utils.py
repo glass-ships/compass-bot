@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional, Union
 from datetime import datetime
 from dateutil import tz
-from typing import List
+from typing import List, Tuple
 
 import discord
 import shlex
@@ -59,7 +59,6 @@ class URL(str):
 
 def parse_args(args: str) -> ddict:
     """Parse arguments from a string into a dictionary"""
-
     args = shlex.split(args)
     opts = {}
     for i in range(len(args)):
@@ -69,9 +68,8 @@ def parse_args(args: str) -> ddict:
     return ddict(opts)
 
 
-def extract_url(content):
+def extract_url(content: str) -> Optional[str]:
     """Extracts URL from message content, or returns as is"""
-
     if re.search(URL_REGEX, content):
         result = URL_REGEX.search(content)
         url = result.group(0)  # type: ignore
@@ -87,7 +85,7 @@ def extract_url(content):
 ##################
 
 
-def get_emojis(guild: discord.Guild) -> (List[discord.Emoji], List[discord.Emoji]):
+def get_emojis(guild: discord.Guild) -> Tuple[List[discord.Emoji], List[discord.Emoji]]:
     """Returns lists of all static and animated emojis in a guild"""
 
     emojis = {"anim": [], "static": []}
@@ -100,7 +98,13 @@ def get_emojis(guild: discord.Guild) -> (List[discord.Emoji], List[discord.Emoji
 
 
 async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> None:
-    """Download an attachment from a message"""
+    """Download an attachment from a message
+    
+    Args:
+        itx (discord.Message): Message context
+        attachment (discord.Attachment): Attachment to download
+        path (Optional[Union[str, os.PathLike]]): Path to save attachment to
+    """
 
     fp = os.path.join("downloads", itx.guild.name, path)
     fn = attachment.filename
@@ -110,7 +114,12 @@ async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> 
 
 
 def getfilepath(itx, fp) -> str:
-    """Returns filepath with guild-specific download prefix"""
+    """Returns filepath with guild-specific download prefix
+    
+    Args:
+        itx (discord.Message): Message context
+        fp (str): File path
+    """
     return f"downloads/{itx.guild.name}/{fp}"
 
 
@@ -128,7 +137,7 @@ def check_time_format(t):
 
 
 def dt_to_epoch(t):
-    """Convert datetime to epoch time (format: `YYYY-MM-DD HH:MM AM/PM TZ`)"""
+    """Convert datetime to epoch time (requires format: `YYYY-MM-DD HH:MM AM/PM TZ`)"""
 
     msg_split = t.split()
     temp = []
@@ -161,7 +170,17 @@ async def send_embed(
     footer=None,
     footer_image=None,
 ):
-    """Send embed to channel"""
+    """Send embed to channel
+    
+    Args:
+        channel (discord.TextChannel): Channel to send embed to
+        title (str): Title of embed (Default: None)
+        description (Union[str, List[str]]): Description of embed (Default: None)
+        image (str): URL of image to include in embed (Default: None)
+        thumbnail (str): URL of thumbnail to include in embed (Default: None)
+        footer (str): Footer text (Default: None)
+        footer_image (str): URL of footer image (Default: None)
+    """
     embed = discord.Embed(title=title, description=description, color=EMBED_COLOR())
     if image:
         embed.set_image(url=image)
@@ -183,7 +202,17 @@ async def send_embed_long(
     footer=None,
     footer_image=None,
 ):
-    """Send potentially too-long embed to channel"""
+    """Send potentially too-long embed to channel
+    
+    Args:
+        channel (discord.TextChannel): Channel to send embed to
+        title (str): Title of embed (Default: None)
+        description (Union[str, List[str]]): Description of embed (Default: None)
+        image (str): URL of image to include in embed (Default: None)
+        thumbnail (str): URL of thumbnail to include in embed (Default: None)
+        footer (str): Footer text (Default: None)
+        footer_image (str): URL of footer image (Default: None)
+    """
     if description and len(description) < 4000:
         embed = discord.Embed(title=title, description=description, color=EMBED_COLOR())
         if image:
@@ -220,7 +249,15 @@ async def send_embed_long(
 
 
 def chunk_list(l, n):
-    # looping till length l
+    """Yield successive n-sized chunks from list l
+
+    Args:
+        l (list): List to chunk into sublists
+        n (int): Size of sublists to subdivide list into
+
+    Yields:
+        list: n-sized sublists of list l
+    """
     for i in range(0, len(l), n):
         yield l[i : i + n]
 

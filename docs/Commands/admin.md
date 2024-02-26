@@ -3,7 +3,7 @@
 ???+ tldr "Admin chat commands"
     | Command | Arguments | Description |
     |---------|-----------|-------------|
-    | `;sync` | "guild" (required, literally just the word "guild") | Syncs the bot's slash commands to your guild |
+    | `;sync` | `guild` (required, literally just the word "guild") | Syncs the bot's slash commands to your guild |
 
 ???+ tldr "/set commands"
     `/set` is a group command that can be used to set a number of bot, channel, and other settings.  
@@ -16,8 +16,8 @@
     | :--- | :--- |:--- |
     | `prefix` | `new_prefix` | Set's the bot prefix for your guild. Does not affect slash commands | 
     | `mod_roles` | `mod_roles`: Role IDs or mentions | Sets the mod roles for your guild | 
-    | `member_role` | `mod_roles`: Role IDs or mentions | Sets the DJ role for your guild (for music commands) |
     | `member_role` | `mod_roles`: Role IDs or mentions | Sets the member roles for your guild |
+    | `required_roles` | `required_roles`: Role IDs or mentions | Sets the roles for your guild (ie. users must have at least one of these roles) |
     | `channel` | - `target`: Which channel to set<br>&emsp;Options:<br>&emsp;`logs | bot | videos* | music | lfg | videos`<br>- `new_channel`: Channel to set as database entry | 
 
     **Note\*: If you set a `videos` channel, all messages containing videos will be moved to this channel.<br>You can allow videos in a channel by using `/allowvideos`,<br>or allow videos in all channels again by using `/unset channel videos`
