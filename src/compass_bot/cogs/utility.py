@@ -63,6 +63,24 @@ class Utility(commands.Cog):
     ######################
 
     @has_mod_ctx
+    @commands.command(name="getusers")
+    async def _get_users(self, ctx: commands.Context):
+        import json
+        members = ctx.guild.members
+        data = [
+            {
+                "id": str(f"{ctx.guild.id}-{mem.id}"),
+                "guild_id": ctx.guild.id,
+                "user_id": mem.id,
+                "user_name": mem.name,
+                "timestamp": None
+            }
+        for mem in members]
+        with open(f"{cog_path.parent}/BATS-MEMBERS.json", "w") as f:
+            json.dump(data, f)
+        await ctx.send("Data written to file")
+
+    @has_mod_ctx
     @commands.command(name="test")
     async def _test(self, ctx: commands.Context, channel_id: int):
         # await ctx.send("Test command")
