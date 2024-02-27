@@ -99,7 +99,7 @@ def get_emojis(guild: discord.Guild) -> Tuple[List[discord.Emoji], List[discord.
 
 async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> None:
     """Download an attachment from a message
-    
+
     Args:
         itx (discord.Message): Message context
         attachment (discord.Attachment): Attachment to download
@@ -115,7 +115,7 @@ async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> 
 
 def getfilepath(itx, fp) -> str:
     """Returns filepath with guild-specific download prefix
-    
+
     Args:
         itx (discord.Message): Message context
         fp (str): File path
@@ -171,7 +171,7 @@ async def send_embed(
     footer_image=None,
 ):
     """Send embed to channel
-    
+
     Args:
         channel (discord.TextChannel): Channel to send embed to
         title (str): Title of embed (Default: None)
@@ -196,14 +196,14 @@ async def send_embed_long(
     *,
     channel: discord.TextChannel,
     title=None,
-    description=None, # Union[str, List[str]]
+    description=None,  # Union[str, List[str]]
     image=None,
     thumbnail=None,
     footer=None,
     footer_image=None,
 ):
     """Send potentially too-long embed to channel
-    
+
     Args:
         channel (discord.TextChannel): Channel to send embed to
         title (str): Title of embed (Default: None)
@@ -248,7 +248,7 @@ async def send_embed_long(
 ##################
 
 
-def chunk_list(l, n):
+def chunk_list(list_to_chunk, num_chunks):
     """Yield successive n-sized chunks from list l
 
     Args:
@@ -258,8 +258,8 @@ def chunk_list(l, n):
     Yields:
         list: n-sized sublists of list l
     """
-    for i in range(0, len(l), n):
-        yield l[i : i + n]
+    for i in range(0, len(list_to_chunk), num_chunks):
+        yield list_to_chunk[i : i + num_chunks]
 
 
 def get_resource_repo() -> None:

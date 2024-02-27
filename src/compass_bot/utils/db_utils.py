@@ -162,7 +162,7 @@ class ServerDB:
     def drop_guild_table(self, guild_id: int):
         exists = self.records.get(self.table, str(guild_id))
         try:
-            failed = exists["message"]
+            exists["message"]
             return False
         except KeyError:
             self.records.delete(self.table, str(guild_id))
