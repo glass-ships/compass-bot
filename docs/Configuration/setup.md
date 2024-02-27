@@ -1,24 +1,17 @@
-#### Configuring Compass
+## Configuring Compass
 
-Once you invite Compass to your server, setup is pretty simple - you just need to run a few quick commands:  
+Compass is intended to be easy to set up and use. The bot has a few settings that can be configured to fit your server's needs.  
+Most configuration can be done natively in Discord, using your server's integration settings.  
+However, Compass also has a few commands that can be used to set up the bot for your server's needs.
 
-1. Sync the bot's command tree to your server:  
-```;sync guild```
+#### Channels
 
-1. (Optional) Set the bot's prefix for your server (default `;`), ex:  
-```/set prefix $```
+Compass uses a few channels for various features.  
+You can set these channels using the `/set` command (see [Admin Commands](../Commands/admin.md) for usage).
 
-1. Set the roles you'd like to access mod-only commands, ex:  
-```/set modroles @modrole1 987654321123456789```
-
-1. Set a channel for Compass logs, ex:  
-```/set channel logs #logs```  
-**Note:** Required for the 🔍 (mag) reaction message flagger
-
-1. (Optional) Set a videos channel. ex:  
-```/set channel videos #videos-and-clips```  
-**Note:** This will move all messages containing videos to your videos channel.  
-To allow videos in a channel, use `/set allowvideos <channel>`,  
-or to allow videos in all channels again, use `/unset channel videos`.
-
-And that's it - Compass is ready to go!
+- `bot` - If a bot channel is set, Compass will only respond to commands in this channel.
+- `lfg` - The LFG (Looking for Group) channel. This is where users can post and join activities.
+- `logs` - Required for the 🔍 (mag) reaction message flagger
+- `music` - The music channel. If a music channel is set, Compass will only respond to music commands in this channel.
+- `videos` - Setting his will move all messages containing videos to your videos channel.
+- `welcome` - Currently not implemented.

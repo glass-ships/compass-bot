@@ -73,6 +73,7 @@ class GuildData:
     mod_roles: List[str] = field(default_factory=list)
     prefix: str = ";"
     required_roles: List[str] = field(default_factory=list)
+    track_activity: bool = False
     videos_whitelist: List[str] = field(default_factory=list)
 
     def __post_init__(self):

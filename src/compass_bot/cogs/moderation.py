@@ -85,6 +85,18 @@ class Moderation(commands.Cog):
 
         return
 
+    @commands.command(name="lastmessage", description="Get the last message from a user")
+    async def _lastMessage(self, ctx: commands.Context, user: discord.Member):
+        last_message = bot.db.get_user_log(ctx.guild.id, user.id)
+        if last_message:
+            await ctx.send(
+                embed=discord.Embed(
+                    description=f"{user.mention}'s last message on:\n<t:{int(last_message.timestamp())}:f>"
+                )
+            )
+        else:
+            await ctx.send(embed=discord.Embed(description=f"No messages found for {user.mention}"))
+
     ######################
     ### Slash Commands ###
     ######################
@@ -224,18 +236,6 @@ class Moderation(commands.Cog):
             image=None,
         )
 
-    @commands.command(name="lastmessage", description="Get the last message from a user")
-    async def _lastMessage(self, ctx: commands.Context, user: discord.Member):
-        last_message = bot.db.get_user_log(ctx.guild.id, user.id)
-        if last_message:
-            await ctx.send(
-                embed=discord.Embed(
-                    description=f"{user.mention}'s last message on:\n<t:{int(last_message.timestamp())}:f>"
-                )
-            )
-        else:
-            await ctx.send(embed=discord.Embed(description=f"No messages found for {user.mention}"))
-
     @has_mod_itx
     @app_commands.command(name="checkinactive", description="Check for inactive users")
     async def _check_inactive(self, itx: discord.Interaction, days: int):
@@ -272,4 +272,3 @@ class Moderation(commands.Cog):
                 )
                 page += 1
         return
-

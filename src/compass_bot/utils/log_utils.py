@@ -13,6 +13,12 @@ LOGURU_FORMAT_SIMPLE = "{time:YYYY-MM-DD_HH:mm:ss} | {level: <8} | {name: <16} |
 
 
 def get_logger(name: str = None, level: str = "INFO"): #, verbose: bool = None):
+    """Return a loguru logger with a specified name and verbosity level
+
+    Args:
+        name (str, optional): Name of the logger. Defaults to None.
+        level (str, optional): Logging level. Defaults to "INFO".
+    """
     logger = loguru.logger
     logger.remove()
     logger.add(

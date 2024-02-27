@@ -104,6 +104,9 @@ class Listeners(commands.Cog):
     @commands.Cog.listener("on_message")
     async def log_activity(self, message: discord.Message):
         """Log messages to the database."""
+        track_activity = bot.db.get_field(message.guild.id, "track_activity")
+        if not track_activity:
+            return
         if message.author.bot:
             return
         if message.guild:

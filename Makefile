@@ -21,7 +21,7 @@ install-linux-deps:
 
 
 .PHONY: install
-install: 
+install: install-linux-deps
 	poetry install
 
 .PHONY: update

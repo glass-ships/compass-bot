@@ -35,10 +35,10 @@ async def _play_check(itx: discord.Interaction):  # , player):
 
     ##### Possibly unnecessary, due to native app management in Discord ##################################
     # Check that command was sent in music channel, if applicable
-    # music_channel = bot.db.get_channel_music(itx.guild.id)
-    # if (music_channel != 0 and music_channel != itx.channel_id):
-    #     await itx.followup.send(f"ERROR: Please use in the designated music channel: <#{music_channel}>")
-    #     return False
+    music_channel = bot.db.get_channel_music(itx.guild.id)
+    if (music_channel is not None and music_channel != itx.channel_id):
+        await itx.followup.send(f"ERROR: Please use in the designated music channel: <#{music_channel}>")
+        return False
     ######################################################################################################
 
     # Check that command was sent in a guild

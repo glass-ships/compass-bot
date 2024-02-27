@@ -90,6 +90,12 @@ class Admin(commands.Cog):
         bot.db.update_prefix(itx.guild_id, new_prefix)
         await itx.response.send_message(f"Prefix set to `{new_prefix}`")
 
+    @group_set.command(name="track_activity", description="Set whether to keep track of user activity")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def _track_activity(self, itx: discord.Interaction, track: bool):
+        bot.db.add_or_update_field(itx.guild_id, "track_activity", track)
+        await itx.response.send_message(f"Activity tracking set to `{track}`")
+
     @group_set.command(name="mod_roles", description="Set the mod roles for your server")
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(mod_roles="List of mod roles (ID or mention)")
