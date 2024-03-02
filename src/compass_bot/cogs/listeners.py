@@ -114,16 +114,12 @@ class Listeners(commands.Cog):
 
     @commands.Cog.listener("on_message")
     async def bat_react(self, message: discord.Message):
-        """React with a bat emoji to messages containing the word 'bat'."""
+        """React with a bat emoji to messages bat related trigger words."""
         triggers = ["bat", "bats", "batty", "batses"]
-        words = message.content.split()
-        emoji_id = 1167520966067359805 # "<:bat_peek:1167520966067359805>"
-        emoji = bot.get_emoji(emoji_id)
-        if message.author.bot:
+        emoji = bot.get_emoji(1167520966067359805)
+        if message.author.bot or not emoji:
             return
-        if (message.guild.id == 875237186700734486 or message.guild.id == GLASS_HARBOR) and (
-            any(i.lower() in triggers for i in words)
-        ):
+        if (message.guild.id == 875237186700734486) and (any(i.lower() in triggers for i in message.content.split())):
             await message.add_reaction(emoji)
 
     @commands.Cog.listener()
