@@ -21,7 +21,7 @@ async def setup(bot):
 
 
 class Listeners(commands.Cog):
-    def __init__(self, bot_):
+    def __init__(self, bot_: commands.Bot):
         global bot
         bot = bot_
 
@@ -111,6 +111,20 @@ class Listeners(commands.Cog):
             return
         if message.guild:
             bot.db.add_or_update_user_log(message.guild.id, message.author.id, message.author.name, message.created_at)
+
+    @commands.Cog.listener("on_message")
+    async def bat_react(self, message: discord.Message):
+        """React with a bat emoji to messages containing the word 'bat'."""
+        triggers = ["bat", "bats", "batty", "batses"]
+        words = message.content.split()
+        emoji_id = 1167520966067359805 # "<:bat_peek:1167520966067359805>"
+        emoji = bot.get_emoji(emoji_id)
+        if message.author.bot:
+            return
+        if (message.guild.id == 875237186700734486 or message.guild.id == GLASS_HARBOR) and (
+            any(i.lower() in triggers for i in words)
+        ):
+            await message.add_reaction(emoji)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):  # reaction, user):
