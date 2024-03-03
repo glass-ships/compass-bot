@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import discord
 from discord import app_commands
@@ -36,10 +36,9 @@ class Main(commands.Cog):
 
     @app_commands.command(name="avatar")
     @app_commands.autocomplete(profile=_profile_autocomplete)
-    async def _avatar(self, itx: discord.Interaction, user: discord.Member = None, profile: str = "Server"):
+    async def _avatar(self, itx: discord.Interaction, user: Optional[discord.Member] = None, profile: str = "User"):
         """Returns a user's Discord avatar"""
         await itx.response.defer()
-
         u = user or itx.user
         mem = await itx.guild.fetch_member(u.id)
         avatarURL = mem.avatar.url if profile == "User" else mem.guild_avatar.url
@@ -50,7 +49,7 @@ class Main(commands.Cog):
 
     @app_commands.command(name="banner")
     @app_commands.autocomplete(profile=_profile_autocomplete)
-    async def _banner(self, itx: discord.Interaction, user: discord.Member = None, profile: str = None):
+    async def _banner(self, itx: discord.Interaction, user: Optional[discord.Member] = None, profile: str = "User"):
         """Returns a user's Discord banner"""
         await itx.response.defer()
 
