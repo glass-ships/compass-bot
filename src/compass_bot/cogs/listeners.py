@@ -1,3 +1,4 @@
+import re
 import time
 import traceback
 from datetime import datetime
@@ -117,9 +118,10 @@ class Listeners(commands.Cog):
         """React with a bat emoji to messages bat related trigger words."""
         triggers = ["bat", "bats", "batty", "batses"]
         emoji = bot.get_emoji(1167520966067359805)
-        if message.author.bot or not emoji:
+        if (message.author.bot) or (not emoji) or (message.guild.id != 875237186700734486):
             return
-        if (message.guild.id == 875237186700734486) and (any(i.lower() in triggers for i in message.content.split())):
+        msg = re.sub('[^a-zA-Z]+', '', message.content)
+        if (any(i.lower() in triggers for i in msg.split())):
             await message.add_reaction(emoji)
 
     @commands.Cog.listener()
