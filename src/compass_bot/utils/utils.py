@@ -248,18 +248,18 @@ async def send_embed_long(
 ##################
 
 
-def chunk_list(list_to_chunk, num_chunks):
+def chunk_list(list_to_chunk: list, chunk_size: int):
     """Yield successive n-sized chunks from list l
 
     Args:
-        l (list): List to chunk into sublists
-        n (int): Size of sublists to subdivide list into
+        list_to_chunk (list): List to chunk into sublists
+        chunk_size (int): Size of sublists to subdivide list into
 
     Yields:
         list: n-sized sublists of list l
     """
-    for i in range(0, len(list_to_chunk), num_chunks):
-        yield list_to_chunk[i : i + num_chunks]
+    for i in range(0, len(list_to_chunk), chunk_size):
+        yield list_to_chunk[i : i + chunk_size]
 
 
 def get_resource_repo() -> None:
