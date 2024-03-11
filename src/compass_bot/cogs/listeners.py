@@ -120,7 +120,7 @@ class Listeners(commands.Cog):
         emoji = bot.get_emoji(1167520966067359805)
         if (message.author.bot) or (not emoji) or (message.guild.id != 875237186700734486):
             return
-        msg = re.sub('[^a-zA-Z]+', '', message.content)
+        msg = re.sub('[^a-zA-Z\s]+', '', message.content)
         if (any(i.lower() in triggers for i in msg.split())):
             await message.add_reaction(emoji)
 
