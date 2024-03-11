@@ -2,6 +2,7 @@ import os
 import re
 import subprocess
 import time
+from collections.abc import Generator
 from pathlib import Path
 from typing import Optional, Union
 from datetime import datetime
@@ -248,7 +249,7 @@ async def send_embed_long(
 ##################
 
 
-def chunk_list(list_to_chunk: list, chunk_size: int):
+def chunk_list(list_to_chunk: list, chunk_size: int) -> Generator[list, None, None]:
     """Yield successive n-sized chunks from list l
 
     Args:
