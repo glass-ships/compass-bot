@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "compass-bot"
-version = "0.9.1"
+version = "0.9.2"
 description = "A Discord bot in Python"
 authors = [
     "Glass Ships <contact@glass-ships.com>",
@@ -15,25 +15,25 @@ packages = [
 
 
 [tool.poetry.dependencies]
-## Core 
-python = ">=3.11, <4.0"
+### Core 
+python = ">=3.12, <4.0"
 discord-py = { git = "https://github.com/Rapptz/discord.py.git" }
 typer = "*"
 loguru = "*"
 psutil = "*"
 
-## Database
+### Database
 # pymongo = { version="*", extras = ["srv"] }
 xata = "*"
 
-## For Commands
+### For Commands
 httpx = "*"
 python-dateutil = "*"
 pytz = "*"
 GitPython = "*"
 pillow = "*"
 
-## For Music 
+### For Music 
 yt-dlp = "*"
 spotipy = { git = "https://github.com/plamere/spotipy.git" }
 beautifulsoup4 = "*"

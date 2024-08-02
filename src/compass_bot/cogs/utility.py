@@ -150,7 +150,7 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(
-        name="download_emojis",
+        name="downloademojis",
         description="Downloads a guild's emojis (Used in Glass Harbor - can be safely ignored)",
         aliases=["dlemojis", "dle"],
     )
