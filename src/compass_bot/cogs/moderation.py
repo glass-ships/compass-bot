@@ -9,7 +9,8 @@ from discord.utils import get
 from loguru import logger
 
 from compass_bot.utils.bot_config import EMBED_COLOR
-from compass_bot.utils.utils import chunk_list, move_message, parse_args, send_embed
+from compass_bot.utils.command_utils import move_message, send_embed
+from compass_bot.utils.utils import chunk_list, parse_args
 
 
 async def mod_check_ctx(ctx: commands.Context):
