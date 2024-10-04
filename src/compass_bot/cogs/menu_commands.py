@@ -5,7 +5,7 @@ from discord import app_commands
 from discord.ext import commands
 from loguru import logger
 
-from compass_bot.utils.utils import move_message
+from compass_bot.utils.command_utils import move_message
 
 
 async def mod_check_itx(itx: discord.Interaction):
