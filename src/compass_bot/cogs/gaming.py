@@ -14,7 +14,7 @@ async def setup(bot):
 
 
 class Gaming(commands.Cog):
-    def __init__(self, bot_):
+    def __init__(self, bot_: commands.Bot):
         global bot
         bot = bot_
 

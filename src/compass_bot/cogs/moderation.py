@@ -1,16 +1,15 @@
-from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Union
-
 import asyncio
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Union
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import get
-
-from compass_bot.utils.utils import download, chunk_list, getfilepath, parse_args, send_embed
-from compass_bot.utils.bot_config import EMBED_COLOR
-
 from loguru import logger
+
+from compass_bot.utils.bot_config import EMBED_COLOR
+from compass_bot.utils.utils import chunk_list, move_message, parse_args, send_embed
 
 
 async def mod_check_ctx(ctx: commands.Context):
@@ -46,7 +45,7 @@ async def setup(bot):
 
 
 class Moderation(commands.Cog):
-    def __init__(self, bot_):
+    def __init__(self, bot_: commands.Bot):
         global bot
         bot = bot_
 
@@ -127,9 +126,18 @@ class Moderation(commands.Cog):
 
     @has_mod_itx
     @app_commands.command(name="purge", description="Deletes n messages from current channel")
-    async def _purge(self, itx: discord.Interaction, number: int = 0):
+    async def _purge(
+        self,
+        itx: discord.Interaction,
+        number: int = None,
+        before: str = None,
+        after: str = None,
+        reason: str = None,
+        # check: callable = None,
+    ):
+        # TODO: look into parsing before/after with https://github.com/scrapinghub/dateparser
         await itx.response.defer()
-        await itx.channel.purge(limit=int(number))
+        await itx.channel.purge(limit=number, before=before, after=after, reason=reason)
         await itx.followup.send(f"{number} messages successfully purged!", ephemeral=True)
 
     @has_mod_itx
@@ -137,32 +145,7 @@ class Moderation(commands.Cog):
     async def _move_message(
         self, itx: discord.Interaction, channel: Union[discord.TextChannel, discord.Thread], message_id: str
     ):
-        await itx.response.defer(ephemeral=True)
-        # Get message to be moved
-        msg = await itx.channel.fetch_message(int(message_id))
-        newmsg = f"""
-{msg.author.mention} - your message from <#{msg.channel.id}> has been moved to the appropriate channel.
-─── **Original Message** ───
-
-{msg.content}
-"""
-        # Get any attachments
-        files = []
-        if msg.attachments:
-            for a in filter(lambda x: x.size <= itx.guild.filesize_limit, msg.attachments):
-                await download(itx, a, "temp/moved_messages")
-                files.append(discord.File(getfilepath(itx, f"temp/moved_messages/{a.filename}")))
-        if any(a.size >= itx.guild.filesize_limit for a in msg.attachments):
-            newmsg += (
-                f"`File: {a.filename} too large to resend`"
-                if len(msg.attachments) == 1
-                else f"`Plus some files too large to resend`"
-            )
-
-        # Move the message
-        await channel.send(content=newmsg, files=files)
-        await msg.delete()
-        await itx.followup.send(f"Message moved to <#{channel.id}>")
+        await move_message(itx, channel, message_id)
 
     @has_mod_itx
     @app_commands.command(name="giverole", description="Give a role to a user with optional duration")

@@ -8,7 +8,7 @@ import asyncio
 import discord
 from discord.ext import commands
 
-from compass_bot.utils.bot_config import GuildData, DEFAULT_PREFIX, COMPASS_SRC
+from compass_bot.utils.bot_config import GuildData, DEFAULT_PREFIX, COMPASS_SRC, MODULES
 from compass_bot.utils.custom_help_commands import CustomHelpCommand
 from compass_bot.utils.db_utils import ServerDB
 from compass_bot.utils.log_utils import get_logger
@@ -54,50 +54,36 @@ def create_bot(id, prefix) -> commands.Bot:
 
 class CompassBot:
     def __init__(self, logger, dev: bool = False):
+        """Initialize the bot"""
         self.app_id = 535346715297841172 if dev else 932737557836468297
-        self.prefix = "," if dev else self.get_prefix
+        self.prefix = "," if dev else self._get_prefix
         self.bot = create_bot(self.app_id, self.prefix)
         self.bot.add_listener(self.on_ready)
         self.bot.logger = logger
 
     async def on_ready(self):
-        await self.prune_db()
-        await self.patch_db()
+        """Tasks to run when bot is ready"""
+        await self._prune_db()
+        await self._patch_db()
         for guild in self.bot.guilds:
-            await self.set_guild_music_config(guild)
+            # self.bot.logger.info(f"Setting music config for guild: {guild.name}")
+            await self._set_guild_music_config(guild)
         self.bot.logger.info(f"{self.bot.user} is online.")
 
     async def startup_tasks(self, dev):
         """Tasks to run on bot startup"""
-        # Connect to database
+        ## Connect to database
         self.bot.logger.info("Connecting to database...")
-        await self.connect_to_db(dev)
-        # Load cogs
+        await self._connect_to_db(dev)
+
+        ## Load cogs
         self.bot.logger.info("Loading cogs...")
-        for f in Path(COMPASS_SRC / "cogs").glob("*.py"):
-            await self.bot.load_extension(f"cogs.{f.stem}")
-
-    async def get_prefix(self, bot, ctx):
-        """Returns a guild's bot prefix, or default if none"""
-        if not ctx.guild:
-            return commands.when_mentioned_or(DEFAULT_PREFIX)(bot, ctx)
-        prefix = self.bot.db.get_prefix(ctx.guild.id)
-        if len(prefix) == 0:
-            self.bot.db.update_prefix(DEFAULT_PREFIX)
-            prefix = DEFAULT_PREFIX
-        return commands.when_mentioned_or(prefix)(bot, ctx)
-
-    async def set_guild_music_config(self, guild_id):
-        """Set a guild's music configs"""
-        from compass_bot.music.player import MusicPlayer
-        from compass_bot.music.music_utils import guild_player
-
-        guild_player[guild_id] = MusicPlayer(self.bot, guild_id)
-        return
+        for cog in MODULES:
+            await self.bot.load_extension(f"cogs.{cog}")
 
     ### Database Methods
 
-    async def connect_to_db(self, dev: bool = False):
+    async def _connect_to_db(self, dev: bool = False):
         """Connects to database"""
         try:
             self.bot.db = ServerDB(dev=dev)
@@ -106,7 +92,7 @@ class CompassBot:
             self.bot.logger.error(f"Error connecting to database: {e}")
         return
 
-    async def prune_db(self):
+    async def _prune_db(self):
         """Prunes unused database entries"""
         self.bot.logger.info("Pruning unused database entries...")
         db_guilds = self.bot.db.get_all_guilds()
@@ -123,7 +109,7 @@ class CompassBot:
                     self.bot.logger.error(f"Error removing database entry for guild {guild_id}.")
         return
 
-    async def patch_db(self):
+    async def _patch_db(self):
         """Creates an entry with default values for any guilds missing in database"""
 
         self.bot.logger.info("Patching missing database entries...")
@@ -144,7 +130,27 @@ class CompassBot:
                     self.bot.logger.error(f"Error adding database entry for guild {guild.id}.")
         return
 
+    ### Music Methods
+
+    async def _set_guild_music_config(self, guild_id):
+        """Set a guild's music configs"""
+        from compass_bot.music.player import MusicPlayer
+        from compass_bot.music.music_utils import guild_player
+
+        guild_player[guild_id] = MusicPlayer(self.bot, guild_id)
+        return
+
     ### Misc
+
+    async def _get_prefix(self, bot, ctx):
+        """Returns a guild's bot prefix, or default if none"""
+        if not ctx.guild:
+            return commands.when_mentioned_or(DEFAULT_PREFIX)(bot, ctx)
+        prefix = self.bot.db.get_prefix(ctx.guild.id)
+        if len(prefix) == 0:
+            self.bot.db.update_prefix(DEFAULT_PREFIX)
+            prefix = DEFAULT_PREFIX
+        return commands.when_mentioned_or(prefix)(bot, ctx)
 
     ### Shutdown
 

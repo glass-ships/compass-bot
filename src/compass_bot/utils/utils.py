@@ -1,3 +1,5 @@
+"""Generic utility functions for Compass Bot"""
+
 import os
 import re
 import subprocess
@@ -14,7 +16,7 @@ import shlex
 from loguru import logger
 from rich.console import Console
 
-from compass_bot.utils.bot_config import COMPASS_ROOT, EMBED_COLOR
+from compass_bot.utils.bot_config import COMPASS_ROOT
 
 console = Console(
     color_system="truecolor",
@@ -154,94 +156,6 @@ def dt_to_epoch(t):
 def epoch_to_dt(t):
     """Convert epoch time to datetime"""
     return datetime.fromtimestamp(t)
-
-
-#####################
-### Discord Utils ###
-#####################
-
-
-async def send_embed(
-    *,
-    channel: discord.TextChannel,
-    title=None,
-    description=None,
-    image=None,
-    thumbnail=None,
-    footer=None,
-    footer_image=None,
-):
-    """Send embed to channel
-
-    Args:
-        channel (discord.TextChannel): Channel to send embed to
-        title (str): Title of embed (Default: None)
-        description (Union[str, List[str]]): Description of embed (Default: None)
-        image (str): URL of image to include in embed (Default: None)
-        thumbnail (str): URL of thumbnail to include in embed (Default: None)
-        footer (str): Footer text (Default: None)
-        footer_image (str): URL of footer image (Default: None)
-    """
-    embed = discord.Embed(title=title, description=description, color=EMBED_COLOR())
-    if image:
-        embed.set_image(url=image)
-    if thumbnail:
-        embed.set_thumbnail(url=thumbnail)
-    if footer or footer_image:
-        embed.set_footer(text=footer, icon_url=footer_image)
-    await channel.send(embed=embed)
-    return
-
-
-async def send_embed_long(
-    *,
-    channel: discord.TextChannel,
-    title=None,
-    description=None,  # Union[str, List[str]]
-    image=None,
-    thumbnail=None,
-    footer=None,
-    footer_image=None,
-):
-    """Send potentially too-long embed to channel
-
-    Args:
-        channel (discord.TextChannel): Channel to send embed to
-        title (str): Title of embed (Default: None)
-        description (Union[str, List[str]]): Description of embed (Default: None)
-        image (str): URL of image to include in embed (Default: None)
-        thumbnail (str): URL of thumbnail to include in embed (Default: None)
-        footer (str): Footer text (Default: None)
-        footer_image (str): URL of footer image (Default: None)
-    """
-    if description and len(description) < 4000:
-        embed = discord.Embed(title=title, description=description, color=EMBED_COLOR())
-        if image:
-            embed.set_image(url=image)
-        if thumbnail:
-            embed.set_thumbnail(url=thumbnail)
-        if footer or footer_image:
-            embed.set_footer(text=footer, icon_url=footer_image)
-        await channel.send(embed=embed)
-        return
-    elif description and len(description) >= 4000:
-        # split into multiple messages
-        num_msgs = len(description) // 4000 + 1
-        chunked = list(chunk_list(description, len(description) // num_msgs))
-        page = 1
-        for sublist in chunked:
-            embed = discord.Embed(
-                title=f"{title} (Page {page}/{num_msgs})",
-                description="\n".join(sublist),
-            )
-            page += 1
-            if image:
-                embed.set_image(url=image)
-            if thumbnail:
-                embed.set_thumbnail(url=thumbnail)
-            if footer or footer_image:
-                embed.set_footer(text=footer, icon_url=footer_image)
-            await channel.send(embed=embed)
 
 
 ##################

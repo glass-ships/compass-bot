@@ -1,4 +1,5 @@
 ### This is a template for a cog file. Copy this file and rename the file and `CogName` for the cog you want to create.
+from typing import Union
 
 import discord
 from discord import app_commands
@@ -12,8 +13,9 @@ async def setup(bot):
     await bot.add_cog(CogName(bot))
 
 
+# Slash and Regular Commands
 class CogName(commands.Cog):
-    def __init__(self, bot_):
+    def __init__(self, bot_: commands.Bot):
         global bot
         bot = bot_
 
@@ -34,3 +36,41 @@ class CogName(commands.Cog):
     async def _command_name(self, ctx: commands.Context):
         """Command description."""
         pass
+
+
+# Context Menu Commands
+class CogName(commands.Cog):
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
+        self.ctx_menu = app_commands.ContextMenu(
+            name="Command Name",
+            callback=self._context_menu_command,
+        )
+        self.bot.tree.add_command(self.ctx_menu)
+
+    async def cog_unload(self) -> None:
+        self.bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
+
+    # You can add checks too
+    @app_commands.checks.has_permissions(ban_members=True)
+    async def _context_menu_command(self, interaction: discord.Interaction, message: Union[discord.Message, discord.Member]) -> None:
+        await interaction.response.send_message("hello...")
+
+class CogName(commands.Cog):
+    def __init__(self, bot: commands.Bot, /) -> None:
+        self.bot: commands.Bot = bot
+        self.ctx_one = app_commands.ContextMenu(name="Context Menu 1", callback=self.ctx_one_callback)
+        self.bot.tree.add_command(self.ctx_one)
+        self.ctx_two = app_commands.ContextMenu(name="Context Menu 2", callback=self.ctx_two_callback)
+        self.bot.tree.add_command(self.ctx_two)
+
+    def cog_unload(self) -> None:
+        # remove both on cog unload to not clog up the tree incorrectly
+        self.bot.tree.remove_command(self.ctx_one.name, type=self.ctx_one.type)
+        self.bot.tree.remove_command(self.ctx_two.name, type=self.ctx_two.type)
+
+        async def ctx_one_callback(self, interaction: discord.Interaction, message: discord.Message) -> None:
+            pass
+
+        async def ctx_two_callback(self, interaction: discord.Interaction, member: discord.Member) -> None:
+            pass

@@ -13,6 +13,12 @@ DEFAULT_PREFIX = ";"
 GLASS = 357738904591532033
 GLASS_HARBOR = 393995277713014785
 
+# MODULE_OPTIONS = ["admin", "gaming", "listeners", "main", "moderation", "music", "utility"]
+exclude_modules = ["__init__", "pinarchiver"]
+MODULES = [f.stem for f in Path(COMPASS_SRC / "cogs").glob("*.py") if f.stem not in exclude_modules]
+CHANNEL_OPTIONS = ["logs", "bot", "welcome", "music", "lfg", "videos"]  # , 'pins']
+ROLE_OPTIONS = ["mod", "member", "required"]
+
 
 def EMBED_COLOR():
     return choice(

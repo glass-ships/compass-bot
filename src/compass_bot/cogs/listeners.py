@@ -105,13 +105,12 @@ class Listeners(commands.Cog):
     @commands.Cog.listener("on_message")
     async def log_activity(self, message: discord.Message):
         """Log messages to the database."""
+        if message.author.bot or isinstance(message.channel, discord.DMChannel):
+            return
         track_activity = bot.db.get_field(message.guild.id, "track_activity")
         if not track_activity:
             return
-        if message.author.bot:
-            return
-        if message.guild:
-            bot.db.add_or_update_user_log(message.guild.id, message.author.id, message.author.name, message.created_at)
+        bot.db.add_or_update_user_log(message.guild.id, message.author.id, message.author.name, message.created_at)
 
     @commands.Cog.listener("on_message")
     async def bat_react(self, message: discord.Message):
@@ -123,8 +122,8 @@ class Listeners(commands.Cog):
         emoji = bot.get_emoji(1289965546900557997)
         if emoji is None:
             logger.error("Bat emoji not found")
-        msg = re.sub('[^a-zA-Z\s]+', '', message.content)
-        if (any(i.lower() in triggers for i in msg.split())):
+        msg = re.sub(r"[^a-zA-Z\s]+", "", message.content)
+        if any(i.lower() in triggers for i in msg.split()):
             await message.add_reaction(emoji)
 
     @commands.Cog.listener()

@@ -38,7 +38,7 @@ class PinArchiver(commands.Cog):
     Furthermore: the p.sendall feature described later in the code allows the user to set
     Passel so that all pinned messages get sent to the pins archive channel."""
 
-    def __init__(self, bot_):
+    def __init__(self, bot_: commands.Bot):
         global bot
         bot = bot_
 

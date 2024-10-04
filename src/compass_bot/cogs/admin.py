@@ -5,11 +5,12 @@ from discord import app_commands
 from discord.ext import commands
 from loguru import logger
 
-from compass_bot.utils.bot_config import GLASS_HARBOR
-
-MODULE_OPTIONS = ["admin", "gaming", "listeners", "main", "moderation", "music", "utility"]  # "utils"]
-CHANNEL_OPTIONS = ["logs", "bot", "welcome", "music", "lfg", "videos"]  # , 'pins']
-ROLE_OPTIONS = ["mod", "member", "required"]
+from compass_bot.utils.bot_config import (
+    CHANNEL_OPTIONS,
+    MODULES,
+    ROLE_OPTIONS,
+    # GLASS_HARBOR
+)
 
 
 async def setup(bot):
@@ -18,7 +19,7 @@ async def setup(bot):
 
 
 class Admin(commands.Cog):
-    def __init__(self, bot_):
+    def __init__(self, bot_: commands.Bot):
         global bot
         bot = bot_
 
@@ -67,9 +68,7 @@ class Admin(commands.Cog):
     @_reload.autocomplete("module")
     async def _reload_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
         return [
-            app_commands.Choice(name=option, value=option)
-            for option in MODULE_OPTIONS
-            if current.lower() in option.lower()
+            app_commands.Choice(name=option, value=option) for option in MODULES if current.lower() in option.lower()
         ]
 
     ########################################################################################################################
