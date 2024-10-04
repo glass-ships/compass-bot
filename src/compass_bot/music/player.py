@@ -8,7 +8,8 @@ from yt_dlp import YoutubeDL
 from loguru import logger
 
 from compass_bot.utils.bot_config import EMBED_COLOR, Emojis, CustomException  # , FetchException, QueueException
-from compass_bot.utils.utils import send_embed, extract_url, ddict
+from compass_bot.utils.command_utils import send_embed
+from compass_bot.utils.utils import extract_url, ddict
 from compass_bot.music import music_utils
 from compass_bot.music.dataclasses import Playlist, PlaylistTypes, Search, Sites, Song, YouTubeSearchResults
 from compass_bot.music.music_config import (
