@@ -11,8 +11,8 @@ from discord.ext import commands
 from loguru import logger
 
 from compass_bot.utils.bot_config import COMPASS_ROOT, GLASS, GLASS_HARBOR
-from compass_bot.utils.utils import get_emojis, get_resource_repo, get_resource_path, REPO_PATH
-from compass_bot.utils.command_utils import send_embed
+from compass_bot.utils.utils import get_resource_repo, get_resource_path, REPO_PATH
+from compass_bot.utils.command_utils import get_emojis, send_embed
 
 
 cog_path = Path(__file__)

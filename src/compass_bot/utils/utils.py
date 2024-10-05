@@ -88,18 +88,6 @@ def extract_url(content: str) -> Optional[str]:
 ##################
 
 
-def get_emojis(guild: discord.Guild) -> Tuple[List[discord.Emoji], List[discord.Emoji]]:
-    """Returns lists of all static and animated emojis in a guild"""
-
-    emojis = {"anim": [], "static": []}
-    for i in guild.emojis:
-        if i.animated is True:
-            emojis["anim"].append(i)
-        else:
-            emojis["static"].append(i)
-    return emojis["static"], emojis["anim"]
-
-
 async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> None:
     """Download an attachment from a message
 

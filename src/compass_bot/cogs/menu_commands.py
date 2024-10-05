@@ -40,8 +40,6 @@ class SelectMenuChannel(discord.ui.Select):
         )
 
     async def callback(self, itx: discord.Interaction) -> None:
-        # await itx.response.send_message(f"Message moved to channel: {self.values[0]}", ephemeral=True)
-        # self.callback(itx, self.values[0], self.message_id)
         channel = itx.guild.get_channel(int(self.values[0]))
         await move_message(itx, channel, self.message_id)
 
@@ -67,8 +65,9 @@ class MenuCommands(commands.Cog):
         bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
 
     @has_mod_itx
-    async def _move_message(self, interaction: discord.Interaction, message: discord.Message) -> None:
+    async def _move_message(self, itx: discord.Interaction, message: discord.Message) -> None:
         """Command description."""
+        await itx.response.defer(ephemeral=True)
         channels = [
             discord.SelectOption(
                 label=channel.name, value=channel.id, description=channel.topic, emoji=None, default=False
@@ -77,4 +76,5 @@ class MenuCommands(commands.Cog):
         ]
         view = discord.ui.View()
         view.add_item(SelectMenuChannel(options=channels, message_id=message.id))
-        await interaction.response.send_message("Select a channel to move the message to:", view=view)
+        # await itx.response.send_message("Select a channel to move the message to:", view=view)
+        await itx.followup.send("Select a channel to move the message to:", view=view)

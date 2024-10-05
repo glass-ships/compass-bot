@@ -1,6 +1,6 @@
 """Discord focused utility functions for commands"""
 
-from typing import Union
+from typing import List, Tuple, Union
 
 import discord
 
@@ -96,10 +96,10 @@ async def move_message(itx: discord.Interaction, channel: Union[discord.TextChan
     # Get message to be moved
     msg = await itx.channel.fetch_message(int(message_id))
     newmsg = f"""
-{msg.author.mention} - your message from <#{msg.channel.id}> has been moved to the appropriate channel.
-─── **Original Message** ───
+{msg.author.mention}, your message from <#{msg.channel.id}> has been moved to the appropriate channel.
 
-{msg.content}
+-# **__Original Message:__**
+>>> {msg.content}
 """
     # Get any attachments
     files = []
@@ -117,4 +117,16 @@ async def move_message(itx: discord.Interaction, channel: Union[discord.TextChan
     # Move the message
     new_message = await channel.send(content=newmsg, files=files)
     await msg.delete()
-    await itx.followup.send(f"Message moved to {new_message.jump_url}")
+    await itx.followup.send(f"Message moved to {new_message.jump_url}", ephemeral=True)
+
+
+def get_emojis(guild: discord.Guild) -> Tuple[List[discord.Emoji], List[discord.Emoji]]:
+    """Returns lists of all static and animated emojis in a guild"""
+
+    emojis = {"anim": [], "static": []}
+    for i in guild.emojis:
+        if i.animated is True:
+            emojis["anim"].append(i)
+        else:
+            emojis["static"].append(i)
+    return emojis["static"], emojis["anim"]
