@@ -9,9 +9,7 @@ authors = [
 homepage = "https://gitlab.com/glass-ships/compass-bot"
 documentation = "https://glass-ships.gitlab.io/compass-bot/"
 repository = "https://gitlab.com/glass-ships/compass-bot"
-packages = [
-    { include = "compass_bot", from= "src" }
-]
+packages = [{ include = "compass_bot", from = "src" }]
 
 
 [tool.poetry.dependencies]
@@ -46,7 +44,6 @@ ruff = "*"
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.8.0"
 mkdocs = "*"
 mkdocs-material = "*"
 mkdocstrings = { version = "*", extras = ["python"] }
