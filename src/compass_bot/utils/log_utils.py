@@ -12,7 +12,7 @@ LOGURU_FORMAT = " | ".join(
 LOGURU_FORMAT_SIMPLE = "{time:YYYY-MM-DD_HH:mm:ss} | {level: <8} | {name: <16} | {message}"
 
 
-def get_logger(name: str = None, level: str = "INFO"): #, verbose: bool = None):
+def get_logger(name: str = None, level: str = "INFO"):  # , verbose: bool = None):
     """Return a loguru logger with a specified name and verbosity level
 
     Args:
@@ -23,8 +23,8 @@ def get_logger(name: str = None, level: str = "INFO"): #, verbose: bool = None):
     logger.remove()
     logger.add(
         sink=sys.stderr,
-        level=level, 
-        #level="INFO" if (verbose is None) else "DEBUG" if (verbose is True) else "WARNING",
+        level=level,
+        # level="INFO" if (verbose is None) else "DEBUG" if (verbose is True) else "WARNING",
         format=LOGURU_FORMAT,
         colorize=True,
     )

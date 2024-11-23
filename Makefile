@@ -44,13 +44,14 @@ clean:
 	rm -rf `find . -type d -name '*.egg-info' `
 	rm -rf .pytest_cache *dist *build 
 
+.PHONY: lint-check
+lint-check:
+	$(RUN) ruff check src
+
 .PHONY: lint
 lint:
-	$(RUN) ruff check src
-	$(RUN) black --check --diff --color -l 120 src
-
+	$(RUN) ruff --check --fix src
 
 .PHONY: format
 format:
-	$(RUN) ruff --fix --exit-zero src
-	$(RUN) black -l 120 src
+	$(RUN) ruff format --exit-zero src

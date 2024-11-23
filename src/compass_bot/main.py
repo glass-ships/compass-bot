@@ -30,13 +30,7 @@ def version_callback(
         console.print(f"\n:arrow_right: Compass Bot version: {__version__}")
         raise typer.Exit()
     app_state["log-level"] = (
-        "INFO"
-        if (verbose == 1)
-        else "DEBUG"
-        if (verbose >= 2)
-        else "ERROR"
-        if (quiet is True)
-        else "WARNING"
+        "INFO" if (verbose == 1) else "DEBUG" if (verbose >= 2) else "ERROR" if (quiet is True) else "WARNING"
     )
     app_state["quiet"] = quiet
 

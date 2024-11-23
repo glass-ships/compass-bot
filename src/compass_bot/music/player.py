@@ -305,7 +305,7 @@ class MusicPlayer(object):
             title=yt_search.title,
             duration=data["duration"],
             webpage_url=data["url"],
-            thumbnail=data["thumbnails"]
+            thumbnail=data["thumbnails"],
             # thumbnail = data['thumbnails'][-1]['url'] if data['thumbnails'] is not None else None
         )
 
