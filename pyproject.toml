@@ -33,7 +33,8 @@ pillow = "*"
 
 ### For Music 
 yt-dlp = "*"
-spotipy = { git = "https://github.com/plamere/spotipy.git" }
+# spotipy = { git = "https://github.com/spotipy-dev/spotipy.git" }
+spotipy = "*"
 beautifulsoup4 = "*"
 pynacl = "*"
 rich = "*"
