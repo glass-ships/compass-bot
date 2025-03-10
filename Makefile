@@ -50,7 +50,7 @@ lint-check:
 
 .PHONY: lint
 lint:
-	$(RUN) ruff --check --fix src
+	$(RUN) ruff check --fix src
 
 .PHONY: format
 format:

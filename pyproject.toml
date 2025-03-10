@@ -1,59 +1,49 @@
-[tool.poetry]
+[project]
 name = "compass-bot"
-version = "0.9.3"
+version = "0.9.4"
 description = "A Discord bot in Python"
 authors = [
-    "Glass Ships <contact@glass-ships.com>",
-    "fatcatnine <fatcatnine@gmail.com>",
+    { name = "Glass Ships", email = "contact@glass-ships.com" },
+    { name = "fatcatnine", email = "fatcatnine@gmail.com" },
 ]
-homepage = "https://gitlab.com/glass-ships/compass-bot"
-documentation = "https://glass-ships.gitlab.io/compass-bot/"
-repository = "https://gitlab.com/glass-ships/compass-bot"
-packages = [{ include = "compass_bot", from = "src" }]
+requires-python = ">=3.12, <4.0"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Natural Language :: English",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    ### Core
+    "discord-py",
+    "typer",
+    "loguru",
+    "psutil",
+    "rich",
+    "ruff",
+    ### Database
+    "xata",
+    ### For Commands
+    "httpx",
+    "python-dateutil",
+    "pytz",
+    "GitPython",
+    "pillow",
+    ### For Music
+    "yt-dlp",
+    "spotipy",
+    "beautifulsoup4",
+    "pynacl",
+]
 
+[project.optional-dependencies]
+dev = ["mkdocs", "mkdocs-material", "mkdocstrings[python]", "pytest"]
 
-[tool.poetry.dependencies]
-### Core 
-python = ">=3.12, <4.0"
-discord-py = { git = "https://github.com/Rapptz/discord.py.git" }
-typer = "*"
-loguru = "*"
-psutil = "*"
-
-### Database
-# pymongo = { version="*", extras = ["srv"] }
-xata = "*"
-
-### For Commands
-httpx = "*"
-python-dateutil = "*"
-pytz = "*"
-GitPython = "*"
-pillow = "*"
-
-### For Music 
-yt-dlp = "*"
-# spotipy = { git = "https://github.com/spotipy-dev/spotipy.git" }
-spotipy = "*"
-beautifulsoup4 = "*"
-pynacl = "*"
-rich = "*"
-ruff = "*"
-
-
-[tool.poetry.group.dev]
-optional = true
-
-[tool.poetry.group.dev.dependencies]
-mkdocs = "*"
-mkdocs-material = "*"
-mkdocstrings = { version = "*", extras = ["python"] }
-pytest = "^8.3.3"
-
-
-[tool.poetry.scripts]
+[project.scripts]
 compass = "compass_bot.main:app"
-
 
 [tool.ruff]
 line-length = 120
@@ -64,7 +54,12 @@ ignore = [
 ]
 # exclude = []
 
+[project.urls]
+Homepage = "https://gitlab.com/glass-ships/compass-bot"
+Documentation = "https://glass-ships.gitlab.io/compass-bot/"
+Repository = "https://gitlab.com/glass-ships/compass-bot"
+Issues = "https://gitlab.com/glass-ships/compass-bot/-/issues"
 
 [build-system]
-requires = ["poetry-core>=1.5.2"]
-build-backend = "poetry.core.masonry.api"
+build-backend = "hatchling.build"
+requires = ["hatchling"]

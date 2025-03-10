@@ -110,7 +110,9 @@ class Listeners(commands.Cog):
         track_activity = bot.db.get_field(message.guild.id, "track_activity")
         if not track_activity:
             return
-        bot.db.add_or_update_user_log(message.guild.id, message.author.id, message.author.name, message.created_at)
+        bot.db.add_or_update_user_log(
+            message.guild.id, message.guild.name, message.author.id, message.author.name, message.created_at
+        )
 
     @commands.Cog.listener("on_message")
     async def bat_react(self, message: discord.Message):

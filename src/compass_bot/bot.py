@@ -7,6 +7,7 @@ from pathlib import Path
 import asyncio
 import discord
 from discord.ext import commands
+from loguru import Logger
 
 from compass_bot.utils.bot_config import GuildData, DEFAULT_PREFIX, COMPASS_SRC, MODULES
 from compass_bot.utils.custom_help_commands import CustomHelpCommand
@@ -53,7 +54,7 @@ def create_bot(id, prefix) -> commands.Bot:
 
 
 class CompassBot:
-    def __init__(self, logger, dev: bool = False):
+    def __init__(self, logger: Logger, dev: bool = False):
         """Initialize the bot"""
         self.app_id = 535346715297841172 if dev else 932737557836468297
         self.prefix = "," if dev else self._get_prefix

@@ -9,9 +9,7 @@ from pathlib import Path
 from typing import Optional, Union
 from datetime import datetime
 from dateutil import tz
-from typing import List, Tuple
 
-import discord
 import shlex
 from loguru import logger
 from rich.console import Console
