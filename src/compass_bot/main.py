@@ -52,7 +52,7 @@ def start(
 
     console.print(
         f"""
-:arrow_right: Starting {'main' if not dev else 'dev'} bot...
+:arrow_right: Starting {"main" if not dev else "dev"} bot...
     :arrow_right: Setting Compass log level to {app_state["log-level"]}
     :arrow_right: To stop the bot, use: poetry run compass stop
 """
@@ -106,10 +106,10 @@ def status():
                 f"""
 Compass is currently running:
     PID: {p.pid}
-    Command: "{' '.join(p.cmdline())}"
+    Command: "{" ".join(p.cmdline())}"
     Status: {p.status()}
     Started: {start_time}
-    Uptime: {uptime.days} days, {uptime.seconds//3600} hrs, {(uptime.seconds//60)%60} min, {uptime.seconds%60} sec
+    Uptime: {uptime.days} days, {uptime.seconds // 3600} hrs, {(uptime.seconds // 60) % 60} min, {uptime.seconds % 60} sec
 """
             )
             raise typer.Exit()

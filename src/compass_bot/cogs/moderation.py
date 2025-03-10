@@ -160,7 +160,7 @@ class Moderation(commands.Cog):
         if role.id not in roles:
             await target_user.add_roles(role)
             await itx.followup.send(
-                f"<@{target_user.id}> has been given the \"{role.name}\" role{' for '+str(dur)+' sec' if dur else ''}."
+                f'<@{target_user.id}> has been given the "{role.name}" role{" for " + str(dur) + " sec" if dur else ""}.'
             )
             if dur:
                 await asyncio.sleep(dur)
@@ -183,7 +183,7 @@ class Moderation(commands.Cog):
         if role.id in roles:
             await bonked.remove_roles(role)
             await itx.followup.send(
-                f"<@{bonked.id}> has had the \"{role.name}\" role removed{' for '+str(dur)+' sec' if dur else ''}."
+                f'<@{bonked.id}> has had the "{role.name}" role removed{" for " + str(dur) + " sec" if dur else ""}.'
             )
             if dur:
                 await asyncio.sleep(dur)
@@ -250,7 +250,7 @@ class Moderation(commands.Cog):
             for sublist in chunked:
                 await itx.followup.send(
                     embed=discord.Embed(
-                        title=f"{title} (Page {page}/{num_msgs+1})",
+                        title=f"{title} (Page {page}/{num_msgs + 1})",
                         description="\n".join(sublist),
                     )
                 )

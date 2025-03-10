@@ -99,7 +99,7 @@ React with 📖 to see your active roster.
             embed = discord.Embed()
             embed.add_field(
                 name=f"{user.nick or user.name} has joined your LFG",
-                value=f'To view your roster, react to [your post]({message.jump_url}) with the {emojis["book"]} emoji.',
+                value=f"To view your roster, react to [your post]({message.jump_url}) with the {emojis['book']} emoji.",
             )
             await channel.send(content=f"{message.author.mention}", embed=embed, delete_after=10.0)
         elif payload.emoji.name == emojis["leave"]:
@@ -118,7 +118,7 @@ React with 📖 to see your active roster.
             embed = discord.Embed()
             embed.add_field(
                 name=f"{user.nick or user.name} has left your LFG",
-                value=f'To view your roster, react to [your post]({message.jump_url}) with the {emojis["book"]} emoji.',
+                value=f"To view your roster, react to [your post]({message.jump_url}) with the {emojis['book']} emoji.",
             )
             await channel.send(content=f"{message.author.mention}", embed=embed, delete_after=10.0)
         elif payload.emoji.name == emojis["book"]:
