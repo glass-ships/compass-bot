@@ -43,15 +43,15 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: [./backend]
+          # paths: [.]
           import:
             - https://docs.python.org/3/objects.inv
             - https://mkdocstrings.github.io/objects.inv
             - https://mkdocstrings.github.io/griffe/objects.inv
           options:
             docstring_style: google
+            docstring_section_style: table
             docstring_options:
-              docstring_section_style: table
               ignore_init_summary: yes
             merge_init_into_class: yes
             # separate_signature: yes
