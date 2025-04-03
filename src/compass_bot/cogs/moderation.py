@@ -197,10 +197,10 @@ class Moderation(commands.Cog):
     async def _check_roles(self, itx: discord.Interaction):  # , roles: Optional[List[discord.Role]] = None):
         await itx.response.defer()
         required_roles = [id for id in bot.db.get_required_roles(itx.guild_id)]
-        role_mentions = [f"<@&{id}>" for id in required_roles]
         if not required_roles:
             await itx.followup.send("No required roles set.")
             return
+        role_mentions = [f"<@&{id}>" for id in required_roles]
         response = await itx.followup.send(
             embed=discord.Embed(description=f"Checking for users without one of {' '.join(role_mentions)}")
         )
