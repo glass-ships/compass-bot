@@ -11,7 +11,7 @@ from discord.ext import commands
 from loguru import logger
 
 from compass_bot.utils.bot_config import COMPASS_ROOT, GLASS, GLASS_HARBOR
-from compass_bot.utils.utils import get_resource_repo, get_resource_path, REPO_PATH
+from compass_bot.utils.utils import get_resource_path
 from compass_bot.utils.command_utils import get_emojis, send_embed
 
 
@@ -156,21 +156,18 @@ class Utility(commands.Cog):
         aliases=["dlemojis", "dle"],
     )
     async def _download_emojis(self, ctx: commands.Context) -> None:
-        get_resource_repo()
-        if os.path.exists(f"{REPO_PATH}/{ctx.guild.name}/emojis"):
-            fp = f"{REPO_PATH}/{ctx.guild.name}/emojis"
-        else:
-            fp = f"{COMPASS_ROOT}/downloads/{ctx.guild.name}/emojis"
-            Path(fp).mkdir(parents=True, exist_ok=True)
-        Path(fp, "png").mkdir(parents=True, exist_ok=True)
-        Path(fp, "gif").mkdir(parents=True, exist_ok=True)
+        dir = get_resource_path(ctx.guild.name, "emojis")
+        if not dir:
+            dir = f"{COMPASS_ROOT}/downloads/{ctx.guild.name}/emojis"
+            Path(dir, "png").mkdir(parents=True, exist_ok=True)
+            Path(dir, "gif").mkdir(parents=True, exist_ok=True)
         guild = bot.get_guild(ctx.guild.id)
         count = 0
         for e in guild.emojis:
             fn = f"gif/{e.name}.gif" if e.animated else f"png/{e.name}.png"
-            await e.save(fp=os.path.join(fp, fn))
+            await e.save(fp=os.path.join(dir, fn))
             count += 1
-        await ctx.send(f"{count} emoji's downloaded")  # , delete_after=2.0)
+        await ctx.send(f"{count} emoji's downloaded")
         return
 
     @has_mod_ctx
@@ -314,7 +311,7 @@ class Utility(commands.Cog):
         return
 
     # Not a command, but a helper function for syncstickers
-    async def _add_stickers(self, ctx: commands.Context, stickers: list = None) -> None:
+    async def _add_stickers(self, ctx: commands.Context, stickers: list) -> None:
         """Adds stickers to a guild from a list of filepaths"""
         for s in stickers:
             parts = s.split("/")[-1].split(".")[0].split("_")

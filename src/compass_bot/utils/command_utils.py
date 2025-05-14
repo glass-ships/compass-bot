@@ -1,11 +1,23 @@
 """Discord focused utility functions for commands"""
 
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
 import discord
 
 from compass_bot.utils.bot_config import EMBED_COLOR
 from compass_bot.utils.utils import chunk_list, download, getfilepath
+
+
+def get_emojis(guild: discord.Guild) -> Tuple[List[discord.Emoji], List[discord.Emoji]]:
+    """Returns lists of all static and animated emojis in a guild"""
+
+    emojis = {"anim": [], "static": []}
+    for i in guild.emojis:
+        if i.animated is True:
+            emojis["anim"].append(i)
+        else:
+            emojis["static"].append(i)
+    return emojis["static"], emojis["anim"]
 
 
 async def send_embed(
@@ -91,9 +103,13 @@ async def send_embed_long(
             await channel.send(embed=embed)
 
 
-async def move_message(itx: discord.Interaction, channel: Union[discord.TextChannel, discord.Thread], message_id: str):
+async def move_message(itx: discord.Interaction, channel: discord.abc.GuildChannel, message_id: str):
     await itx.response.defer(ephemeral=True)
-    # Get message to be moved
+    assert itx.channel is not None
+    if not isinstance(itx.channel, (discord.TextChannel, discord.Thread)):
+        await itx.followup.send("Unable to move messages from a category or forum channel", ephemeral=True)
+        return
+    message_id = message_id.split("-")[-1]
     msg = await itx.channel.fetch_message(int(message_id))
     newmsg = f"""
 {msg.author.mention}, your message from <#{msg.channel.id}> has been moved to the appropriate channel.
@@ -118,15 +134,3 @@ async def move_message(itx: discord.Interaction, channel: Union[discord.TextChan
     new_message = await channel.send(content=newmsg, files=files)
     await msg.delete()
     await itx.followup.send(f"Message moved to {new_message.jump_url}", ephemeral=True)
-
-
-def get_emojis(guild: discord.Guild) -> Tuple[List[discord.Emoji], List[discord.Emoji]]:
-    """Returns lists of all static and animated emojis in a guild"""
-
-    emojis = {"anim": [], "static": []}
-    for i in guild.emojis:
-        if i.animated is True:
-            emojis["anim"].append(i)
-        else:
-            emojis["static"].append(i)
-    return emojis["static"], emojis["anim"]

@@ -27,7 +27,7 @@ console = Console(
 #############################
 
 REPO_PATH = f"{COMPASS_ROOT.parent}/discord-stuff"
-REPO_URL = f"https://glass-ships:{os.getenv('GITLAB_TOKEN')}@gitlab.com/glass-ships/discord-stuff.git"
+REPO_URL = f"https://oauth2:{os.getenv('GITLAB_PAT')}@gitlab.com/glass-ships/discord-stuff.git"
 
 URL_REGEX = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
@@ -58,9 +58,9 @@ class URL(str):
 #####################
 
 
-def parse_args(args: str) -> ddict:
+def parse_args(args_: str) -> ddict:
     """Parse arguments from a string into a dictionary"""
-    args = shlex.split(args)
+    args = shlex.split(args_)
     opts = {}
     for i in range(len(args)):
         arg = args[i]
@@ -95,7 +95,7 @@ async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> 
         path (Optional[Union[str, os.PathLike]]): Path to save attachment to
     """
 
-    fp = os.path.join("downloads", itx.guild.name, path)
+    fp = os.path.join("downloads", itx.guild.name, path or "")
     fn = attachment.filename
     Path(fp).mkdir(parents=True, exist_ok=True)
     await attachment.save(fp=f"{fp}/{fn}")
@@ -165,7 +165,8 @@ def chunk_list(list_to_chunk: list, chunk_size: int) -> Generator[list, None, No
 
 def get_resource_repo() -> None:
     """Clone or pull resource repo"""
-    if not Path(REPO_PATH).is_dir():
+    if not Path(REPO_PATH).exists():
+        logger.debug(f"Repo not found - cloning repo to {REPO_PATH}")
         subprocess.call(["git", "clone", REPO_URL, REPO_PATH])
     else:
         logger.debug("Repo already exists - pulling repo")
@@ -174,7 +175,7 @@ def get_resource_repo() -> None:
 
 
 def get_resource_path(guild_name: str, *resource: str) -> Union[str, None]:
-    """Returns path to resource
+    """Returns path to resource (checks data repo first, then downloads)
 
     Args:
         guild_name (str): Name of guild
@@ -185,8 +186,7 @@ def get_resource_path(guild_name: str, *resource: str) -> Union[str, None]:
     if os.path.exists(f"{REPO_PATH}/{guild_name}/{sub_path}"):
         resource_path = f"{REPO_PATH}/{guild_name}/{sub_path}"
     elif os.path.exists(f"{COMPASS_ROOT}/downloads/{guild_name}"):
-        if not os.path.exists(f"{COMPASS_ROOT}/downloads/{guild_name}/{sub_path}"):
-            os.mkdir(f"{COMPASS_ROOT}/downloads/{guild_name}/{sub_path}", parents=True)
+        Path(f"{COMPASS_ROOT}/downloads/{guild_name}/{sub_path}").mkdir(parents=True, exist_ok=True)
         resource_path = f"{COMPASS_ROOT}/downloads/{guild_name}/{sub_path}"
     else:
         return None
