@@ -4,9 +4,9 @@
 
 ### Overview
 
-Compass is a general Discord bot written in Python, with features intended to simplify Discord server moderation and management. 
+Compass is a general Discord bot written in Python, with features intended to simplify Discord server moderation and management.
 
-### Where can I find a command list? 
+### Where can I find a command list?
 
 [Right here!](Commands/general.md)
 
@@ -16,4 +16,4 @@ Setting up Compass is pretty simple - just a few quick commands and you're on yo
 
 Check out the [Configuration page](Configuration/setup.md) for more info.
 
-<img src='images/compass.png' alt='Compass Logo' width='50%' style='display: block; margin-left: auto; margin-right: auto;'> 
+<img src='images/compass.png' alt='Compass Logo' width='50%' style='display: block; margin-left: auto; margin-right: auto;'>

@@ -20,8 +20,8 @@ def test_parse_spotify_playlist():
     ("Bethesda VS Critics: How To Save The Games Industry", "https://www.youtube.com/watch?v=C6NiXAdMzEk")
 ])
 def test_search_youtube(search, expected):
-    url = music_utils.search_youtube(search)
-    assert url == expected
+    result = music_utils.search_youtube(search)
+    assert result.url == expected
 
 def test_get_yt_metadata():
     pass

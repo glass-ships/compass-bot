@@ -5,19 +5,24 @@ stages:
   - pages
 
 before_script:
-  - pip install poetry
-  - poetry install -E dev
-  - source `poetry env info --path`/bin/activate
+  - wget -qO- https://astral.sh/uv/install.sh | sh
+  - uv venv
+  - uv pip install .[dev]
 
 test-deps:
   stage: test-deps
   script:
-    - poetry update
+    - uv sync --upgrade --all-extras
+
+run-tests:
+  stage: test-deps
+  script:
+    - uv run pytest
 
 pages:
   stage: pages
   script:
-  - poetry run mkdocs build --strict --verbose
+  - uv run mkdocs build --strict --verbose
   - mv site public
   artifacts:
     paths:
