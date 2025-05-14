@@ -58,4 +58,4 @@ lint: ## Lint all code
 
 .PHONY: format
 format: ## Format all code
-	$(RUN) ruff format --exit-zero src
+	$(RUN) ruff format src

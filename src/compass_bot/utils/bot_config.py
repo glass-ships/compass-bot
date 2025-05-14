@@ -1,7 +1,7 @@
 from pathlib import Path
 from dataclasses import dataclass, field
 from random import choice
-from typing import List
+from typing import List, Optional
 
 import discord
 
@@ -66,16 +66,16 @@ class Emojis:
 @dataclass
 class GuildData:
     guild: discord.Guild
-    chan_bot: int = None
-    chan_lfg: int = None
-    chan_logs: int = None
-    chan_music: int = None
-    chan_vids: int = None
-    chan_welcome: int = None
-    default_channel: discord.TextChannel = None
-    guild_id: int = None  # field(init=False)
-    guild_name: str = None  # field(init=False)
-    mem_role: int = None
+    guild_id: Optional[int] = None
+    guild_name: Optional[str] = None
+    default_channel: Optional[int] = None
+    chan_bot: Optional[int] = None
+    chan_lfg: Optional[int] = None
+    chan_logs: Optional[int] = None
+    chan_music: Optional[int] = None
+    chan_vids: Optional[int] = None
+    chan_welcome: Optional[int] = None
+    mem_role: Optional[int] = None
     mod_roles: List[str] = field(default_factory=list)
     prefix: str = ";"
     required_roles: List[str] = field(default_factory=list)
