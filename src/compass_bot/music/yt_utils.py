@@ -23,7 +23,8 @@ class SearchYT:
         )[:limit]
         data_ = []
         for i in data:
-            js_data = {"id": "", "title": "", "thumb": "", "simple_data": ""}
+            # js_data = {"id": "", "title": "", "thumb": "", "simple_data": ""}
+            js_data = {}
             js_data["id"] = i[0]
             js_data["title"] = i[3]
             js_data["thumb"] = i[1], i[2]
@@ -42,9 +43,8 @@ class Data:
         html = urllib.request.urlopen(res)
         self.source = html.read().decode("utf8")
 
-        # Construct a dictionary of the data
-
     def data(self):
+        """Construct a dictionary of the data"""
         videodetails = re.findall(r'"videoDetails":\{(.+?),"isOwnerViewing', self.source)[0] or None
         id = re.findall(r'"videoId":"(\S{11})', videodetails)[0] or None
         title = re.findall(r'"title":"(.+?)",', videodetails)[0] or None

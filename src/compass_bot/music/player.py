@@ -1,27 +1,26 @@
 import asyncio
 
 # import aiohttp
-
 import discord
 import spotipy
-from yt_dlp import YoutubeDL
 from loguru import logger
+from yt_dlp import YoutubeDL
 
-from compass_bot.utils.bot_config import EMBED_COLOR, Emojis, CustomException  # , FetchException, QueueException
-from compass_bot.utils.command_utils import send_embed
-from compass_bot.utils.utils import extract_url, ddict
 from compass_bot.music import music_utils
-from compass_bot.music.dataclasses import Playlist, PlaylistTypes, Search, Sites, Song, YouTubeSearchResults
+from compass_bot.music.dataclasses import Playlist, PlaylistTypes, Search, Sites, Song, UserSearch, YouTubeSearchResults
 from compass_bot.music.music_config import (
-    ErrorMessages,
-    InfoMessages,
     COOKIE_PATH,
-    VC_TIMEOUT,
     SPOTIFY_ID,
     SPOTIFY_SECRET,
+    VC_TIMEOUT,
     YTDL_OPTIONS,
+    ErrorMessages,
+    InfoMessages,
 )
 from compass_bot.music.queue import Queue
+from compass_bot.utils.bot_config import EMBED_COLOR, CustomException, Emojis
+from compass_bot.utils.command_utils import send_embed
+from compass_bot.utils.utils import ddict, extract_url
 
 # from compass_bot.utils.utils import console
 
@@ -68,7 +67,7 @@ class MusicPlayer(object):
         except Exception as e:
             logger.warning(f"Spotify API Error: {e}")
 
-        if ~discord.opus.is_loaded():
+        if not discord.opus.is_loaded():
             try:
                 discord.opus.load_opus("libopus.so.0")
                 logger.debug("Opus successfully loaded")
@@ -100,29 +99,20 @@ class MusicPlayer(object):
     async def process_request(self, itx: discord.Interaction, query: str):
         """Process user search and returns a list of search strings"""
 
-        user_search = ddict(
-            {
-                "original": query,
-                "url": extract_url(query),
-                "playlist_type": music_utils.identify_playlist(query),
-                "host": music_utils.identify_host(query),
-            }
+        user_search = UserSearch(
+            query=query,
+            url=extract_url(query),
+            playlist_type=music_utils.identify_playlist(query),
+            host=music_utils.identify_host(query),
         )
-        # logger.debug(f"Processing user search: {user_search}")
         logger.info(f"Processing user search: {user_search}")
-
-        # Possibly process Youtube separately
-        # if host == Sites.YouTube:
-        #     await self._process_youtube_search(itx, query, url, playlist_type)
-
         try:
             # Process single keyword search
             if user_search.url is None:
-                await self._add_to_queue(Search(query=user_search.original), itx.user, itx.channel)
+                await self._add_to_queue(Search(query=user_search.query), itx.user, itx.channel)
                 await itx.followup.send(
                     embed=discord.Embed(description=f"{Emojis.cd} Queued: `{query}`", color=EMBED_COLOR())
                 )
-
             # Process single URL
             elif user_search.playlist_type == PlaylistTypes.Not_Playlist:
                 search = self._get_song_info(user_search.url, user_search.host)
@@ -132,7 +122,6 @@ class MusicPlayer(object):
                         description=f"{Emojis.cd} Queued: [{search.query}]({search.url})", color=EMBED_COLOR()
                     )
                 )
-
             # Process Playlist
             else:
                 playlist = self._get_playlist(user_search.url, user_search.playlist_type)
@@ -173,7 +162,6 @@ class MusicPlayer(object):
             await itx.followup.send(
                 embed=discord.Embed(title=ErrorMessages.SEARCH_ERROR, description=f"```{e}```", color=EMBED_COLOR())
             )
-            # raise Exception("Error processing search.").with_traceback(e.__traceback__)
             return False
 
         return
@@ -298,13 +286,13 @@ class MusicPlayer(object):
             raise CustomException(f"Could not get metadata for {search.url}.")
 
         song = Song(
-            base_url=yt_search.url,
-            original_url=search.url,
             requested_by=requested_by,
+            original_url=search.url,
+            base_url=yt_search.url,
+            webpage_url=data["url"],
             channel_name=data["channel_name"],
             title=yt_search.title,
             duration=data["duration"],
-            webpage_url=data["url"],
             thumbnail=data["thumbnails"],
             # thumbnail = data['thumbnails'][-1]['url'] if data['thumbnails'] is not None else None
         )
