@@ -54,7 +54,7 @@ def start(
         f"""
 :arrow_right: Starting {"main" if not dev else "dev"} bot...
     :arrow_right: Setting Compass log level to {app_state["log-level"]}
-    :arrow_right: To stop the bot, use: poetry run compass stop
+    :arrow_right: To stop the bot, use: uv run compass stop
 """
     )
     if not debug:

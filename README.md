@@ -3,11 +3,8 @@
 [![GitLab](https://gitlab.com/glass-ships/compass-bot/badges/main/pipeline.svg)](https://gitlab.com/glass-ships/compass-bot/-/pipelines)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://gitlab.com/glass-ships/compass-bot/-/raw/main/LICENSE)
 
-[![Python](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/downloads/release/python-3110/)
-[![Poetry](https://img.shields.io/badge/poetry-1.1.11-blue)](https://python-poetry.org/docs/)
-[![Discord.py](https://img.shields.io/badge/discord.py-2.0.0a-blue)](https://discordpy.readthedocs.io/en/latest/)
-
-| [Documentation](https://glass-ships.gitlab.io/compass-bot) | [Invite Compass](https://discord.com/oauth2/authorize?client_id=932737557836468297&scope=bot&permissions=8&scope=applications.commands%20bot) |
+[![Documentation Badge](https://img.shields.io/badge/Documentation-8A2BE2)](https://glass-ships.gitlab.io/compass-bot)
+[![Invite Badge](https://img.shields.io/badge/Invite%20Compass-8A2BE2)](https://discord.com/oauth2/authorize?client_id=932737557836468297&scope=bot&permissions=8&scope=applications.commands%20bot)
 
 Compass is a general Discord bot written in Python and hosted on DigitalOcean.
 
@@ -19,33 +16,43 @@ If you have any questions, suggestions, or feedback, please feel free to create 
 
 For guided instructions on creating a Discord bot in C# or Python, see [Fatcatnine's Thinbotnine repository](https://gitlab.com/fatcatnine/thinbotnine) (soon TM)
 
-#### Dependencies
+#### Requirements
 
-- Python >= 3.11
-- Poetry
+- [Python](https://python.org) >= 3.12
+- [uv](https://astral.sh/uv)
 - libffi-dev
 - libnacl-dev
 - libopus0
 
 ### Development - Running the bot
 
-- Install system dependencies:  
-   `sudo apt install -y libffi-dev libnacl-dev libopus0 build-essential libssl-dev libffi-dev libxml2-dev libxslt1-dev zlib1g-dev`  
-   (or equivalent for your system)
+- Install system dependencies (for example, on Ubuntu):
+   ```bash
+   sudo apt install -y \
+      build-essential \
+      libssl-dev libffi-dev libxml2-dev libxslt1-dev zlib1g-dev \  
+      libffi-dev libnacl-dev libopus0
+   ```
 
-- Install [Poetry](https://python-poetry.org/docs/#installation) and [Python](https://www.python.org/downloads/) if needed.
+- Install [uv](https://astral.sh/uv)
 
 - Clone the repository:  
-   `git clone https://gitlab.com/glass-ships/compass-bot.git`
+   ```bash
+   git clone https://gitlab.com/glass-ships/compass-bot.git
+   ```
 
 - Install Compass and its dependencies:  
-   `poetry install`
+   ```bash
+   uv venv && uv pip install .
+   ```
 
-- Start the bot:  
-   `poetry run compass [OPTIONS] start [ARGS]`
+- Start the bot:
+   ```bash
+   uv run compass [OPTIONS] start [ARGS]
+   ```
 
 For more information, see the [documentation](https://glass-ships.gitlab.io/compass-bot),
-or run `poetry run compass --help` for a list of available commands.
+or run `uv run compass --help` for a list of available commands.
 
 ### Contributing
 
