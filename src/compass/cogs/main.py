@@ -6,6 +6,10 @@ from discord.ext import commands
 
 from loguru import logger
 
+from compass.bot import CompassBot
+from compass.components.pagination import Pagination
+from compass.config.bot_config import COLORS
+
 
 async def setup(bot):
     """Cog setup method"""
@@ -13,13 +17,34 @@ async def setup(bot):
 
 
 class Main(commands.Cog):
-    def __init__(self, bot_: commands.Bot):
+    def __init__(self, bot_: CompassBot):
         global bot
         bot = bot_
 
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
+
+    @app_commands.command(name="help", description="List chat commands")
+    async def help(self, itx: discord.Interaction):
+        cmds = [c for c in bot.walk_commands()]
+        per_page = 10
+
+        def _get_page(page: int):
+            emb = discord.Embed(
+                title="Commands",
+                description="A list of Compass bot chat commands\n(to be used with `;command_name`)",
+                color=COLORS.random(),
+            )
+            offset = (page - 1) * per_page
+            for cmd in cmds[offset : offset + per_page]:
+                emb.add_field(name=f"{cmd.name} {cmd.aliases}", value=cmd.description, inline=False)
+            emb.set_author(name=f"Requested by {itx.user}")
+            n = Pagination.compute_total_pages(len(cmds), per_page)
+            emb.set_footer(text=f"Page {page} from {n}")
+            return emb, n
+
+        await Pagination(itx, _get_page).navigate()
 
     @app_commands.command(name="ping")
     async def _ping(self, itx: discord.Interaction):

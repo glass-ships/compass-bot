@@ -5,7 +5,8 @@ from discord import app_commands
 from discord.ext import commands
 from loguru import logger
 
-from compass_bot.utils.bot_config import (
+from compass.bot import CompassBot
+from compass.config.bot_config import (
     CHANNEL_OPTIONS,
     MODULES,
     ROLE_OPTIONS,
@@ -19,7 +20,7 @@ async def setup(bot):
 
 
 class Admin(commands.Cog):
-    def __init__(self, bot_: commands.Bot):
+    def __init__(self, bot_: CompassBot):
         global bot
         bot = bot_
 
@@ -32,26 +33,38 @@ class Admin(commands.Cog):
     @commands.command(name="sync", description="Syncs the bot's command tree")
     @commands.has_permissions(administrator=True)
     async def _sync(self, ctx: commands.Context, spec: Union[Literal["dev"], Literal["guild"], None]):
-        logger.info("Syncing ships...")
-        if spec == "dev":
-            g = bot.get_guild(ctx.guild.id)
-            await ctx.send(embed=discord.Embed(description=f"Copying command tree to {g}"))
-            bot.tree.copy_global_to(guild=g)
-            fmt = await bot.tree.sync(guild=g)
-            await ctx.send((f"Synced {len(fmt)} commands to dev guild."))
-        elif spec == "guild":
-            g = bot.get_guild(ctx.guild.id)
-            fmt = await bot.tree.sync(guild=g)
-            await ctx.send(embed=discord.Embed(description=f"Synced {len(fmt)} commands to guild."))
-            logger.info("Ships synced!")
-        elif spec is None:
-            fmt1 = await bot.tree.sync()
-            await ctx.send(embed=discord.Embed(description=f"Synced bot tree ({len(fmt1)} commands)"))
-            logger.info("Ships synced!")
-        else:
-            await ctx.send(embed=discord.Embed(description=f"Unexpected argument.\nType `;help` for more info."))
-            logger.warning("Error syncing ships! (Bad argument)")
-        return
+        logger.debug(f"Syncing command tree ({spec})")
+        match spec:
+            case None:
+                bot.tree.clear_commands(guild=None)
+                fmt = await bot.tree.sync()
+                await ctx.send(embed=discord.Embed(description=f"Synced bot tree ({len(fmt)} commands)"))
+            case "dev":
+                try:
+                    g = bot.get_guild(ctx.guild.id)
+                except AttributeError:
+                    await ctx.send(embed=discord.Embed(description="No guild found for this command."))
+                    return
+                await ctx.send(embed=discord.Embed(description=f"Copying command tree to {g}"))
+                bot.tree.clear_commands(guild=g)
+                bot.tree.copy_global_to(guild=g)
+                fmt = await bot.tree.sync(guild=g)
+                await ctx.send(embed=discord.Embed(description=f"Synced {len(fmt)} commands to guild."))
+            case "guild":
+                try:
+                    g = bot.get_guild(ctx.guild.id)
+                except AttributeError:
+                    await ctx.send(embed=discord.Embed(description="No guild found for this command."))
+                    return
+                bot.tree.clear_commands(guild=g)
+                fmt = await bot.tree.sync(guild=g)
+                await ctx.send(embed=discord.Embed(description=f"Synced {len(fmt)} commands to guild."))
+            case _:
+                await ctx.send(
+                    embed=discord.Embed(description=f"Unexpected argument: {spec}.\nType `;help` for more info.")
+                )
+                return
+            
 
     @app_commands.command(name="reload", description="Force reloads a bot module")
     @commands.has_permissions(administrator=True)

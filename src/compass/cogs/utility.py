@@ -10,10 +10,10 @@ from discord import app_commands
 from discord.ext import commands
 from loguru import logger
 
-from compass_bot.utils.bot_config import COMPASS_ROOT, GLASS, GLASS_HARBOR
-from compass_bot.utils.utils import get_resource_path
-from compass_bot.utils.command_utils import get_emojis, send_embed
-
+from compass.bot import CompassBot
+from compass.config.bot_config import COMPASS_ROOT, GLASS, GLASS_HARBOR
+from compass.utils.command_utils import get_emojis, send_embed
+from compass.utils.utils import get_resource_path
 
 cog_path = Path(__file__)
 
@@ -51,7 +51,7 @@ async def setup(bot):
 
 
 class Utility(commands.Cog):
-    def __init__(self, bot_: commands.Bot):
+    def __init__(self, bot_: CompassBot):
         global bot
         bot = bot_
 
@@ -64,33 +64,16 @@ class Utility(commands.Cog):
     ######################
 
     @has_mod_ctx
-    @commands.command(name="test")
-    async def _test(self, ctx: commands.Context, channel_id: int):
-        # await ctx.send("Test command")
-        await ctx.send(f"Testing channel: {bot.get_channel(channel_id).jump_url}")
+    @commands.command(name="test", description="Test command - unused.")
+    async def _test(self, ctx: commands.Context):
+        from dateparser import parse
+
+        content = ctx.message.content.lstrip(",test")
+        parsed = parse(content)
+        await ctx.send(f"{content} - {parsed}")
 
     @has_mod_ctx
-    @commands.command(name="broadcast", aliases=["announce", "sendall"])
-    async def broadcast(self, ctx: commands.Context, *, msg: str):
-        if ctx.author.id != GLASS:
-            return
-        for server in bot.guilds:
-            # for channel in server.text_channels:
-            #     try:
-            #         await channel.send(msg)
-            #     except Exception:
-            #         continue
-            #     else:
-            #         break
-            log_channel = bot.db.get_channel_logs(ctx.guild.id)
-            if not log_channel:
-                # log_channel = ctx.guild.system_channel
-                return
-            channel = bot.get_channel(log_channel)
-            await channel.send(msg)
-
-    @has_mod_ctx
-    @commands.command(name="getcommands", aliases=["gc", "getcmds"])
+    @commands.command(name="getcommands", aliases=["gc", "getcmds"], description="List all app commands (debug)")
     async def _get_commands(self, ctx: commands.Context, guild_id=None):
         g = bot.get_guild(int(guild_id) if guild_id else ctx.guild.id)
         global_get_cmds = bot.tree.get_commands()
@@ -113,14 +96,36 @@ class Utility(commands.Cog):
 
         msg = f"__**Global Commands (get) ({len(global_get_cmds)}):**__\n"
         msg += cmds_to_str(global_get_cmds)
-        msg += f"__**Guild Commands (get) ({len(guild_get_cmds)}):**__\n"
+        msg += f"\n__**Guild Commands (get) ({len(guild_get_cmds)}):**__\n"
         msg += cmds_to_str(guild_get_cmds)
-        msg += f"__**Global Commands (fetch) ({len(global_fetch_cmds)}):**__\n"
+        msg += f"\n__**Global Commands (fetch) ({len(global_fetch_cmds)}):**__\n"
         msg += cmds_to_str(global_fetch_cmds)
-        msg += f"__**Guild Commands (fetch) ({len(guild_fetch_cmds)}):**__\n"
+        msg += f"\n__**Guild Commands (fetch) ({len(guild_fetch_cmds)}):**__\n"
         msg += cmds_to_str(guild_fetch_cmds)
 
         await ctx.send(embed=discord.Embed(description=msg))
+
+    @has_mod_ctx
+    @commands.command(
+        name="broadcast", aliases=["announce", "sendall"], description="Broadcast a message to all servers."
+    )
+    async def broadcast(self, ctx: commands.Context, *, msg: str):
+        if ctx.author.id != GLASS:
+            return
+        for server in bot.guilds:
+            # for channel in server.text_channels:
+            #     try:
+            #         await channel.send(msg)
+            #     except Exception:
+            #         continue
+            #     else:
+            #         break
+            log_channel = bot.db.get_channel_logs(ctx.guild.id)
+            if not log_channel:
+                # log_channel = ctx.guild.system_channel
+                return
+            channel = bot.get_channel(log_channel)
+            await channel.send(msg)
 
     @has_mod_ctx
     @commands.command(name="clearcommands", aliases=["cc"])
@@ -344,11 +349,11 @@ class Utility(commands.Cog):
     #####################
 
     @has_mod_ctx
-    @commands.command(name="clearfilecache", aliases=["cfc", "rm -rf"])
-    async def _clear_file_cache(self, ctx: commands.Context, option: str):
+    @commands.command(name="cleardownloads", aliases=["clr", "rm -rf"], description="Clear locally downloaded files")
+    async def _clear_downloads(self, ctx: commands.Context, option: str):
         shutil.rmtree(f"downloads/")
         await ctx.message.delete()
-        await ctx.send(f"File cache cleared!", delete_after=2.0)
+        await ctx.send(f"Downloads cleared!", delete_after=2.0)
 
     # Purely academic / for personal usage if you want to host your own instance.
     # Not intended for scraping servers for content.

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 # from enum import StrEnum, auto
 # from pathlib import Path
 
-from compass_bot.utils.bot_config import COMPASS_ROOT, Emojis
+from compass.config.bot_config import COMPASS_ROOT, Emojis
 
 # Re-usable paths
 ABSOLUTE_PATH = ""  # DO NOT MODIFY

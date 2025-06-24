@@ -5,7 +5,8 @@ import discord
 from discord.ext import commands
 from loguru import logger
 
-from compass_bot.utils.bot_config import EMBED_COLOR
+from compass.bot import CompassBot
+from compass.config.bot_config import COLORS
 
 
 async def setup(bot):
@@ -14,7 +15,7 @@ async def setup(bot):
 
 
 class Gaming(commands.Cog):
-    def __init__(self, bot_: commands.Bot):
+    def __init__(self, bot_: CompassBot):
         global bot
         bot = bot_
 
@@ -47,7 +48,7 @@ class Gaming(commands.Cog):
 
         embed = discord.Embed(
             title="LFG session created!",
-            color=EMBED_COLOR(),
+            color=COLORS().random().random(),
             description="""
 React with 📖 to see your active roster.
 **Note:** Please do not edit your post, the bot will automatically react with 🇫 when session is full.
@@ -131,7 +132,7 @@ React with 📖 to see your active roster.
                 return
             embed = discord.Embed(
                 title=f"{message.author.name}'s LFG",
-                color=EMBED_COLOR(),
+                color=COLORS().random(),
             )
             embed.set_thumbnail(url=message.author.avatar.url)
 

@@ -1,15 +1,13 @@
-from datetime import datetime, timedelta
-import sys
 import subprocess
+import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
 import psutil
 import typer
 
-from compass_bot.utils.utils import epoch_to_dt
-from compass_bot.utils.utils import console
-
+from compass.utils.utils import console, epoch_to_dt
 
 app = typer.Typer(name="compass")
 app_state = {
@@ -25,9 +23,9 @@ def version_callback(
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Supress logging (except Errors)"),
 ):
     if version:
-        from compass_bot import __version__
+        from compass import __version__
 
-        console.print(f"\n:arrow_right: Compass Bot version: {__version__}")
+        console.print(f"Compass Bot {__version__}")
         raise typer.Exit()
     app_state["log-level"] = (
         "INFO" if (verbose == 1) else "DEBUG" if (verbose >= 2) else "ERROR" if (quiet is True) else "WARNING"
@@ -42,13 +40,7 @@ def start(
     pull: bool = typer.Option(False, "--pull", "-p", help="Pull the latest version of the Bot from GitHub"),
     debug: bool = typer.Option(False, "--debug", "-D", help="Run the Bot in debug mode (logs to stdout)"),
 ):
-    """Starts the Bot
-
-    Args:
-        dev (bool, optional): Run the development version of the Bot locally. Defaults to False.
-        update (bool, optional): Update the Bot's dependencies. Defaults to False.
-        pull (bool, optional): Pull the latest version of the Bot from GitHub. Defaults to False.
-    """
+    """Starts the Bot"""
 
     console.print(
         f"""
@@ -60,7 +52,7 @@ def start(
     if not debug:
         console.print(f":arrow_right: For log output, see `logs/`")
 
-    cmd = ["python", "src/compass_bot/bot.py", "--log-level", app_state["log-level"]]
+    cmd = [f"{sys.executable}", "src/compass/bot.py", "--log-level", app_state["log-level"]]
     if dev:
         cmd.append("--dev")
     if update:
@@ -86,7 +78,7 @@ def start(
 def stop():
     """Stops the Bot"""
     try:
-        subprocess.call(["pkill", "-f", "python src/compass_bot/bot.py"])
+        subprocess.call(["pkill", "-f", "python src/compass/bot.py"])
     except Exception as e:
         console.print("Error stopping bot: ", e)
         raise typer.Exit(1)
@@ -96,10 +88,10 @@ def stop():
 
 @app.command()
 def status():
-    """Checks the status of the Bot"""
+    """Check if Compass is currently running"""
     processes = [p for p in psutil.process_iter(attrs=["name"]) if "python" in p.name()]
     for p in processes:
-        if "src/compass_bot/bot.py" in p.cmdline():
+        if "src/compass/bot.py" in p.cmdline():
             start_time = epoch_to_dt(p.create_time()).strftime("%Y-%m-%d at %H:%M:%S")
             uptime = timedelta(seconds=(datetime.now() - epoch_to_dt(p.create_time())).total_seconds())
             console.print(

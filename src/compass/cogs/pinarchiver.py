@@ -6,7 +6,7 @@ from discord.ext import commands
 # from discord.utils import get
 # from loguru import logger
 
-# from compass_bot.utils.bot_config import EMBED_COLOR
+# from compass.utils.bot_config import COLORS
 
 
 mode = 1
@@ -94,7 +94,7 @@ class PinArchiver(commands.Cog):
     #             last_pinned = numPins[0]
     #             pinEmbed = discord.Embed(
     #                 description="\"" + last_pinned.content + "\"",
-    #                 color=EMBED_COLOR()
+    #                 color=COLORS().random()
     #             )
     #             # checks to see if pinned message has attachments
     #             attachments = last_pinned.attachments
@@ -121,7 +121,7 @@ class PinArchiver(commands.Cog):
     #                 pinEmbed = discord.Embed(
     #                     # title="Sent by " + last_pinned.author.name,
     #                     description="\"" + last_pinned.content + "\"",
-    #                     color=EMBED_COLOR()
+    #                     color=COLORS().random()
     #                 )
     #                 # checks to see if pinned message has attachments
     #                 attachments = last_pinned.attachments
@@ -147,7 +147,7 @@ class PinArchiver(commands.Cog):
     #                 pinEmbed = discord.Embed(
     #                     # title="Sent by " + last_pinned.author.name,
     #                     description="\"" + last_pinned.content + "\"",
-    #                     color=EMBED_COLOR()
+    #                     color=COLORS().random()
     #                 )
     #                 # checks to see if pinned message has attachments
     #                 attachments = last_pinned.attachments

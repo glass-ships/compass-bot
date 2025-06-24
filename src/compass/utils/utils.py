@@ -10,16 +10,17 @@ from typing import Optional, Union
 from datetime import datetime
 from dateutil import tz
 
+import discord
 import shlex
+from dateparser import parse as dt_parse
 from loguru import logger
 from rich.console import Console
 
-from compass_bot.utils.bot_config import COMPASS_ROOT
+from compass.config.bot_config import COMPASS_ROOT
 
 console = Console(
-    color_system="truecolor",
     stderr=True,
-    style="blue1",
+    style="bright_yellow on black",
 )
 
 #############################
@@ -58,14 +59,32 @@ class URL(str):
 #####################
 
 
-def parse_args(args_: str) -> ddict:
-    """Parse arguments from a string into a dictionary"""
-    args = shlex.split(args_)
+def parse_args(arg_str: str) -> ddict:
+    """Parse arguments from a string into a dictionary
+
+    Example:
+        parse_args("--title this is a title --description this is a description")
+        Returns: {"title": "this is a title", "description": "this is a description"}
+    """
+    args = shlex.split(arg_str)
     opts = {}
-    for i in range(len(args)):
+
+    i = 0
+    while i < len(args):
         arg = args[i]
         if arg.startswith("--"):
-            opts[arg.lstrip("-").replace("-", "_")] = args[i + 1]
+            key = arg.lstrip("-").replace("-", "_")
+            # Collect all following arguments until next flag or end
+            value_parts = []
+            i += 1
+            while i < len(args) and not args[i].startswith("--"):
+                value_parts.append(args[i])
+                i += 1
+            opts[key] = " ".join(value_parts) if value_parts else ""
+            # Don't increment i here since we already moved to next flag or end
+        else:
+            i += 1
+
     return ddict(opts)
 
 
@@ -86,24 +105,21 @@ def extract_url(content: str) -> Optional[str]:
 ##################
 
 
-async def download(itx, attachment, path: Optional[Union[str, os.PathLike]]) -> None:
-    """Download an attachment from a message
-
-    Args:
-        itx (discord.Message): Message context
-        attachment (discord.Attachment): Attachment to download
-        path (Optional[Union[str, os.PathLike]]): Path to save attachment to
-    """
-
+async def download(
+    itx: discord.Interaction,
+    attachment: discord.Attachment,
+    path: Optional[Union[str, os.PathLike]],
+) -> None:
+    """Download an attachment from a message"""
     fp = os.path.join("downloads", itx.guild.name, path or "")
     fn = attachment.filename
     Path(fp).mkdir(parents=True, exist_ok=True)
-    await attachment.save(fp=f"{fp}/{fn}")
+    await attachment.save(fp=Path(fp) / fn)
     return
 
 
 def getfilepath(itx, fp) -> str:
-    """Returns filepath with guild-specific download prefix
+    """Returns filepath with guild-specific download path
 
     Args:
         itx (discord.Message): Message context
@@ -117,9 +133,13 @@ def getfilepath(itx, fp) -> str:
 #######################
 
 
+def parse_date(date_str: str):
+    """Parses a time/date-related string into a datetime object."""
+    return dt_parse(date_str, settings={"TIMEZONE": "UTC"})
+
+
 def check_time_format(t):
     """Check that datetime input is in format `YYYY-MM-DD HH:MM AM/PM TZ`"""
-
     pattern = r"\d{4}-\d{1,2}-\d{1,2}\s\d{1,2}:\d{2}\s[a-zA-Z]{2}\s[a-zA-Z]{3}"
     match = re.match(pattern, t)
     return bool(match)
@@ -127,7 +147,6 @@ def check_time_format(t):
 
 def dt_to_epoch(t):
     """Convert datetime to epoch time (requires format: `YYYY-MM-DD HH:MM AM/PM TZ`)"""
-
     msg_split = t.split()
     temp = []
     temp.extend(msg_split[0].split("-"))

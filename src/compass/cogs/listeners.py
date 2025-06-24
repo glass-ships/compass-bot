@@ -8,8 +8,9 @@ import discord
 from discord.ext import commands
 from discord.utils import get
 
-from compass_bot.utils.bot_config import COMPASS_SRC, GLASS_HARBOR, GuildData
-from compass_bot.utils.utils import download, getfilepath
+from compass.bot import CompassBot
+from compass.config.bot_config import COMPASS_SRC, GLASS_HARBOR, GuildData
+from compass.utils.utils import download, getfilepath
 
 from loguru import logger
 
@@ -22,7 +23,7 @@ async def setup(bot):
 
 
 class Listeners(commands.Cog):
-    def __init__(self, bot_: commands.Bot):
+    def __init__(self, bot_: CompassBot):
         global bot
         bot = bot_
 

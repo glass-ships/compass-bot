@@ -2,4 +2,4 @@
 
 Getters, setters, and updaters for Compass's database
 
-::: src.compass_bot.utils.db_utils
+::: src.compass.utils.db_utils

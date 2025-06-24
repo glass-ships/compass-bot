@@ -1,11 +1,11 @@
 """Discord focused utility functions for commands"""
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import discord
 
-from compass_bot.utils.bot_config import EMBED_COLOR
-from compass_bot.utils.utils import chunk_list, download, getfilepath
+from compass.config.bot_config import COLORS
+from compass.utils.utils import chunk_list, download, getfilepath
 
 
 def get_emojis(guild: discord.Guild) -> Tuple[List[discord.Emoji], List[discord.Emoji]]:
@@ -41,7 +41,7 @@ async def send_embed(
         footer (str): Footer text (Default: None)
         footer_image (str): URL of footer image (Default: None)
     """
-    embed = discord.Embed(title=title, description=description, color=EMBED_COLOR())
+    embed = discord.Embed(title=title, description=description, color=COLORS().random())
     if image:
         embed.set_image(url=image)
     if thumbnail:
@@ -74,7 +74,7 @@ async def send_embed_long(
         footer_image (str): URL of footer image (Default: None)
     """
     if description and len(description) < 4000:
-        embed = discord.Embed(title=title, description=description, color=EMBED_COLOR())
+        embed = discord.Embed(title=title, description=description, color=COLORS().random())
         if image:
             embed.set_image(url=image)
         if thumbnail:
@@ -103,7 +103,7 @@ async def send_embed_long(
             await channel.send(embed=embed)
 
 
-async def move_message(itx: discord.Interaction, channel: discord.abc.GuildChannel, message_id: str):
+async def move_message(itx: discord.Interaction, channel: Union[discord.TextChannel, discord.Thread], message_id: str):
     await itx.response.defer(ephemeral=True)
     assert itx.channel is not None
     if not isinstance(itx.channel, (discord.TextChannel, discord.Thread)):
@@ -120,15 +120,11 @@ async def move_message(itx: discord.Interaction, channel: discord.abc.GuildChann
     # Get any attachments
     files = []
     if msg.attachments:
+        if any(a.size >= itx.guild.filesize_limit for a in msg.attachments):
+            newmsg += "`Plus some files too large to resend`"
         for a in filter(lambda x: x.size <= itx.guild.filesize_limit, msg.attachments):
             await download(itx, a, "temp/moved_messages")
             files.append(discord.File(getfilepath(itx, f"temp/moved_messages/{a.filename}")))
-    if any(a.size >= itx.guild.filesize_limit for a in msg.attachments):
-        newmsg += (
-            f"`File: {a.filename} too large to resend`"
-            if len(msg.attachments) == 1
-            else f"`Plus some files too large to resend`"
-        )
 
     # Move the message
     new_message = await channel.send(content=newmsg, files=files)

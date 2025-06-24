@@ -8,9 +8,10 @@ from discord.ext import commands
 from discord.utils import get
 from loguru import logger
 
-from compass_bot.utils.bot_config import EMBED_COLOR
-from compass_bot.utils.command_utils import move_message, send_embed
-from compass_bot.utils.utils import chunk_list, parse_args
+from compass.bot import CompassBot
+from compass.config.bot_config import COLORS
+from compass.utils.command_utils import move_message, send_embed
+from compass.utils.utils import chunk_list, parse_args, dt_parse
 
 
 async def mod_check_ctx(ctx: commands.Context):
@@ -46,7 +47,7 @@ async def setup(bot):
 
 
 class Moderation(commands.Cog):
-    def __init__(self, bot_: commands.Bot):
+    def __init__(self, bot_: CompassBot):
         global bot
         bot = bot_
 
@@ -63,12 +64,16 @@ class Moderation(commands.Cog):
         name="sendembed", aliases=["se"], description="Send an embed to a channel (fields not yet supported)"
     )
     async def _send_embed(
-        self, ctx: commands.Context, target: Union[discord.User, discord.TextChannel], *, embed_fields: str = None
+        self,
+        ctx: commands.Context,
+        target: Union[discord.User, discord.TextChannel],
+        *,
+        embed_fields: str = "",
     ):
         target = target or ctx.channel
         args = parse_args(embed_fields)
 
-        embed = discord.Embed(title=args.title, description=args.description, color=EMBED_COLOR())
+        embed = discord.Embed(title=args.title, description=args.description, color=COLORS().random())
 
         if args.image:
             embed.set_image(url=args.image)
@@ -126,19 +131,19 @@ class Moderation(commands.Cog):
         await itx.response.send_message(embed=discord.Embed(description=f"Mod roles:\n{r}"))
 
     @has_mod_itx
-    @app_commands.command(name="purge", description="Deletes n messages from current channel")
+    @app_commands.command(name="purge", description="Deletes messages from current channel")
     async def _purge(
         self,
         itx: discord.Interaction,
-        number: int = None,
-        before: str = None,
-        after: str = None,
-        reason: str = None,
+        number: Optional[int] = None,
+        before: str = "",
+        after: str = "",
+        reason: Optional[str] = None,
         # check: callable = None,
     ):
         # TODO: look into parsing before/after with https://github.com/scrapinghub/dateparser
         await itx.response.defer()
-        await itx.channel.purge(limit=number, before=before, after=after, reason=reason)
+        await itx.channel.purge(limit=number, before=dt_parse(before), after=dt_parse(after), reason=reason)
         await itx.followup.send(f"{number} messages successfully purged!", ephemeral=True)
 
     @has_mod_itx
@@ -172,7 +177,7 @@ class Moderation(commands.Cog):
     @has_mod_itx
     @app_commands.command(name="removerole", description="Remove role from a user with optional duration")
     @app_commands.rename(dur="duration")
-    async def _take_role(self, itx: discord.interactions, role: discord.Role, user: discord.Member, dur: Optional[int]):
+    async def _take_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: Optional[int]):
         await itx.response.defer()
         role = get(itx.guild.roles, id=role.id)
         if not user:
@@ -241,7 +246,7 @@ class Moderation(commands.Cog):
         desc = "\n".join(inactive_formatted) if inactive_formatted else "No inactive members found."
         title = f"Inactive Members - {days} Days"
         if len(desc) < 4000:
-            await itx.followup.send(embed=discord.Embed(title=title, description=desc))
+            await itx.followup.send(embed=discord.Embed(title=title, description=desc, color=COLORS.random()))
         else:
             # split into multiple messages
             num_msgs = len(desc) // 4000 + 1
@@ -252,6 +257,7 @@ class Moderation(commands.Cog):
                     embed=discord.Embed(
                         title=f"{title} (Page {page}/{num_msgs + 1})",
                         description="\n".join(sublist),
+                        color=COLORS.random()
                     )
                 )
                 page += 1

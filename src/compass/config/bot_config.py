@@ -5,7 +5,7 @@ from typing import List, Optional
 
 import discord
 
-# /path/to/compass-bot/src/compass_bot/
+# /path/to/compass-bot/src/compass/
 COMPASS_ROOT = Path(__file__).parent.parent.parent.parent
 COMPASS_SRC = Path(__file__).parent.parent
 
@@ -13,36 +13,36 @@ DEFAULT_PREFIX = ";"
 GLASS = 357738904591532033
 GLASS_HARBOR = 393995277713014785
 
-# MODULE_OPTIONS = ["admin", "gaming", "listeners", "main", "moderation", "music", "utility"]
 exclude_modules = ["__init__", "pinarchiver"]
 MODULES = [f.stem for f in Path(COMPASS_SRC / "cogs").glob("*.py") if f.stem not in exclude_modules]
 CHANNEL_OPTIONS = ["logs", "bot", "welcome", "music", "lfg", "videos"]  # , 'pins']
 ROLE_OPTIONS = ["mod", "member", "required"]
 
 
-def EMBED_COLOR():
-    return choice(
-        [
-            discord.Colour.magenta(),
-            discord.Colour.blurple(),
-            discord.Colour.dark_teal(),
-            discord.Colour.blue(),
-            discord.Colour.dark_blue(),
-            discord.Colour.dark_gold(),
-            discord.Colour.dark_green(),
-            discord.Colour.dark_grey(),
-            discord.Colour.dark_magenta(),
-            discord.Colour.dark_orange(),
-            discord.Colour.dark_purple(),
-            discord.Colour.dark_red(),
-            discord.Colour.darker_grey(),
-            discord.Colour.gold(),
-            discord.Colour.green(),
-            discord.Colour.greyple(),
-            discord.Colour.orange(),
-            discord.Colour.purple(),
-        ]
-    )
+class COLORS:
+    black = discord.Colour.from_str("#272932")
+    red = discord.Colour.from_str("#710000")
+    yellow = discord.Colour.from_str("#f3e500")
+    cyan = discord.Colour.from_str("#1ac5b0")
+    blue = discord.Colour.from_str("#3e7bf3")
+    purple = discord.Colour.from_str("#9370db")
+    pink = discord.Colour.from_str("#e455ae")
+    magenta = discord.Colour.from_str("#cb1dcd")
+    pale_silver = discord.Colour.from_str("#d1c5c0")
+
+    @staticmethod
+    def random():
+        return choice(
+            [
+                COLORS.red,
+                COLORS.yellow,
+                COLORS.cyan,
+                COLORS.blue,
+                COLORS.purple,
+                COLORS.pink,
+                COLORS.magenta,
+            ]
+        )
 
 
 @dataclass
@@ -77,7 +77,7 @@ class GuildData:
     chan_welcome: Optional[int] = None
     mem_role: Optional[int] = None
     mod_roles: List[str] = field(default_factory=list)
-    prefix: str = ";"
+    prefix: str = DEFAULT_PREFIX
     required_roles: List[str] = field(default_factory=list)
     track_activity: bool = False
     videos_whitelist: List[str] = field(default_factory=list)
@@ -89,18 +89,3 @@ class GuildData:
         # self.chan_bot = self.chan_bot if self.chan_bot else self.default_channel
         # self.chan_logs = self.chan_logs if self.chan_logs else self.default_channel
         # self.chan_welcome = self.chan_welcome if self.chan_welcome else self.default_channel
-
-
-class CustomException(Exception):
-    pass
-    # def __init__(self, message, errors):
-    #     super().__init__(message)
-    #     self.errors = errors
-
-
-class FetchException(CustomException):
-    pass
-
-
-class QueueException(CustomException):
-    pass

@@ -1,29 +1,29 @@
 import asyncio
 
 # import aiohttp
-
 import discord
 import spotipy
-from yt_dlp import YoutubeDL
 from loguru import logger
+from yt_dlp import YoutubeDL
 
-from compass_bot.utils.bot_config import EMBED_COLOR, Emojis, CustomException  # , FetchException, QueueException
-from compass_bot.utils.command_utils import send_embed
-from compass_bot.utils.utils import extract_url, ddict
-from compass_bot.music import music_utils
-from compass_bot.music.dataclasses import Playlist, PlaylistTypes, Search, Sites, Song, YouTubeSearchResults
-from compass_bot.music.music_config import (
-    ErrorMessages,
-    InfoMessages,
+from compass.config.bot_config import COLORS, Emojis
+from compass.music import music_utils
+from compass.music.dataclasses import Playlist, PlaylistTypes, Search, Sites, Song, YouTubeSearchResults
+from compass.music.music_config import (
     COOKIE_PATH,
-    VC_TIMEOUT,
     SPOTIFY_ID,
     SPOTIFY_SECRET,
+    VC_TIMEOUT,
     YTDL_OPTIONS,
+    ErrorMessages,
+    InfoMessages,
 )
-from compass_bot.music.queue import Queue
+from compass.music.queue import Queue
+from compass.utils.command_utils import send_embed
+from compass.utils.exceptions import CustomException
+from compass.utils.utils import ddict, extract_url
 
-# from compass_bot.utils.utils import console
+# from compass.utils.utils import console
 
 
 class Timer:
@@ -68,12 +68,12 @@ class MusicPlayer(object):
         except Exception as e:
             logger.warning(f"Spotify API Error: {e}")
 
-        if ~discord.opus.is_loaded():
+        if not discord.opus.is_loaded():
             try:
                 discord.opus.load_opus("libopus.so.0")
                 logger.debug("Opus successfully loaded")
             except Exception as e:
-                logger.warning(f"Could not load opus: {e}")
+                logger.debug(f"Could not load opus: {e}")
 
     async def timeout_handler(self):
         """Method to handle timeout disconnection of the music player"""
@@ -120,7 +120,7 @@ class MusicPlayer(object):
             if user_search.url is None:
                 await self._add_to_queue(Search(query=user_search.original), itx.user, itx.channel)
                 await itx.followup.send(
-                    embed=discord.Embed(description=f"{Emojis.cd} Queued: `{query}`", color=EMBED_COLOR())
+                    embed=discord.Embed(description=f"{Emojis.cd} Queued: `{query}`", color=COLORS().random())
                 )
 
             # Process single URL
@@ -129,7 +129,7 @@ class MusicPlayer(object):
                 await self._add_to_queue(search, itx.user, itx.channel)
                 await itx.followup.send(
                     embed=discord.Embed(
-                        description=f"{Emojis.cd} Queued: [{search.query}]({search.url})", color=EMBED_COLOR()
+                        description=f"{Emojis.cd} Queued: [{search.query}]({search.url})", color=COLORS().random()
                     )
                 )
 
@@ -142,7 +142,7 @@ class MusicPlayer(object):
                 await itx.followup.send(
                     embed=discord.Embed(
                         description=f"{Emojis.cd} Queued {playlist.total} items from playlist **{playlist.name}**",
-                        color=EMBED_COLOR(),
+                        color=COLORS().random(),
                     )
                 )
 
@@ -171,7 +171,7 @@ class MusicPlayer(object):
         except Exception as e:
             logger.warning(f"Could not process search: {e}")
             await itx.followup.send(
-                embed=discord.Embed(title=ErrorMessages.SEARCH_ERROR, description=f"```{e}```", color=EMBED_COLOR())
+                embed=discord.Embed(title=ErrorMessages.SEARCH_ERROR, description=f"```{e}```", color=COLORS().random())
             )
             # raise Exception("Error processing search.").with_traceback(e.__traceback__)
             return False

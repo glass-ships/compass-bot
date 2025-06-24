@@ -1,14 +1,15 @@
 from typing import List
 
-import discord as dsc
+import discord
 from discord import app_commands
 from discord.ext import commands
 from loguru import logger
 
-from compass_bot.utils.command_utils import move_message
+from compass.bot import CompassBot
+from compass.utils.command_utils import move_message
 
 
-async def mod_check_itx(itx: dsc.Interaction):
+async def mod_check_itx(itx: discord.Interaction):
     mod_roles = bot.db.get_mod_roles(itx.guild_id)
     user_roles = [x.id for x in itx.user.roles]
     if itx.user.guild_permissions.administrator:
@@ -27,10 +28,10 @@ async def setup(bot):
     await bot.add_cog(MenuCommands(bot))
 
 
-class SelectMenuChannel(dsc.ui.Select):
+class SelectMenuChannel(discord.ui.Select):
     def __init__(
         self,
-        options: List[dsc.SelectOption],
+        options: List[discord.SelectOption],
         message_id: int,
     ) -> None:
         self.message_id = message_id
@@ -39,23 +40,23 @@ class SelectMenuChannel(dsc.ui.Select):
             options=options,
         )
 
-    async def callback(self, itx: dsc.Interaction) -> None:
+    async def callback(self, itx: discord.Interaction) -> None:
         if itx.guild is not None:
             if channel := itx.guild.get_channel(int(self.values[0])):
-                await move_message(itx, channel, str(self.message_id))
+                try:
+                    await move_message(itx, channel, str(self.message_id))
+                except Exception as e:
+                    await itx.followup.send(
+                        f"An error occurred while moving the message: {e}", ephemeral=True
+                    )
+                    raise e
             else:
-                await itx.response.send_message("Channel not found.", ephemeral=True)
+                await itx.followup.send("Channel not found.", ephemeral=True)
                 return
 
 
-# class SelectChannelView(dsc.ui.View):
-#     def __init__(self, options: List[dsc.SelectOption]) -> None:
-#         super().__init__()
-#         self.add_item(SelectMenuChannel(options=options))
-
-
 class MenuCommands(commands.Cog):
-    def __init__(self, bot_: commands.Bot) -> None:
+    def __init__(self, bot_: CompassBot) -> None:
         global bot
         bot = bot_
         self.ctx_menu = app_commands.ContextMenu(name="Move Message", callback=self._move_message)
@@ -69,15 +70,15 @@ class MenuCommands(commands.Cog):
         bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
 
     @has_mod_itx
-    async def _move_message(self, itx: dsc.Interaction, message: dsc.Message) -> None:
+    async def _move_message(self, itx: discord.Interaction, message: discord.Message) -> None:
         """Command description."""
         await itx.response.defer(ephemeral=True)
         channels = [
-            dsc.SelectOption(
+            discord.SelectOption(
                 label=channel.name, value=str(channel.id), description=channel.topic, emoji=None, default=False
             )
             for channel in message.guild.text_channels
         ]
-        view = dsc.ui.View()
+        view = discord.ui.View()
         view.add_item(SelectMenuChannel(options=channels, message_id=message.id))
         await itx.followup.send("Select a channel to move the message to:", view=view)

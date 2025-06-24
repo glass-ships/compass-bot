@@ -1,9 +1,9 @@
 import asyncio
 import pytest
 
-from compass_bot.music.dataclasses import Playlist, PlaylistTypes, Sites, Song, Search
-# from compass_bot.music.music_utils import identify_host, identify_playlist, parse_spotify_track, parse_spotify_playlist, search_youtube, get_yt_metadata
-from compass_bot.music import music_utils
+from compass.music.dataclasses import Playlist, PlaylistTypes, Sites, Song, Search
+# from compass.music.music_utils import identify_host, identify_playlist, parse_spotify_track, parse_spotify_playlist, search_youtube, get_yt_metadata
+from compass.music import music_utils
 
 
 ### Test spotify metadata methods ###
