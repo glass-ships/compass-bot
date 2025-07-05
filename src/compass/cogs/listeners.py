@@ -9,7 +9,7 @@ from discord.ext import commands
 from discord.utils import get
 
 from compass.bot import CompassBot
-from compass.config.bot_config import COMPASS_SRC, GLASS_HARBOR, GuildData
+from compass.config.bot_config import COLORS, COMPASS_SRC, GLASS_HARBOR, GuildData
 from compass.utils.utils import download, getfilepath
 
 from loguru import logger
@@ -120,11 +120,12 @@ class Listeners(commands.Cog):
         """React with a bat emoji to messages bat related trigger words."""
         if (message.author.bot) or (message.guild.id != 1289952016390426664):
             return
-        triggers = ["bat", "bats", "batty", "batses"]
+        triggers = ["bat", "bats", "batty", "batses", "<@&1375644186543390781>"]
         # <:bat_peek:1289965546900557997>
         emoji = bot.get_emoji(1289965546900557997)
         if emoji is None:
             logger.error("Bat emoji not found")
+            return
         msg = re.sub(r"[^a-zA-Z\s]+", "", message.content)
         if any(i.lower() in triggers for i in msg.split()):
             await message.add_reaction(emoji)
@@ -270,11 +271,15 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member) -> None:
         guild = member.guild
-        # channel_id = bot.db.get_channel_welcome(guild_id=guild.id)
-        # if channel_id is None:
-        #     return
-        # channel = get(guild.text_channels, id=channel_id)
-        # await channel.send(
-        #     embed=discord.Embed(title=f"Goodbye, {member.name}!", description=f"{member.mention} has left the server.")
-        # )
+        channel_id = bot.db.get_channel_logs(guild_id=guild.id)
+        if channel_id is None:
+            return
+        channel = get(guild.text_channels, id=channel_id)
+        await channel.send(
+            embed=discord.Embed(
+                title=f"Goodbye, {member.name}!",
+                description=f"{member.mention} has left the server.",
+                color=COLORS.random(),
+            )
+        )
         bot.db.remove_user_log(guild.id, member.id)

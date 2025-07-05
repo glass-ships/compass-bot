@@ -138,15 +138,15 @@ def parse_date(date_str: str):
     return dt_parse(date_str, settings={"TIMEZONE": "UTC"})
 
 
-def check_time_format(t):
+def check_time_format(t: str):
     """Check that datetime input is in format `YYYY-MM-DD HH:MM AM/PM TZ`"""
     pattern = r"\d{4}-\d{1,2}-\d{1,2}\s\d{1,2}:\d{2}\s[a-zA-Z]{2}\s[a-zA-Z]{3}"
     match = re.match(pattern, t)
     return bool(match)
 
 
-def dt_to_epoch(t):
-    """Convert datetime to epoch time (requires format: `YYYY-MM-DD HH:MM AM/PM TZ`)"""
+def dt_to_epoch(t: str):
+    """Convert datetime str to epoch time (requires format: `YYYY-MM-DD HH:MM AM/PM TZ`)"""
     msg_split = t.split()
     temp = []
     temp.extend(msg_split[0].split("-"))

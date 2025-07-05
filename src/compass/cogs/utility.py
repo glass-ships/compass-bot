@@ -66,11 +66,21 @@ class Utility(commands.Cog):
     @has_mod_ctx
     @commands.command(name="test", description="Test command - unused.")
     async def _test(self, ctx: commands.Context):
-        from dateparser import parse
+        pass
 
-        content = ctx.message.content.lstrip(",test")
-        parsed = parse(content)
-        await ctx.send(f"{content} - {parsed}")
+    @has_mod_ctx
+    @commands.command(
+        name="clean_activity_log", aliases=["clract"], description="Delete entries for users not in the guild anymore"
+    )
+    async def _clean_activity_log(self, ctx: commands.Context):
+        for guild in bot.guilds:
+            await ctx.send(f"Clearing user activity in {guild.name}")
+            for member in guild.members:
+                user_log = bot.db.get_user_log
+                if user_log is None:
+                    await ctx.send(f"Removing user log for {member.name}")
+                    bot.db.remove_user_log(guild.id, member.id)
+        await ctx.send(f"Activity log cleaned")
 
     @has_mod_ctx
     @commands.command(name="getcommands", aliases=["gc", "getcmds"], description="List all app commands (debug)")

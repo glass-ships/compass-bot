@@ -1,42 +1,40 @@
-site_name: 'Compass Bot Documentation'
+site_name: "Compass Bot Documentation"
 
-repo_name: 'glass-ships/compass-bot'
-repo_url: 'https://gitlab.com/glass-ships/compass-bot'
+repo_name: "glass-ships/compass-bot"
+repo_url: "https://gitlab.com/glass-ships/compass-bot"
 
 theme:
-    name: 'material'
-    docs_dir: docs/
-    logo: 'images/compassBkgd.png'
-    favicon:
-        'images/favicon.ico'
-    features:
-        - navigation.expand
-        - navigation.instant
-        - navigation.tracking
-        - navigation.tabs
-        - navigation.tabs.sticky
-    palette:
-        # Palette toggle for light mode
-      - media: "(prefers-color-scheme: light)"
-        scheme: default
-        primary: indigo
-        accent: cyan
-        toggle:
-          icon: material/brightness-7
-          name: Switch to dark mode
-      # Palette toggle for dark mode
-      - media: "(prefers-color-scheme: dark)"
-        scheme: slate
-        primary: indigo
-        accent: yellow
-        toggle:
-          icon: material/brightness-4
-          name: Switch to light mode
-    font:
-        text: 'Rajdhani'
-        # text: 'Source Sans Pro'
-        code: 'Source Sans Pro Mono'
-
+  name: "material"
+  docs_dir: docs/
+  logo: "images/compassBkgd.png"
+  favicon: "images/favicon.ico"
+  features:
+    - navigation.expand
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+  palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: yellow
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: "Rajdhani"
+    # text: 'Source Sans Pro'
+    code: "Source Sans Pro Mono"
 
 plugins:
   - search
@@ -60,9 +58,7 @@ plugins:
             show_root_full_path: no
             show_root_toc_entry: False
             filters:
-              - '!^_[^_]'
-              # - '^_[^_]'
-
+              - "!^_[^_]" # Exclude private members
 
 markdown_extensions:
   - admonition
@@ -80,13 +76,11 @@ markdown_extensions:
   - pymdownx.tabbed:
       alternate_style: true
 
-
 extra:
   social:
-    - icon: 'fontawesome/solid/house'
-      link: 'https://glass-ships.com'
-    - icon: 'fontawesome/brands/github-alt'
-      link: 'https://github.com/glass-ships'
+    - icon: "fontawesome/solid/house"
+      link: "https://glass-ships.com"
+    - icon: "fontawesome/brands/github-alt"
+      link: "https://github.com/glass-ships"
 
-
-copyright: '&copy; 2020 - 2023 [Glass](https://glass-ships.com)'
+copyright: "&copy; 2020 - 2023 [Glass](https://glass-ships.com)"
