@@ -72,7 +72,7 @@ class Moderation(commands.Cog):
     ):
         target = target or ctx.channel
         args = parse_args(embed_fields)
-
+        
         embed = discord.Embed(title=args.title, description=args.description, color=COLORS().random())
 
         if args.image:
@@ -82,9 +82,9 @@ class Moderation(commands.Cog):
         if args.footer or args.footer_image:
             embed.set_footer(text=args.footer, icon_url=args.footer_image)
 
-        await target.send(embed=embed)
+        sent = await target.send(embed=embed)
         if isinstance(target, discord.TextChannel):
-            await ctx.channel.send(f"Embed sent to <#{target.id}>.", delete_after=5.0)
+            await ctx.channel.send(f"Embed sent to {sent.jump_url}.", delete_after=5.0)
         elif isinstance(target, discord.User):
             await ctx.channel.send(f"Embed sent to {target.mention}.", delete_after=5.0)
 

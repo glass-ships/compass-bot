@@ -127,7 +127,7 @@ class Listeners(commands.Cog):
             "<@&1210756079487688774>",  # @Example Role 2
         ]
         emoji = bot.get_emoji(1289965546900557997)  # <:bat_peek:1289965546900557997>
-        if emoji is None:
+        if emoji is None and message.guild.id == SERVERS.BATS:
             logger.error("Bat emoji not found")
             emoji = str("🦇")
 

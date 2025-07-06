@@ -28,7 +28,8 @@ class Admin(commands.Cog):
         logger.info(f"Cog Online: {self.qualified_name}")
 
     ########################################################################################################################
-
+    ### Mostly debug commands, users shouldn't need these
+    
     @commands.command(name="sync", description="Syncs the bot's command tree")
     @commands.has_permissions(administrator=True)
     async def _sync(self, ctx: commands.Context, spec: Union[Literal["dev"], Literal["guild"], None]):
@@ -73,9 +74,9 @@ class Admin(commands.Cog):
         try:
             await bot.reload_extension(f"cogs.{module}")
         except Exception as e:
-            await itx.response.send_message(f"\nError: \n```{e}```")
+            await itx.response.send_message(f"\nError: \n```{e}```", ephemeral=True)
         else:
-            await itx.response.send_message(f"\nModule: `{module}` reloaded.")
+            await itx.response.send_message(f"\nModule: `{module}` reloaded.", ephemeral=True)
 
     @_reload.autocomplete("module")
     async def _reload_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
