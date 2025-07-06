@@ -123,7 +123,7 @@ async def move_message(itx: discord.Interaction, channel: Union[discord.TextChan
         if any(a.size >= itx.guild.filesize_limit for a in msg.attachments):
             newmsg += "`Plus some files too large to resend`"
         for a in filter(lambda x: x.size <= itx.guild.filesize_limit, msg.attachments):
-            await download(itx, a, "temp/moved_messages")
+            await download(msg, a, "temp/moved_messages")
             files.append(discord.File(getfilepath(itx, f"temp/moved_messages/{a.filename}")))
 
     # Move the message

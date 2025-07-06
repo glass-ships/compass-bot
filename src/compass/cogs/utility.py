@@ -11,7 +11,7 @@ from discord.ext import commands
 from loguru import logger
 
 from compass.bot import CompassBot
-from compass.config.bot_config import COMPASS_ROOT, GLASS, GLASS_HARBOR
+from compass.config.bot_config import COMPASS_ROOT, GLASS, SERVERS
 from compass.utils.command_utils import get_emojis, send_embed
 from compass.utils.utils import get_resource_path
 
@@ -370,7 +370,7 @@ class Utility(commands.Cog):
     @has_mod_ctx
     @commands.command(name="download", description="Downloads all attachments in a channel", aliases=["dl"])
     async def _download(self, ctx: commands.Context):
-        glass_servers = [GLASS_HARBOR, 771161933301940224, 827388504232165386]
+        glass_servers = [SERVERS.GLASS_HARBOR, SERVERS.GLASS_TEST, SERVERS.GLASS_H]
         if ctx.guild.id not in glass_servers:  # type: ignore
             await ctx.response.send_message(
                 "This command is only available in the Glass Discord servers.", ephemeral=True

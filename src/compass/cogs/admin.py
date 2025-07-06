@@ -10,7 +10,6 @@ from compass.config.bot_config import (
     CHANNEL_OPTIONS,
     MODULES,
     ROLE_OPTIONS,
-    # GLASS_HARBOR
 )
 
 

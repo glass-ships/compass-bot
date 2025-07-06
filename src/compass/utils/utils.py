@@ -106,12 +106,12 @@ def extract_url(content: str) -> Optional[str]:
 
 
 async def download(
-    itx: discord.Interaction,
+    msg: discord.Message,
     attachment: discord.Attachment,
     path: Optional[Union[str, os.PathLike]],
 ) -> None:
     """Download an attachment from a message"""
-    fp = os.path.join("downloads", itx.guild.name, path or "")
+    fp = os.path.join("downloads", msg.guild.name, path or "")
     fn = attachment.filename
     Path(fp).mkdir(parents=True, exist_ok=True)
     await attachment.save(fp=Path(fp) / fn)

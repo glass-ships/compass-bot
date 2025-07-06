@@ -11,12 +11,18 @@ COMPASS_SRC = Path(__file__).parent.parent
 
 DEFAULT_PREFIX = ";"
 GLASS = 357738904591532033
-GLASS_HARBOR = 393995277713014785
 
 exclude_modules = ["__init__", "pinarchiver"]
 MODULES = [f.stem for f in Path(COMPASS_SRC / "cogs").glob("*.py") if f.stem not in exclude_modules]
 CHANNEL_OPTIONS = ["logs", "bot", "welcome", "music", "lfg", "videos"]  # , 'pins']
 ROLE_OPTIONS = ["mod", "member", "required"]
+
+
+class SERVERS:
+    GLASS_HARBOR = 393995277713014785
+    GLASS_H = 827388504232165386
+    GLASS_TEST = 771161933301940224
+    BATS = 1289952016390426664
 
 
 class COLORS:
