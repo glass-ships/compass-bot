@@ -78,7 +78,7 @@ def start(
 def stop():
     """Stops the Bot"""
     try:
-        subprocess.call(["pkill", "-f", "python src/compass/bot.py"])
+        subprocess.call(["pkill", "-f", "src/compass/bot.py"])
     except Exception as e:
         console.print("Error stopping bot: ", e)
         raise typer.Exit(1)

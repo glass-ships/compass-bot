@@ -37,14 +37,14 @@ class Main(commands.Cog):
                 color=COLORS.random(),
             )
             offset = (page - 1) * per_page
+            n = Pagination.compute_total_pages(len(cmds), per_page)
             for cmd in cmds[offset : offset + per_page]:
                 emb.add_field(name=f"{cmd.name} {cmd.aliases}", value=cmd.description, inline=False)
             emb.set_author(name=f"Requested by {itx.user}")
-            n = Pagination.compute_total_pages(len(cmds), per_page)
-            emb.set_footer(text=f"Page {page} from {n}")
+            emb.set_footer(text=f"Page {page} of {n}")
             return emb, n
 
-        await Pagination(itx, _get_page).navigate()
+        await Pagination(itx, _get_page).init()
 
     @app_commands.command(name="ping")
     async def _ping(self, itx: discord.Interaction):
