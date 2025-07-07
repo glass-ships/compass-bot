@@ -229,9 +229,11 @@ class Moderation(commands.Cog):
     @has_mod_itx
     @app_commands.command(name="checkinactive", description="Check for inactive users")
     async def _check_inactive(self, itx: discord.Interaction, days: int):
+        await itx.response.defer()
         if itx.guild is None:
             await itx.followup.send("This command can only be used in a server.")
             return
+        response = await itx.followup.send("Checking for inactive members")
         inactive = []
         for member in itx.guild.members:
             if member.bot:

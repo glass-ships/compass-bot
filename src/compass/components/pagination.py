@@ -8,8 +8,7 @@ from compass.config.bot_config import COLORS
 class Pagination(discord.ui.View):
     """Reusable paginated embed component.
 
-    Currently sending responses/followups prior to calling Pagination
-    is not supported.
+    The interaction response *MUST* be deferred.
 
     Attributes:
         itx: the interaction to respond to
@@ -40,12 +39,26 @@ class Pagination(discord.ui.View):
             ```
     """
 
-    def __init__(self, itx: discord.Interaction, get_page: Callable):
+    def __init__(self, itx: discord.Interaction, get_page: Callable, followup: Optional[discord.Webhook] = None):
         self.itx = itx
+        self.followup = followup
         self.get_page = get_page
         self.total_pages: int
         self.index = 1
+        self.response: discord.InteractionMessage
         super().__init__(timeout=300)
+
+    async def _respond(self, embed: discord.Embed, view: Optional[discord.ui.View] = None):
+        """Helper function to either send a new message or edit original as needed"""
+        args = {}
+        if view is not None:
+            args["view"] = view
+        args["embed"] = embed
+        try:
+            await self.itx.response.send_message(**args)
+            self.response = await self.itx.original_response()
+        except discord.InteractionResponded:
+            await self.response.edit(**args)
 
     async def itx_check(self, itx: discord.Interaction) -> bool:
         if itx.user == self.itx.user:
@@ -59,11 +72,12 @@ class Pagination(discord.ui.View):
 
     async def init(self):
         emb, self.total_pages = self.get_page(self.index)
+        self.response = await self.itx.original_response()
         if self.total_pages == 1:
-            await self.itx.response.send_message(embed=emb)
+            await self.response.edit(embed=emb)
         elif self.total_pages > 1:
             self.update_buttons()
-            await self.itx.response.send_message(embed=emb, view=self)
+            await self.response.edit(embed=emb, view=self)
 
     async def edit_page(self, itx: discord.Interaction):
         emb, self.total_pages = self.get_page(self.index)

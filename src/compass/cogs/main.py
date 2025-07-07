@@ -27,6 +27,7 @@ class Main(commands.Cog):
 
     @app_commands.command(name="help", description="List chat commands")
     async def help(self, itx: discord.Interaction):
+        await itx.response.defer()
         cmds = [c for c in bot.walk_commands()]
         per_page = 10
 
