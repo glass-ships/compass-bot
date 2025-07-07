@@ -283,6 +283,8 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member) -> None:
         guild = member.guild
+        if guild.id != SERVERS.GLASS_HARBOR:
+            return
         channel_id = bot.db.get_channel_logs(guild_id=guild.id)
         if channel_id is None:
             return

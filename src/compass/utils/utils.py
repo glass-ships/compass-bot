@@ -6,7 +6,7 @@ import subprocess
 import time
 from collections.abc import Generator
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Optional, Union
 from datetime import datetime
 from dateutil import tz
 
@@ -63,24 +63,30 @@ def parse_args(arg_str: str) -> ddict:
     """Parse arguments from a string into a dictionary
 
     Example:
-        parse_args("--title this is a title --description this is a description")
-        Returns: {"title": "this is a title", "description": "this is a description"}
+        >>> parse_args("--title this is a title --description this is a description" --empty)
+        {"title": "this is a title", "description": "this is a description", "empty": None}
     """
     args = shlex.split(arg_str)
     opts = {}
-
     i = 0
     while i < len(args):
         arg = args[i]
         if arg.startswith("--"):
             key = arg.lstrip("-").replace("-", "_")
             # Collect all following arguments until next flag or end
-            value_parts = []
+            value_parts: List[str] = []
             i += 1
             while i < len(args) and not args[i].startswith("--"):
                 value_parts.append(args[i])
                 i += 1
-            opts[key] = " ".join(value_parts) if value_parts else ""
+            if len(value_parts) == 0 or (len(value_parts) == 1 and value_parts[0].lower() == "true"):
+                opts[key] = True
+            elif len(value_parts) == 1 and value_parts[0].lower() == "false":
+                opts[key] = False
+            elif len(value_parts) == 1 and value_parts[0].lower() == "none":
+                opts[key] = None
+            else:
+                opts[key] = " ".join(value_parts) if value_parts else ""
             # Don't increment i here since we already moved to next flag or end
         else:
             i += 1

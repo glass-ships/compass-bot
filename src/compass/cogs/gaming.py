@@ -1,5 +1,4 @@
 import asyncio
-import re
 
 import discord
 from discord import app_commands
@@ -28,7 +27,9 @@ class lfgView(discord.ui.View):
         logger.debug(f"{lfg=}")
         if lfg is None:
             embed = discord.Embed(
-                title="Inactive Post", description="This post is more than 60 minutes old and has expired."
+                title="Inactive Post",
+                description="This post is more than 60 minutes old and has expired.",
+                color=COLORS.random(),
             )
             await itx.channel.send(embed=embed, delete_after=10.0)
             return

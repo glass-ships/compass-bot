@@ -10,8 +10,8 @@ from loguru import logger
 
 from compass.bot import CompassBot
 from compass.config.bot_config import COLORS
+from compass.utils import chunk_list, dt_parse, parse_args
 from compass.utils.command_utils import move_message, send_embed
-from compass.utils.utils import chunk_list, parse_args, dt_parse
 
 
 async def mod_check_ctx(ctx: commands.Context):
@@ -72,7 +72,7 @@ class Moderation(commands.Cog):
     ):
         target = target or ctx.channel
         args = parse_args(embed_fields)
-        
+
         embed = discord.Embed(title=args.title, description=args.description, color=COLORS().random())
 
         if args.image:
@@ -257,7 +257,7 @@ class Moderation(commands.Cog):
                     embed=discord.Embed(
                         title=f"{title} (Page {page}/{num_msgs + 1})",
                         description="\n".join(sublist),
-                        color=COLORS.random()
+                        color=COLORS.random(),
                     )
                 )
                 page += 1

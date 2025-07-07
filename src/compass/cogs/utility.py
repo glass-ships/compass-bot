@@ -12,8 +12,8 @@ from loguru import logger
 
 from compass.bot import CompassBot
 from compass.config.bot_config import COMPASS_ROOT, GLASS, SERVERS
+from compass.utils import get_resource_path
 from compass.utils.command_utils import get_emojis, send_embed
-from compass.utils.utils import get_resource_path
 
 cog_path = Path(__file__)
 

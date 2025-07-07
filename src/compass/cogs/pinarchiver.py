@@ -6,7 +6,7 @@ from discord.ext import commands
 # from discord.utils import get
 # from loguru import logger
 
-# from compass.utils.bot_config import COLORS
+# from compass.config.bot_config import COLORS
 
 
 mode = 1

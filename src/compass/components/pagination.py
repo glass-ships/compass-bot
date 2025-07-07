@@ -17,7 +17,9 @@ class Pagination(discord.ui.View):
         if itx.user == self.itx.user:
             return True
         else:
-            emb = discord.Embed(description=f"Only the author of the command can perform this action.", color=16711680)
+            emb = discord.Embed(
+                description=f"Only the author of the command can perform this action.", color=COLORS.random()
+            )
             await itx.response.send_message(embed=emb, ephemeral=True)
             return False
 

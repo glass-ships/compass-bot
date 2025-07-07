@@ -46,9 +46,7 @@ class SelectMenuChannel(discord.ui.Select):
                 try:
                     await move_message(itx, channel, str(self.message_id))
                 except Exception as e:
-                    await itx.followup.send(
-                        f"An error occurred while moving the message: {e}", ephemeral=True
-                    )
+                    await itx.followup.send(f"An error occurred while moving the message: {e}", ephemeral=True)
                     raise e
             else:
                 await itx.followup.send("Channel not found.", ephemeral=True)
