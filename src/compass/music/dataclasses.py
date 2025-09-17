@@ -5,7 +5,7 @@ from typing import Optional
 
 import discord
 
-from compass_bot.utils.bot_config import EMBED_COLOR, Emojis
+from compass.config.bot_config import COLORS, Emojis
 
 
 class Sites(StrEnum):
@@ -86,7 +86,7 @@ class Song:
         # TODO: Add estimated time until song is played
         embed = discord.Embed(
             description=f"{Emojis.catChillin} Song queued: {pos}. [{self.title}]({self.webpage_url})",
-            color=EMBED_COLOR(),
+            color=COLORS().random(),
         )
         return embed
 
@@ -94,7 +94,7 @@ class Song:
         embed = discord.Embed(
             title=f"{Emojis.eq} Now Playing",
             description=f"[{self.title}]({self.original_url})" if self.original_url is not None else self.title,
-            color=EMBED_COLOR(),
+            color=COLORS().random(),
         )
         if self.thumbnail is not None:
             embed.set_thumbnail(url=self.thumbnail)

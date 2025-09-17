@@ -17,6 +17,7 @@ class ServerDB:
 
         self.xata = XataClient(db_url=DB_URL, api_key=DB_API_KEY)
         self.table = "test-guilds" if dev else "guilds"
+        self.lfg_table = "test-lfgs" if dev else "lfgs"
         self.data = self.xata.data()
         self.records = self.xata.records()
         self._cache = {}
@@ -182,20 +183,20 @@ class ServerDB:
     ### LFG methods ###
     ###################
 
-    def add_lfg(self, lfg_id: int, user_id: int, num_players: int):
+    def add_lfg(self, lfg_id: int, leader_id: int, num_players: int):
         lfg = {
-            "leader": user_id,
+            "leader": leader_id,
             "joined": [],
             "standby": [],
             "num_players": num_players,
         }
-        self.records.insert_with_id("lfgs", str(lfg_id), lfg)
+        self.records.insert_with_id(self.lfg_table, str(lfg_id), lfg)
 
     def get_lfg(self, lfg_id: int):
-        return self.records.get("lfgs", str(lfg_id))
+        return self.records.get(self.lfg_table, str(lfg_id))
 
     def drop_lfg(self, lfg_id):
-        self.records.delete("lfgs", str(lfg_id))
+        self.records.delete(self.lfg_table, str(lfg_id))
 
     def update_lfg_join(self, lfg_id: int, user_id: int):
         lfg = self.get_lfg(lfg_id)
@@ -204,11 +205,11 @@ class ServerDB:
             return False
         if len(joined) < lfg["num_players"]:
             joined.append(str(user_id))
-            self.records.update("lfgs", str(lfg_id), {"joined": joined})
+            self.records.update(self.lfg_table, str(lfg_id), {"joined": joined})
         else:
             standby = lfg["standby"]
             standby.append(str(user_id))
-            self.records.update("lfgs", str(lfg_id), {"standby": standby})
+            self.records.update(self.lfg_table, str(lfg_id), {"standby": standby})
         return True
 
     def update_lfg_leave(self, lfg_id: int, user_id: int):
@@ -217,10 +218,10 @@ class ServerDB:
         standby = lfg["standby"]
         if str(user_id) in joined:
             joined.remove(str(user_id))
-            self.records.update("lfgs", str(lfg_id), {"joined": joined})
+            self.records.update(self.lfg_table, str(lfg_id), {"joined": joined})
         elif str(user_id) in standby:
             standby.remove(str(user_id))
-            self.records.update("lfgs", str(lfg_id), {"standby": standby})
+            self.records.update(self.lfg_table, str(lfg_id), {"standby": standby})
 
     #################################
     ### User Activity Log Methods ###

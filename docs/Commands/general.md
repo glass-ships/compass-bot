@@ -7,5 +7,5 @@
     | `/banner` | `None` | `user | server` | Get a user's Discord banner (currently, Discord only allows access to user banners) |
     | `/ping` | `None` | Returns "Pong!" and the ping latency. |
 
-???+ tldr "Chat Commands"
+<!-- ???+ tldr "Chat Commands" -->
     

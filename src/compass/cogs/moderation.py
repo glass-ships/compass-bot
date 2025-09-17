@@ -8,9 +8,11 @@ from discord.ext import commands
 from discord.utils import get
 from loguru import logger
 
-from compass_bot.utils.bot_config import EMBED_COLOR
-from compass_bot.utils.command_utils import move_message, send_embed
-from compass_bot.utils.utils import chunk_list, parse_args
+from compass.bot import CompassBot
+from compass.components.pagination import Pagination
+from compass.config.bot_config import COLORS
+from compass.utils import chunk_list, dt_parse, parse_args
+from compass.utils.command_utils import move_message, send_embed
 
 
 async def mod_check_ctx(ctx: commands.Context):
@@ -46,7 +48,7 @@ async def setup(bot):
 
 
 class Moderation(commands.Cog):
-    def __init__(self, bot_: commands.Bot):
+    def __init__(self, bot_: CompassBot):
         global bot
         bot = bot_
 
@@ -63,12 +65,16 @@ class Moderation(commands.Cog):
         name="sendembed", aliases=["se"], description="Send an embed to a channel (fields not yet supported)"
     )
     async def _send_embed(
-        self, ctx: commands.Context, target: Union[discord.User, discord.TextChannel], *, embed_fields: str = None
+        self,
+        ctx: commands.Context,
+        target: Union[discord.User, discord.TextChannel],
+        *,
+        embed_fields: str = "",
     ):
         target = target or ctx.channel
         args = parse_args(embed_fields)
 
-        embed = discord.Embed(title=args.title, description=args.description, color=EMBED_COLOR())
+        embed = discord.Embed(title=args.title, description=args.description, color=COLORS().random())
 
         if args.image:
             embed.set_image(url=args.image)
@@ -77,9 +83,9 @@ class Moderation(commands.Cog):
         if args.footer or args.footer_image:
             embed.set_footer(text=args.footer, icon_url=args.footer_image)
 
-        await target.send(embed=embed)
+        sent = await target.send(embed=embed)
         if isinstance(target, discord.TextChannel):
-            await ctx.channel.send(f"Embed sent to <#{target.id}>.", delete_after=5.0)
+            await ctx.channel.send(f"Embed sent to {sent.jump_url}.", delete_after=5.0)
         elif isinstance(target, discord.User):
             await ctx.channel.send(f"Embed sent to {target.mention}.", delete_after=5.0)
 
@@ -126,19 +132,19 @@ class Moderation(commands.Cog):
         await itx.response.send_message(embed=discord.Embed(description=f"Mod roles:\n{r}"))
 
     @has_mod_itx
-    @app_commands.command(name="purge", description="Deletes n messages from current channel")
+    @app_commands.command(name="purge", description="Deletes messages from current channel")
     async def _purge(
         self,
         itx: discord.Interaction,
-        number: int = None,
-        before: str = None,
-        after: str = None,
-        reason: str = None,
+        number: Optional[int] = None,
+        before: str = "",
+        after: str = "",
+        reason: Optional[str] = None,
         # check: callable = None,
     ):
         # TODO: look into parsing before/after with https://github.com/scrapinghub/dateparser
         await itx.response.defer()
-        await itx.channel.purge(limit=number, before=before, after=after, reason=reason)
+        await itx.channel.purge(limit=number, before=dt_parse(before), after=dt_parse(after), reason=reason)
         await itx.followup.send(f"{number} messages successfully purged!", ephemeral=True)
 
     @has_mod_itx
@@ -172,7 +178,7 @@ class Moderation(commands.Cog):
     @has_mod_itx
     @app_commands.command(name="removerole", description="Remove role from a user with optional duration")
     @app_commands.rename(dur="duration")
-    async def _take_role(self, itx: discord.interactions, role: discord.Role, user: discord.Member, dur: Optional[int]):
+    async def _take_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: Optional[int]):
         await itx.response.defer()
         role = get(itx.guild.roles, id=role.id)
         if not user:
@@ -224,35 +230,36 @@ class Moderation(commands.Cog):
     @app_commands.command(name="checkinactive", description="Check for inactive users")
     async def _check_inactive(self, itx: discord.Interaction, days: int):
         await itx.response.defer()
-        response = await itx.followup.send("Checking for inactive members...", wait=True)
+        if itx.guild is None:
+            await itx.followup.send("This command can only be used in a server.")
+            return
+        response = await itx.followup.send("Checking for inactive members")
         inactive = []
         for member in itx.guild.members:
             if member.bot:
                 continue
-            last_message = bot.db.get_user_log(itx.guild_id, member.id)
+            last_message = bot.db.get_user_log(itx.guild.id, member.id)
             if not last_message or (last_message and datetime.now(timezone.utc) - last_message > timedelta(days=days)):
-                inactive.append((member.mention, last_message))
+                inactive.append((member.name, member.mention, last_message))
 
-        await response.edit(content=f"Found {len(inactive)} inactive members.")
-
-        inactive_formatted = [
-            f"{m[0]} - <t:{int(m[1].timestamp())}:f>" if m[1] else f"{m[0]} - No messages found " for m in inactive
-        ]
-        desc = "\n".join(inactive_formatted) if inactive_formatted else "No inactive members found."
-        title = f"Inactive Members - {days} Days"
-        if len(desc) < 4000:
-            await itx.followup.send(embed=discord.Embed(title=title, description=desc))
-        else:
-            # split into multiple messages
-            num_msgs = len(desc) // 4000 + 1
-            chunked = list(chunk_list(inactive_formatted, len(inactive_formatted) // num_msgs))
-            page = 1
-            for sublist in chunked:
-                await itx.followup.send(
-                    embed=discord.Embed(
-                        title=f"{title} (Page {page}/{num_msgs + 1})",
-                        description="\n".join(sublist),
-                    )
+        def _get_page(page: int):
+            emb = discord.Embed(
+                title=f"Inactive Members - {days} days ({len(inactive)})",
+                color=COLORS.random(),
+            )
+            offset = (page - 1) * per_page
+            n = Pagination.compute_total_pages(len(inactive), per_page)
+            for m in inactive[offset : offset + per_page]:
+                emb.add_field(
+                    name="",
+                    value=f"{m[0]} ({m[1]}) - <t:{int(m[2].timestamp())}:f>"
+                    if m[2]
+                    else f"{m[0]} ({m[1]}) - No messages found",
+                    inline=False,
                 )
-                page += 1
-        return
+            emb.set_author(name=f"Requested by {itx.user}")
+            emb.set_footer(text=f"Page {page} of {n}")
+            return emb, n
+
+        per_page = 10
+        await Pagination(itx, _get_page).init()

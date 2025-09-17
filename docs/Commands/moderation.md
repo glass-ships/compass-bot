@@ -9,13 +9,24 @@ These commands are only available to users with roles set via the `/ set mod_rol
     | `;sendembed` | `channel`, `embed fields` | Send an `embed` to a `channel` |
     | `;lastmessage` | `user` (id or mention) | Get the last message from a user (if you have `/set track_activity` to true) |
 
+    `;sendembed` supported fields:
+    
+    - title
+    - description
+    - image (url)
+    - footer
+    - footer image
+
+    Example of `;sendembed`:  
+        
+        ;sendembed #bot-testing --title Example Title --description Example description for an embed --image https://media.discordapp.net/attachments/954197737140793365/954270177208467467/unknown.png --footer peekabo --footer-image https://glass-ships.gitlab.io/compass-bot/images/compassBkgd.png
 
 ???+ tldr "Slash Commands (mod only)"
     | Command | Arguments | Description |
     | :--- | :--- | :--- |
     | `send` | `message`, `channel` (optional) | Send a `message` to a `channel`<br>Example usage: `;send "Some kinda message" #some-channel |
     | `dm` | `user`, `message` | Send a `message` to a `user` |
-    | `moveto` | - `channel`: Destination channel<br>- `message id`: Message to be moved | Move a message to a specific channel |
+    | `moveto` | - `channel`: Destination channel<br>- `message id`: Message to be moved | Move a message to a specific channel (also available as a right-click menu command) |
     | `purge` | `number` | Deletes the specified number of message from the current channel |
     | `giverole` | `user`, `role`, `duration` (in seconds) | Give a `role` to a `user`, optionally for a `duration` |
     | `removerole` | `user`, `role`, `duration` (in seconds) | Remove a `role` from a `user`, optionally for a `duration` |

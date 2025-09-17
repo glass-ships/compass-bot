@@ -19,31 +19,32 @@ classifiers = [
 dependencies = [
     ### Core
     "discord-py",
-    "typer",
     "loguru",
     "psutil",
     "rich",
     "ruff",
+    "typer",
     ### Database
     "xata",
     ### For Commands
+    "dateparser",
+    "GitPython",
     "httpx",
+    "pillow",
     "python-dateutil",
     "pytz",
-    "GitPython",
-    "pillow",
     ### For Music
-    "yt-dlp",
-    "spotipy",
     "beautifulsoup4",
     "pynacl",
+    "spotipy",
+    "yt-dlp",
 ]
 
 [project.optional-dependencies]
 dev = ["mkdocs", "mkdocs-material", "mkdocstrings[python]", "pytest"]
 
 [project.scripts]
-compass = "compass_bot.main:app"
+compass = "compass.main:app"
 
 [project.urls]
 Homepage = "https://gitlab.com/glass-ships/compass-bot"
@@ -54,6 +55,9 @@ Issues = "https://gitlab.com/glass-ships/compass-bot/-/issues"
 [build-system]
 build-backend = "hatchling.build"
 requires = ["hatchling"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/compass"]
 
 [tool.ruff]
 line-length = 120

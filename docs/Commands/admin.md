@@ -20,16 +20,17 @@ These commands are only available to users with the administrator permission.
     | `required_roles` | `required_roles`: Role IDs or mentions | Sets the required roles for your guild (ie. users must have at least one of these roles) |
 
 
-    **Note\*: If you set a `videos` channel, all messages containing videos will be moved to this channel.<br>You can allow videos in a channel by using `/allowvideos`,<br>or allow videos in all channels again by using `/unset channel videos`
-
 ???+ tldr "/set channel"
     `/set channel` is a subcommand of `/set` that can be used to set a number of channels for the bot.
     
     | Channel | Description |
     | :--- | :--- |
-    | `bot` | Specify a channel for bot commands to work in (not required, native Discord integration settings can be used to configure this) |
     | `lfg` | Sets a channel for the LFG listener |
     | `logs` | Sets a channel for the bot logs (required if you wish to use the `mag` react logger) |
     | `music` | Sets a channel for the music commands to work in |
-    | `videos` | Sets a channel for the videos to be moved to |
+    | `videos`* | Sets a channel for the videos to be moved to |
     | `welcome` | Sets a channel for the welcome messages (currently not implemented) |
+    | **DEPRECATED** | --- |
+    | `bot` | Specify a channel for bot commands to work in (not required, native Discord integration settings can be used to configure this) |
+
+    **\*Note**: If you set a `videos` channel, all messages containing videos will be moved to this channel.<br>You can allow videos in a channel by using `/allowvideos`,<br>or allow videos in all channels again by using `/unset channel videos`

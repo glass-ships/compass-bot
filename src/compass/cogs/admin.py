@@ -1,16 +1,18 @@
-from typing import List, Literal, Union
+from typing import List, Literal
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 from loguru import logger
 
-from compass_bot.utils.bot_config import (
+from compass.bot import CompassBot
+from compass.config.bot_config import (
     CHANNEL_OPTIONS,
+    COLORS,
     MODULES,
     ROLE_OPTIONS,
-    # GLASS_HARBOR
 )
+from compass.utils.utils import parse_args
 
 
 async def setup(bot):
@@ -19,7 +21,7 @@ async def setup(bot):
 
 
 class Admin(commands.Cog):
-    def __init__(self, bot_: commands.Bot):
+    def __init__(self, bot_: CompassBot):
         global bot
         bot = bot_
 
@@ -28,30 +30,101 @@ class Admin(commands.Cog):
         logger.info(f"Cog Online: {self.qualified_name}")
 
     ########################################################################################################################
+    ### Mostly debug commands, users shouldn't need these
 
     @commands.command(name="sync", description="Syncs the bot's command tree")
     @commands.has_permissions(administrator=True)
-    async def _sync(self, ctx: commands.Context, spec: Union[Literal["dev"], Literal["guild"], None]):
-        logger.info("Syncing ships...")
-        if spec == "dev":
-            g = bot.get_guild(ctx.guild.id)
-            await ctx.send(embed=discord.Embed(description=f"Copying command tree to {g}"))
-            bot.tree.copy_global_to(guild=g)
-            fmt = await bot.tree.sync(guild=g)
-            await ctx.send((f"Synced {len(fmt)} commands to dev guild."))
-        elif spec == "guild":
-            g = bot.get_guild(ctx.guild.id)
-            fmt = await bot.tree.sync(guild=g)
-            await ctx.send(embed=discord.Embed(description=f"Synced {len(fmt)} commands to guild."))
-            logger.info("Ships synced!")
-        elif spec is None:
-            fmt1 = await bot.tree.sync()
-            await ctx.send(embed=discord.Embed(description=f"Synced bot tree ({len(fmt1)} commands)"))
-            logger.info("Ships synced!")
+    async def _sync(self, ctx: commands.Context, *, sync_args: str = ""):
+        """Sync the bot tree
+
+        Args:
+            clean: clear tree before syncing
+            dev:   copy global commands to guild(s)
+        """
+
+        async def _update_msg(msg, new_content):
+            await msg.edit(embed=discord.Embed(description=new_content, color=COLORS.random()))
+
+        args = parse_args(sync_args)
+        logger.debug(f"Syncing with args: {args} (from {sync_args})")
+        guild = ctx.guild if args.guild is True else None
+
+        desc = "Syncing bot tree..."
+        msg = await ctx.send(embed=discord.Embed(description=desc, color=COLORS.random()))
+
+        if args.clean is True:
+            # This will remove all guild commands from the CommandTree and syncs,
+            # which effectively removes all commands from the guild.
+            logger.debug(f"\nClearing command tree from {guild.name if guild else 'all guilds'}...")
+            desc += f"\nClearing command tree from {guild.name if guild else 'all guilds'}..."
+            await _update_msg(msg, desc)
+            bot.tree.clear_commands(guild=guild)
+
+        if guild is not None:
+            if args.dev:
+                logger.debug(f"\nCopying global commands to guild: {guild.name}...")
+                desc += f"\nCopying global commands to guild: {guild.name}..."
+                await _update_msg(msg, desc)
+                bot.tree.copy_global_to(guild=guild)
+
+            synced = await bot.tree.sync(guild=guild)
+            logger.debug(f"\nSynced {len(synced)} commands to guild.")
+            desc += f"\nSynced {len(synced)} commands to guild."
+            await _update_msg(msg, desc)
+            return
         else:
-            await ctx.send(embed=discord.Embed(description=f"Unexpected argument.\nType `;help` for more info."))
-            logger.warning("Error syncing ships! (Bad argument)")
+            i = 1
+            t = len(bot.guilds)
+            for g in bot.guilds:
+                if args.dev:
+                    logger.debug(f"\nCopying global commands to guild: {g.name} ({i}/{t})...")
+                    desc += f"\nCopying global commands to guild: {g.name} ({i}/{t})..."
+                    await _update_msg(msg, desc)
+                    bot.tree.copy_global_to(guild=g)
+                synced = await bot.tree.sync(guild=g)
+                logger.debug(f"\nSynced {len(synced)} commands to guild: {g.name} ({i}/{t}).")
+                desc += f"\nSynced {len(synced)} commands to guild: {g.name} ({i}/{t})."
+                await _update_msg(msg, desc)
+                i += 1
+
+        desc += "\nSync complete!"
+        await _update_msg(msg, desc)
         return
+
+    async def _sync_umbra(
+        self, ctx: commands.Context, guilds: commands.Greedy[discord.Object], spec: Literal["~", "*", "^"] | None = None
+    ) -> None:
+        if not guilds:
+            if spec == "~":
+                # This will sync all guild commands for the current context’s guild.
+                synced = await ctx.bot.tree.sync(guild=ctx.guild)
+            elif spec == "*":
+                # This command copies all global commands to the current guild and syncs.
+                ctx.bot.tree.copy_global_to(guild=ctx.guild)
+                synced = await ctx.bot.tree.sync(guild=ctx.guild)
+            elif spec == "^":
+                # This command will remove all guild commands from the CommandTree and syncs,
+                # which effectively removes all commands from the guild.
+                ctx.bot.tree.clear_commands(guild=ctx.guild)
+                await ctx.bot.tree.sync(guild=ctx.guild)
+                synced = []
+            else:
+                # This takes all global commands within the CommandTree and sends them to Discord.
+                synced = await ctx.bot.tree.sync()
+
+            await ctx.send(f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}")
+            return
+
+        ret = 0
+        for guild in guilds:
+            try:
+                await ctx.bot.tree.sync(guild=guild)
+            except discord.HTTPException:
+                pass
+            else:
+                ret += 1
+
+        await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
     @app_commands.command(name="reload", description="Force reloads a bot module")
     @commands.has_permissions(administrator=True)
@@ -61,9 +134,9 @@ class Admin(commands.Cog):
         try:
             await bot.reload_extension(f"cogs.{module}")
         except Exception as e:
-            await itx.response.send_message(f"\nError: \n```{e}```")
+            await itx.response.send_message(f"\nError: \n```{e}```", ephemeral=True)
         else:
-            await itx.response.send_message(f"\nModule: `{module}` reloaded.")
+            await itx.response.send_message(f"\nModule: `{module}` reloaded.", ephemeral=True)
 
     @_reload.autocomplete("module")
     async def _reload_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:

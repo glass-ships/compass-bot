@@ -3,9 +3,9 @@ from collections import deque
 
 import discord
 
-from compass_bot.utils.bot_config import Emojis, EMBED_COLOR
-from compass_bot.music.music_config import InfoMessages, MAX_HISTORY_LENGTH, MAX_TRACKNAME_HISTORY_LENGTH
-from compass_bot.music.dataclasses import Song
+from compass.config.bot_config import Emojis, COLORS
+from compass.music.music_config import InfoMessages, MAX_HISTORY_LENGTH, MAX_TRACKNAME_HISTORY_LENGTH
+from compass.music.dataclasses import Song
 
 
 class Queue:
@@ -25,7 +25,7 @@ class Queue:
 
     def queue_embed(self):
         if self.is_empty():
-            embed = discord.Embed(description=InfoMessages.QUEUE_EMPTY, color=EMBED_COLOR())
+            embed = discord.Embed(description=InfoMessages.QUEUE_EMPTY, color=COLORS().random())
         else:
             queue_list = []
             for counter, song in enumerate(list(self.playque), start=1):
@@ -42,7 +42,7 @@ class Queue:
                 else:
                     break
 
-            embed = discord.Embed(title=f"{Emojis.playlist} Queue", color=EMBED_COLOR())
+            embed = discord.Embed(title=f"{Emojis.playlist} Queue", color=COLORS().random())
             embed.description = "\n".join(queue_list)
             embed.set_footer(text=f"Plus {self.__len__() - counter} more queued...")
         # return queue_list, counter

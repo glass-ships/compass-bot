@@ -3,10 +3,10 @@
 # import httpx
 # from yt_dlp import YoutubeDL
 
-from compass_bot.utils.utils import URL
-from compass_bot.music.music_config import SUPPORTED_EXTENSIONS
-from compass_bot.music.dataclasses import Sites, Search, Playlist, PlaylistTypes, YouTubeSearchResults
-import compass_bot.music.yt_utils as yt_utils
+from compass.utils.utils import URL
+from compass.music.music_config import SUPPORTED_EXTENSIONS
+from compass.music.dataclasses import Sites, Search, Playlist, PlaylistTypes, YouTubeSearchResults
+import compass.music.yt_utils as yt_utils
 
 guild_player = {}
 
