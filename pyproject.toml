@@ -22,7 +22,6 @@ dependencies = [
     "loguru",
     "psutil",
     "rich",
-    "ruff",
     "typer",
     ### Database
     "xata",
@@ -41,7 +40,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["mkdocs", "mkdocs-material", "mkdocstrings[python]", "pytest"]
+dev = ["mkdocs", "mkdocs-material", "mkdocstrings[python]", "pytest", "ruff"]
 
 [project.scripts]
 compass = "compass.main:app"
@@ -63,7 +62,30 @@ packages = ["src/compass"]
 line-length = 120
 
 [tool.ruff.lint]
+select = [
+    "A",
+    "ARG",
+    "B",    # flake8-bugbear codes
+    "BLE",
+    "C",    # mccabe complexity codes
+    "D",    # pydocstyle codes
+    "E",    # pycodestyle errors
+    "F",    # pyflakes codes
+    "FURB",
+    "I",    # isort codes
+    "N",    # naming convention codes
+    "UP",
+    "Q",    # flake8-quotes codes
+]
 ignore = [
+    "D100", # Missing docstring in public module
+    "D101", # Missing docstring in public class
+    "D104", # Missing docstring in public package
+    "D202", # No blank lines after function docstring
+    "D203", # 1 blank line required before class docstring
+    "D213", # Multi-line docstring summary should start at the first line
+    "D413", # Missing blank line after last section of docstring
+    "D107", # Missing docstring in __init__
     "F541", # f-strings with no placeholders
 ]
 # exclude = []
