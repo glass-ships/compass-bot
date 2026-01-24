@@ -221,7 +221,7 @@ class Listeners(commands.Cog):
         chan_id = bot.db.get_channel_logs(glass_guild.id)
         channel = get(glass_guild.text_channels, id=chan_id)
 
-        if bot.db.drop_guild_table(guild.id):
+        if bot.db.drop_guild(guild.id):
             await channel.send(embed=discord.Embed(description=f'Guild "{guild.name}" removed from database.'))
         else:
             await channel.send(embed=discord.Embed(description=f'Guild "{guild.name}" not found in database.'))
@@ -296,4 +296,4 @@ class Listeners(commands.Cog):
                 color=COLORS.random(),
             )
         )
-        bot.db.remove_user_log(guild.id, member.id)
+        bot.db.drop_user_log(guild.id, member.id)

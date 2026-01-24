@@ -11,7 +11,7 @@ from loguru import logger
 from compass.bot import CompassBot
 from compass.components.pagination import Pagination
 from compass.config.bot_config import COLORS
-from compass.utils import chunk_list, dt_parse, parse_args
+from compass.utils import dt_parse, parse_args
 from compass.utils.command_utils import move_message, send_embed
 
 
@@ -202,7 +202,7 @@ class Moderation(commands.Cog):
     @app_commands.command(name="checkroles", description="Check for users missing required roles")
     async def _check_roles(self, itx: discord.Interaction):  # , roles: Optional[List[discord.Role]] = None):
         await itx.response.defer()
-        required_roles = [id for id in bot.db.get_required_roles(itx.guild_id)]
+        required_roles = bot.db.get_required_roles(itx.guild_id)
         if not required_roles:
             await itx.followup.send("No required roles set.")
             return

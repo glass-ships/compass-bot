@@ -95,7 +95,7 @@ class CompassBot(commands.Bot):
         for guild_id in db_guilds:
             if guild_id not in bot_guilds:
                 logger.debug(f"Bot not in guild with id {guild_id}. Removing database entry.")
-                result = self.db.drop_guild_table(guild_id)
+                result = self.db.drop_guild(guild_id)
                 if result:
                     logger.debug(f"Database entry for guild {guild_id} removed.")
                 else:

@@ -6,8 +6,8 @@
         { "name": "guild_name", "type": "string" },
         { "name": "prefix", "type": "string" },
         { "name": "mem_role", "type": "int" },
-        { "name": "mod_roles", "type": "multiple" },
-        { "name": "required_roles", "type": "multiple" },
+        { "name": "mod_roles", "type": "list[int]" },
+        { "name": "required_roles", "type": "list[int]" },
         { "name": "default_channel", "type": "int" },
         { "name": "chan_bot", "type": "int" },
         { "name": "chan_logs", "type": "int" },
@@ -15,15 +15,15 @@
         { "name": "chan_music", "type": "int" },
         { "name": "chan_lfg", "type": "int" },
         { "name": "chan_vids", "type": "int" },
-        { "name": "lfgs", "type": "multiple" },
-        { "name": "videos_whitelist", "type": "multiple" }
+        { "name": "track_activity", "type": "boolean" },
+        { "name": "videos_whitelist", "type": "list[int]" }
       ]
     },
     "lfg-schema": {
       "columns": [
         { "name": "leader", "type": "int" },
-        { "name": "joined", "type": "multiple" },
-        { "name": "standby", "type": "multiple" },
+        { "name": "joined", "type": "list[int]" },
+        { "name": "standby", "type": "list[int]" },
         { "name": "num_players", "type": "int" }
       ]
     }

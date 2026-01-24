@@ -179,7 +179,7 @@ class Admin(commands.Cog):
                 roles.append(int(role[3:-1]))
             else:
                 roles.append(int(role))
-        bot.db.update_mod_roles(itx.guild_id, [str(role) for role in roles])
+        bot.db.update_mod_roles(itx.guild_id, roles)
         await itx.response.send_message(f"Mod roles set: {mod_roles}")
 
     @group_set.command(name="member_role", description="Set the member role for your server")
@@ -199,7 +199,7 @@ class Admin(commands.Cog):
                 roles.append(int(role[3:-1]))
             else:
                 roles.append(int(role))
-        bot.db.update_required_roles(itx.guild_id, [str(role) for role in roles])
+        bot.db.update_required_roles(itx.guild_id, roles)
         await itx.response.send_message(f"Required roles set: {required_roles}")
 
     ### Unset Commands ###
@@ -303,5 +303,5 @@ class Admin(commands.Cog):
             bot.db.add_videos_whitelist(itx.guild_id, channel.id)
             await itx.response.send_message(f"Videos allowed in <#{channel.id}>.")
         elif allow is False:
-            bot.db.remove_videos_whitelist(itx.guild_id, channel.id)
+            bot.db.drop_videos_whitelist(itx.guild_id, channel.id)
             await itx.response.send_message(f"Videos not allowed in <#{channel.id}>.")

@@ -76,10 +76,10 @@ class Utility(commands.Cog):
         for guild in bot.guilds:
             await ctx.send(f"Clearing user activity in {guild.name}")
             for member in guild.members:
-                user_log = bot.db.get_user_log
-                if user_log is None:
+                user_log = bot.db.get_user_log(guild.id, member.id)
+                if user_log is not None:
                     await ctx.send(f"Removing user log for {member.name}")
-                    bot.db.remove_user_log(guild.id, member.id)
+                    bot.db.drop_user_log(guild.id, member.id)
         await ctx.send(f"Activity log cleaned")
 
     @has_mod_ctx
