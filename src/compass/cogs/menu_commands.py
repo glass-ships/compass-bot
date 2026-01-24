@@ -1,4 +1,4 @@
-from typing import List
+
 
 import discord
 from discord import app_commands
@@ -31,7 +31,7 @@ async def setup(bot):
 class SelectMenuChannel(discord.ui.Select):
     def __init__(
         self,
-        options: List[discord.SelectOption],
+        options: list[discord.SelectOption],
         message_id: int,
     ) -> None:
         self.message_id = message_id

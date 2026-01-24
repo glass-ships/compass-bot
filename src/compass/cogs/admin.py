@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import Literal
 
 import discord
 from discord import app_commands
@@ -139,7 +139,7 @@ class Admin(commands.Cog):
             await itx.response.send_message(f"\nModule: `{module}` reloaded.", ephemeral=True)
 
     @_reload.autocomplete("module")
-    async def _reload_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    async def _reload_autocomplete(self, itx: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         return [
             app_commands.Choice(name=option, value=option) for option in MODULES if current.lower() in option.lower()
         ]
@@ -222,7 +222,7 @@ class Admin(commands.Cog):
         return True
 
     @_role.autocomplete("option")
-    async def _roles_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    async def _roles_autocomplete(self, itx: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         return [
             app_commands.Choice(name=option, value=option)
             for option in ROLE_OPTIONS
@@ -259,7 +259,7 @@ class Admin(commands.Cog):
         return True
 
     @_channel_set.autocomplete("option")
-    async def _channel_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    async def _channel_autocomplete(self, itx: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         return [
             app_commands.Choice(name=option, value=option)
             for option in CHANNEL_OPTIONS

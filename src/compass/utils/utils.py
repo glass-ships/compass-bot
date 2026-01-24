@@ -6,7 +6,7 @@ import subprocess
 import time
 from collections.abc import Generator
 from pathlib import Path
-from typing import List, Optional, Union
+
 from datetime import datetime
 from dateutil import tz
 
@@ -74,7 +74,7 @@ def parse_args(arg_str: str) -> ddict:
         if arg.startswith("--"):
             key = arg.lstrip("-").replace("-", "_")
             # Collect all following arguments until next flag or end
-            value_parts: List[str] = []
+            value_parts: list[str] = []
             i += 1
             while i < len(args) and not args[i].startswith("--"):
                 value_parts.append(args[i])
@@ -94,7 +94,7 @@ def parse_args(arg_str: str) -> ddict:
     return ddict(opts)
 
 
-def extract_url(content: str) -> Optional[str]:
+def extract_url(content: str) -> str | None:
     """Extracts URL from message content, or returns as is"""
     if re.search(URL_REGEX, content):
         result = URL_REGEX.search(content)
@@ -114,7 +114,7 @@ def extract_url(content: str) -> Optional[str]:
 async def download(
     msg: discord.Message,
     attachment: discord.Attachment,
-    path: Optional[Union[str, os.PathLike]],
+    path: str | os.PathLike | None,
 ) -> None:
     """Download an attachment from a message"""
     fp = os.path.join("downloads", msg.guild.name, path or "")
@@ -199,7 +199,7 @@ def get_resource_repo() -> None:
         time.sleep(5)
 
 
-def get_resource_path(guild_name: str, *resource: str) -> Union[str, None]:
+def get_resource_path(guild_name: str, *resource: str) -> str | None:
     """Returns path to resource (checks data repo first, then downloads)
 
     Args:

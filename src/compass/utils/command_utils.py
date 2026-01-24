@@ -1,6 +1,6 @@
 """Discord focused utility functions for commands"""
 
-from typing import List, Tuple, Union
+
 
 import discord
 
@@ -8,7 +8,7 @@ from compass.config.bot_config import COLORS
 from compass.utils.utils import chunk_list, download, getfilepath
 
 
-def get_emojis(guild: discord.Guild) -> Tuple[List[discord.Emoji], List[discord.Emoji]]:
+def get_emojis(guild: discord.Guild) -> tuple[list[discord.Emoji], list[discord.Emoji]]:
     """Returns lists of all static and animated emojis in a guild"""
 
     emojis = {"anim": [], "static": []}
@@ -103,7 +103,7 @@ async def send_embed_long(
             await channel.send(embed=embed)
 
 
-async def move_message(itx: discord.Interaction, channel: Union[discord.TextChannel, discord.Thread], message_id: str):
+async def move_message(itx: discord.Interaction, channel: discord.TextChannel | discord.Thread, message_id: str):
     await itx.response.defer(ephemeral=True)
     assert itx.channel is not None
     if not isinstance(itx.channel, (discord.TextChannel, discord.Thread)):

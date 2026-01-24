@@ -1,4 +1,4 @@
-from typing import List, Optional
+
 
 import discord
 from discord import app_commands
@@ -54,7 +54,7 @@ class Main(commands.Cog):
         await itx.followup.send(f"Pong! Latency: {round(bot.latency, 2)} ms", ephemeral=True)
         return
 
-    async def _profile_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    async def _profile_autocomplete(self, itx: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         options = ["User", "Server"]
         return [
             app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()
@@ -62,7 +62,7 @@ class Main(commands.Cog):
 
     @app_commands.command(name="avatar")
     @app_commands.autocomplete(profile=_profile_autocomplete)
-    async def _avatar(self, itx: discord.Interaction, user: Optional[discord.Member] = None, profile: str = "User"):
+    async def _avatar(self, itx: discord.Interaction, user: discord.Member | None = None, profile: str = "User"):
         """Returns a user's Discord avatar"""
         await itx.response.defer()
         u = user or itx.user
@@ -75,7 +75,7 @@ class Main(commands.Cog):
 
     @app_commands.command(name="banner")
     @app_commands.autocomplete(profile=_profile_autocomplete)
-    async def _banner(self, itx: discord.Interaction, user: Optional[discord.Member] = None, profile: str = "User"):
+    async def _banner(self, itx: discord.Interaction, user: discord.Member | None = None, profile: str = "User"):
         """Returns a user's Discord banner"""
         await itx.response.defer()
 

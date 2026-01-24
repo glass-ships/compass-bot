@@ -3,7 +3,7 @@ import asyncio
 import logging
 import os
 import sys
-from typing import Union
+
 
 import discord
 from discord.ext import commands
@@ -124,7 +124,7 @@ class CompassBot(commands.Bot):
         return
 
     ### Misc
-    async def _get_prefix(self, bot: "CompassBot", msg: discord.Message) -> Union[str, list[str]]:
+    async def _get_prefix(self, bot: "CompassBot", msg: discord.Message) -> str | list[str]:
         """Returns a guild's self prefix, or default if none"""
         logging.debug(f"Locals: {locals()}")
         logging.debug(f"Getting prefix for {msg.guild.name}")

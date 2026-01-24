@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Union
+
 
 import discord
 from discord import app_commands
@@ -67,7 +67,7 @@ class Moderation(commands.Cog):
     async def _send_embed(
         self,
         ctx: commands.Context,
-        target: Union[discord.User, discord.TextChannel],
+        target: discord.User | discord.TextChannel,
         *,
         embed_fields: str = "",
     ):
@@ -136,10 +136,10 @@ class Moderation(commands.Cog):
     async def _purge(
         self,
         itx: discord.Interaction,
-        number: Optional[int] = None,
+        number: int | None = None,
         before: str = "",
         after: str = "",
-        reason: Optional[str] = None,
+        reason: str | None = None,
         # check: callable = None,
     ):
         # TODO: look into parsing before/after with https://github.com/scrapinghub/dateparser
@@ -150,13 +150,13 @@ class Moderation(commands.Cog):
     @has_mod_itx
     @app_commands.command(name="moveto", description="Move a message to specified channel")
     async def _move_message(
-        self, itx: discord.Interaction, channel: Union[discord.TextChannel, discord.Thread], message_id: str
+        self, itx: discord.Interaction, channel: discord.TextChannel | discord.Thread, message_id: str
     ):
         await move_message(itx, channel, message_id)
 
     @has_mod_itx
     @app_commands.command(name="giverole", description="Give a role to a user with optional duration")
-    async def _give_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: Optional[int]):
+    async def _give_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: int | None):
         role = get(itx.guild.roles, id=role.id)
         if not user:
             target_user = itx.user
@@ -178,7 +178,7 @@ class Moderation(commands.Cog):
     @has_mod_itx
     @app_commands.command(name="removerole", description="Remove role from a user with optional duration")
     @app_commands.rename(dur="duration")
-    async def _take_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: Optional[int]):
+    async def _take_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: int | None):
         await itx.response.defer()
         role = get(itx.guild.roles, id=role.id)
         if not user:

@@ -2,7 +2,7 @@ import subprocess
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
+
 
 import psutil
 import typer
@@ -18,7 +18,7 @@ app_state = {
 
 @app.callback(invoke_without_command=True)
 def version_callback(
-    version: Optional[bool] = typer.Option(None, "--version", is_eager=True),
+    version: bool | None = typer.Option(None, "--version", is_eager=True),
     verbose: int = typer.Option(0, "--verbose", "-v", count=True, help="Enable verbose logging"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Supress logging (except Errors)"),
 ):

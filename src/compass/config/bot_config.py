@@ -1,7 +1,7 @@
 from pathlib import Path
 from dataclasses import dataclass, field
 from random import choice
-from typing import List, Optional
+
 
 import discord
 
@@ -72,21 +72,21 @@ class Emojis:
 @dataclass
 class GuildData:
     guild: discord.Guild
-    guild_id: Optional[int] = None
-    guild_name: Optional[str] = None
-    default_channel: Optional[int] = None
-    chan_bot: Optional[int] = None
-    chan_lfg: Optional[int] = None
-    chan_logs: Optional[int] = None
-    chan_music: Optional[int] = None
-    chan_vids: Optional[int] = None
-    chan_welcome: Optional[int] = None
-    mem_role: Optional[int] = None
-    mod_roles: List[str] = field(default_factory=list)
+    guild_id: int | None = None
+    guild_name: str | None = None
+    default_channel: int | None = None
+    chan_bot: int | None = None
+    chan_lfg: int | None = None
+    chan_logs: int | None = None
+    chan_music: int | None = None
+    chan_vids: int | None = None
+    chan_welcome: int | None = None
+    mem_role: int | None = None
+    mod_roles: list[str] = field(default_factory=list)
     prefix: str = DEFAULT_PREFIX
-    required_roles: List[str] = field(default_factory=list)
+    required_roles: list[str] = field(default_factory=list)
     track_activity: bool = False
-    videos_whitelist: List[str] = field(default_factory=list)
+    videos_whitelist: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         self.guild_id = self.guild.id

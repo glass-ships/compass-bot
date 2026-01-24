@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import discord
 
@@ -39,7 +39,7 @@ class Pagination(discord.ui.View):
             ```
     """
 
-    def __init__(self, itx: discord.Interaction, get_page: Callable, followup: Optional[discord.Webhook] = None):
+    def __init__(self, itx: discord.Interaction, get_page: Callable, followup: discord.Webhook | None = None):
         self.itx = itx
         self.followup = followup
         self.get_page = get_page
@@ -48,7 +48,7 @@ class Pagination(discord.ui.View):
         self.response: discord.InteractionMessage
         super().__init__(timeout=300)
 
-    async def _respond(self, embed: discord.Embed, view: Optional[discord.ui.View] = None):
+    async def _respond(self, embed: discord.Embed, view: discord.ui.View | None = None):
         """Helper function to either send a new message or edit original as needed"""
         args = {}
         if view is not None:

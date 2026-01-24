@@ -3,7 +3,7 @@ import os
 import requests
 import shutil
 from pathlib import Path
-from typing import List, Optional
+
 
 import discord
 from discord import app_commands
@@ -187,7 +187,7 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(name="syncemojis", description="Syncs emojis from resource repo or local backup")
-    async def _sync_emojis(self, ctx: commands.Context, option: Optional[str] = None):
+    async def _sync_emojis(self, ctx: commands.Context, option: str | None = None):
         await send_embed(channel=ctx.channel, description="Syncing emojis...")
         backup_dir_static = get_resource_path(ctx.guild.name, "emojis", "png")
         backup_dir_anim = get_resource_path(ctx.guild.name, "emojis", "gif")
@@ -215,7 +215,7 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(name="clearemojis", description="Clears all emojis in a guild")
-    async def _clear_emojis(self, ctx: commands.Context, emojis: List[discord.Emoji] = None) -> None:
+    async def _clear_emojis(self, ctx: commands.Context, emojis: list[discord.Emoji] = None) -> None:
         def _check(m):
             return m.author == ctx.author and m.channel == ctx.channel
 
@@ -301,7 +301,7 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(name="clearstickers", description="Clears all stickers in a guild")
-    async def _clear_stickers(self, ctx: commands.Context, stickers: List[discord.Sticker] = None) -> None:
+    async def _clear_stickers(self, ctx: commands.Context, stickers: list[discord.Sticker] = None) -> None:
         def _check(m):
             return m.author == ctx.author and m.channel == ctx.channel
 
