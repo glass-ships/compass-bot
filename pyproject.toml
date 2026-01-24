@@ -25,9 +25,7 @@ dependencies = [
     "ruff",
     "typer",
     ### Database
-    "certifi",
     "pymongo",
-    "xata",
     ### For Commands
     "dateparser",
     "GitPython",
