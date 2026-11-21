@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-from enum import StrEnum, auto
 from datetime import timedelta
-from typing import Optional
+from enum import StrEnum, auto
 
 import discord
 
@@ -35,7 +34,7 @@ class Search:
 @dataclass
 class UserSearch:
     query: str
-    url: Optional[str]
+    url: str | None
     playlist_type: PlaylistTypes
     host: Sites
 

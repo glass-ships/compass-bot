@@ -2,7 +2,6 @@ import subprocess
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
 
 import psutil
 import typer
@@ -18,7 +17,7 @@ app_state = {
 
 @app.callback(invoke_without_command=True)
 def version_callback(
-    version: Optional[bool] = typer.Option(None, "--version", is_eager=True),
+    version: bool | None = typer.Option(None, "--version", is_eager=True),
     verbose: int = typer.Option(0, "--verbose", "-v", count=True, help="Enable verbose logging"),
     quiet: bool = typer.Option(False, "--quiet", "-q", help="Supress logging (except Errors)"),
 ):
@@ -50,7 +49,7 @@ def start(
 """
     )
     if not debug:
-        console.print(f":arrow_right: For log output, see `logs/`")
+        console.print(":arrow_right: For log output, see `logs/`")
 
     cmd = [f"{sys.executable}", "src/compass/bot.py", "--log-level", app_state["log-level"]]
     if dev:
@@ -81,7 +80,7 @@ def stop():
         subprocess.call(["pkill", "-f", "src/compass/bot.py"])
     except Exception as e:
         console.print("Error stopping bot: ", e)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
     console.print("Bot stopped successfully")
     raise typer.Exit()
 
@@ -93,7 +92,13 @@ def status():
     for p in processes:
         if "src/compass/bot.py" in p.cmdline():
             start_time = epoch_to_dt(p.create_time()).strftime("%Y-%m-%d at %H:%M:%S")
-            uptime = timedelta(seconds=(datetime.now() - epoch_to_dt(p.create_time())).total_seconds())
+            uptime_delta = timedelta(seconds=(datetime.now() - epoch_to_dt(p.create_time())).total_seconds())
+            uptime = (
+                f"{uptime_delta.days} days, "
+                + f"{uptime_delta.seconds // 3600} hrs, "
+                + f"{(uptime_delta.seconds // 60) % 60} min, "
+                + f"{uptime_delta.seconds % 60} sec "
+            )
             console.print(
                 f"""
 Compass is currently running:
@@ -101,7 +106,7 @@ Compass is currently running:
     Command: "{" ".join(p.cmdline())}"
     Status: {p.status()}
     Started: {start_time}
-    Uptime: {uptime.days} days, {uptime.seconds // 3600} hrs, {(uptime.seconds // 60) % 60} min, {uptime.seconds % 60} sec
+    Uptime: {uptime}
 """
             )
             raise typer.Exit()

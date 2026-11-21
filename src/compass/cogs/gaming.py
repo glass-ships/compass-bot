@@ -1,12 +1,16 @@
 import asyncio
+import logging
 
 import discord
 from discord import app_commands
 from discord.ext import commands
-from loguru import logger
 
 from compass.bot import CompassBot
 from compass.config.bot_config import COLORS
+
+logger = logging.getLogger(__name__)
+
+bot: CompassBot  # set in the cog's __init__ via `global bot`
 
 
 async def setup(bot):
@@ -14,7 +18,7 @@ async def setup(bot):
     await bot.add_cog(Gaming(bot))
 
 
-class lfgView(discord.ui.View):
+class LFGView(discord.ui.View):
     def __init__(self):
         super().__init__()
 
@@ -66,7 +70,7 @@ class lfgView(discord.ui.View):
         if itx.user.id == lfg["leader"]:
             await itx.channel.send(f"{itx.user.mention} - you cannot join your own LFG post.", delete_after=5.0)
             return
-        if str(itx.user.id) in lfg["joined"] or str(itx.user.id) in lfg["standby"]:
+        if itx.user.id in lfg["joined"] or itx.user.id in lfg["standby"]:
             await itx.channel.send(
                 f"{itx.user.mention} You are already in the fireteam or on standby for this LFG post.",
                 delete_after=5.0,
@@ -74,11 +78,16 @@ class lfgView(discord.ui.View):
             return
         if len(lfg["joined"]) + 1 == lfg["num_players"]:
             await itx.message.add_reaction("🇫")
-        bot.db.update_lfg_join(lfg_id=itx.message.id, user_id=itx.user.id)
+        success = bot.db.update_lfg_join(lfg_id=itx.message.id, user_id=itx.user.id)
+        if not success:
+            await itx.channel.send(
+                f"{itx.user.mention} Unable to join - LFG may be full or you may already be in it.", delete_after=5.0
+            )
+            return
         embed = discord.Embed()
         embed.add_field(
             name=f"{itx.user.nick or itx.user.name} has joined your LFG",
-            value=f"To view your roster, click the button below.",
+            value="To view your roster, click the button below.",
         )
         await itx.channel.send(content=f"{itx.message.author.mention}", embed=embed, delete_after=5.0)
 
@@ -96,17 +105,22 @@ class lfgView(discord.ui.View):
         if itx.user.id == lfg["leader"]:
             await itx.channel.send(f"{itx.user.mention} - you cannot leave your own LFG post.", delete_after=5.0)
             return
-        if str(itx.user.id) not in lfg["joined"] and str(itx.user.id) not in lfg["standby"]:
+        if itx.user.id not in lfg["joined"] and itx.user.id not in lfg["standby"]:
             await itx.channel.send(
                 f"{itx.user.mention} You are not in the fireteam or on standby for this LFG post.",
                 delete_after=5.0,
             )
             return
-        bot.db.update_lfg_leave(lfg_id=itx.message.id, user_id=itx.user.id)
+        success = bot.db.update_lfg_leave(lfg_id=itx.message.id, user_id=itx.user.id)
+        if not success:
+            await itx.channel.send(
+                f"{itx.user.mention} Unable to leave - you may not be in this LFG.", delete_after=5.0
+            )
+            return
         embed = discord.Embed()
         embed.add_field(
             name=f"{itx.user.nick or itx.user.name} has left your LFG",
-            value=f"To view your roster, click the button below.",
+            value="To view your roster, click the button below.",
         )
         await itx.channel.send(content=f"{itx.message.author.mention}", embed=embed, delete_after=5.0)
 
@@ -123,7 +137,7 @@ class Gaming(commands.Cog):
     @app_commands.command(name="lfg")
     @app_commands.describe(num_players="Number of players needed")
     async def _lfg(self, itx: discord.Interaction, num_players: int, activity: str, description: str = ""):
-        await itx.response.send_message(f"Creating lfg...", ephemeral=True, delete_after=0.0)
+        await itx.response.send_message("Creating lfg...", ephemeral=True, delete_after=0.0)
 
         lfg_channel = bot.db.get_channel_lfg(itx.guild.id)
         if not lfg_channel or lfg_channel == 0 or itx.channel.id != lfg_channel:
@@ -139,7 +153,7 @@ class Gaming(commands.Cog):
         embed.set_footer(text=f"Fireteam Leader: {itx.user.name}", icon_url=itx.user.avatar.url)
 
         # Send the embed with the view attached
-        view = lfgView()
+        view = LFGView()
         lfg_msg = await itx.channel.send(content="", embed=embed, view=view, delete_after=3600)
         lfg_id = lfg_msg.id
 

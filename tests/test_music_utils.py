@@ -1,17 +1,7 @@
-import asyncio
 import pytest
 
-from compass.music.dataclasses import Playlist, PlaylistTypes, Sites, Song, Search
-from compass.music.music_utils import (
-    identify_host,
-    identify_playlist,
-    parse_spotify_track,
-    parse_spotify_playlist,
-    search_youtube,
-    get_yt_metadata,
-)
 from compass.music import music_utils
-
+from compass.music.dataclasses import PlaylistTypes, Sites
 
 ### Test spotify metadata methods ###
 
@@ -27,6 +17,7 @@ def test_parse_spotify_playlist():
 ### Test youtube metadata methods ###
 
 
+@pytest.mark.integration  # hits YouTube
 @pytest.mark.parametrize(
     "search, expected",
     [("Bethesda VS Critics: How To Save The Games Industry", "https://www.youtube.com/watch?v=C6NiXAdMzEk")],

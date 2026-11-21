@@ -1,46 +1,23 @@
 import asyncio
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Union
+import logging
+from datetime import UTC, datetime, timedelta
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.utils import get
-from loguru import logger
 
 from compass.bot import CompassBot
 from compass.components.pagination import Pagination
 from compass.config.bot_config import COLORS
-from compass.utils import chunk_list, dt_parse, parse_args
+from compass.utils import dt_parse, parse_args
+from compass.utils.checks import has_mod_ctx, has_mod_itx
 from compass.utils.command_utils import move_message, send_embed
 
-
-async def mod_check_ctx(ctx: commands.Context):
-    mod_roles = bot.db.get_mod_roles(ctx.guild.id)
-    user_roles = [x.id for x in ctx.author.roles]
-    if ctx.author.guild_permissions.administrator:
-        return True
-    if any(int(i) in user_roles for i in mod_roles):
-        return True
-    await ctx.send("You do not have permission to use this command.", delete_after=5.0)
-    await asyncio.sleep(3)
-    await ctx.message.delete()
-    return False
+logger = logging.getLogger(__name__)
 
 
-async def mod_check_itx(itx: discord.Interaction):
-    mod_roles = bot.db.get_mod_roles(itx.guild_id)
-    user_roles = [x.id for x in itx.user.roles]
-    if itx.user.guild_permissions.administrator:
-        return True
-    if any(int(i) in user_roles for i in mod_roles):
-        return True
-    await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
-    return False
-
-
-has_mod_ctx = commands.check(mod_check_ctx)
-has_mod_itx = app_commands.check(mod_check_itx)
+bot: CompassBot  # set in the cog's __init__ via `global bot`
 
 
 async def setup(bot):
@@ -67,7 +44,7 @@ class Moderation(commands.Cog):
     async def _send_embed(
         self,
         ctx: commands.Context,
-        target: Union[discord.User, discord.TextChannel],
+        target: discord.User | discord.TextChannel,
         *,
         embed_fields: str = "",
     ):
@@ -92,7 +69,7 @@ class Moderation(commands.Cog):
         return
 
     @commands.command(name="lastmessage", description="Get the last message from a user")
-    async def _lastMessage(self, ctx: commands.Context, user: discord.Member):
+    async def _last_message(self, ctx: commands.Context, user: discord.Member):
         last_message = bot.db.get_user_log(ctx.guild.id, user.id)
         if last_message:
             await ctx.send(
@@ -125,7 +102,10 @@ class Moderation(commands.Cog):
     @has_mod_itx
     @app_commands.command(name="getmodroles", description="Get a list of guild's mod roles")
     async def _get_mod_roles(self, itx: discord.Interaction):
-        mod_roles = bot.db.get_mod_roles(itx.guild_id)
+        mod_roles = bot.db.get_mod_roles(itx.guild_id) or []  # None when unset
+        if not mod_roles:
+            await itx.response.send_message("No mod roles set.", ephemeral=True)
+            return
         r = ""
         for i in mod_roles:
             r += f"<@&{int(i)}>\n"
@@ -136,10 +116,10 @@ class Moderation(commands.Cog):
     async def _purge(
         self,
         itx: discord.Interaction,
-        number: Optional[int] = None,
+        number: int | None = None,
         before: str = "",
         after: str = "",
-        reason: Optional[str] = None,
+        reason: str | None = None,
         # check: callable = None,
     ):
         # TODO: look into parsing before/after with https://github.com/scrapinghub/dateparser
@@ -150,13 +130,14 @@ class Moderation(commands.Cog):
     @has_mod_itx
     @app_commands.command(name="moveto", description="Move a message to specified channel")
     async def _move_message(
-        self, itx: discord.Interaction, channel: Union[discord.TextChannel, discord.Thread], message_id: str
+        self, itx: discord.Interaction, channel: discord.TextChannel | discord.Thread, message_id: str
     ):
         await move_message(itx, channel, message_id)
 
     @has_mod_itx
     @app_commands.command(name="giverole", description="Give a role to a user with optional duration")
-    async def _give_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: Optional[int]):
+    async def _give_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: int | None):
+        await itx.response.defer()
         role = get(itx.guild.roles, id=role.id)
         if not user:
             target_user = itx.user
@@ -166,7 +147,8 @@ class Moderation(commands.Cog):
         if role.id not in roles:
             await target_user.add_roles(role)
             await itx.followup.send(
-                f'<@{target_user.id}> has been given the "{role.name}" role{" for " + str(dur) + " sec" if dur else ""}.'
+                f'<@{target_user.id}> has been given the "{role.name}" role'
+                f"{' for ' + str(dur) + ' sec' if dur else ''}."
             )
             if dur:
                 await asyncio.sleep(dur)
@@ -178,7 +160,7 @@ class Moderation(commands.Cog):
     @has_mod_itx
     @app_commands.command(name="removerole", description="Remove role from a user with optional duration")
     @app_commands.rename(dur="duration")
-    async def _take_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: Optional[int]):
+    async def _take_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: int | None):
         await itx.response.defer()
         role = get(itx.guild.roles, id=role.id)
         if not user:
@@ -202,11 +184,11 @@ class Moderation(commands.Cog):
     @app_commands.command(name="checkroles", description="Check for users missing required roles")
     async def _check_roles(self, itx: discord.Interaction):  # , roles: Optional[List[discord.Role]] = None):
         await itx.response.defer()
-        required_roles = [id for id in bot.db.get_required_roles(itx.guild_id)]
+        required_roles = bot.db.get_required_roles(itx.guild_id)
         if not required_roles:
             await itx.followup.send("No required roles set.")
             return
-        role_mentions = [f"<@&{id}>" for id in required_roles]
+        role_mentions = [f"<@&{_id}>" for _id in required_roles]
         response = await itx.followup.send(
             embed=discord.Embed(description=f"Checking for users without one of {' '.join(role_mentions)}")
         )
@@ -233,13 +215,13 @@ class Moderation(commands.Cog):
         if itx.guild is None:
             await itx.followup.send("This command can only be used in a server.")
             return
-        response = await itx.followup.send("Checking for inactive members")
+        await itx.followup.send("Checking for inactive members")
         inactive = []
         for member in itx.guild.members:
             if member.bot:
                 continue
             last_message = bot.db.get_user_log(itx.guild.id, member.id)
-            if not last_message or (last_message and datetime.now(timezone.utc) - last_message > timedelta(days=days)):
+            if not last_message or (last_message and datetime.now(UTC) - last_message > timedelta(days=days)):
                 inactive.append((member.name, member.mention, last_message))
 
         def _get_page(page: int):

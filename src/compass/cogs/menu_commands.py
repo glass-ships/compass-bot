@@ -1,26 +1,17 @@
-from typing import List
+import logging
 
 import discord
 from discord import app_commands
 from discord.ext import commands
-from loguru import logger
 
 from compass.bot import CompassBot
+from compass.utils.checks import has_mod_itx
 from compass.utils.command_utils import move_message
 
-
-async def mod_check_itx(itx: discord.Interaction):
-    mod_roles = bot.db.get_mod_roles(itx.guild_id)
-    user_roles = [x.id for x in itx.user.roles]
-    if itx.user.guild_permissions.administrator:
-        return True
-    if any(int(i) in user_roles for i in mod_roles):
-        return True
-    await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
-    return False
+logger = logging.getLogger(__name__)
 
 
-has_mod_itx = app_commands.check(mod_check_itx)
+bot: CompassBot  # set in the cog's __init__ via `global bot`
 
 
 async def setup(bot):
@@ -31,7 +22,7 @@ async def setup(bot):
 class SelectMenuChannel(discord.ui.Select):
     def __init__(
         self,
-        options: List[discord.SelectOption],
+        options: list[discord.SelectOption],
         message_id: int,
     ) -> None:
         self.message_id = message_id
@@ -68,15 +59,15 @@ class MenuCommands(commands.Cog):
         bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
 
     @has_mod_itx
-    async def _move_message(self, itx: discord.Interaction, message: discord.Message) -> None:
+    async def _move_message(self, itx: discord.Interaction, msg: discord.Message) -> None:
         """Command description."""
         await itx.response.defer(ephemeral=True)
         channels = [
             discord.SelectOption(
                 label=channel.name, value=str(channel.id), description=channel.topic, emoji=None, default=False
             )
-            for channel in message.guild.text_channels
+            for channel in msg.guild.text_channels
         ]
         view = discord.ui.View()
-        view.add_item(SelectMenuChannel(options=channels, message_id=message.id))
+        view.add_item(SelectMenuChannel(options=channels, message_id=msg.id))
         await itx.followup.send("Select a channel to move the message to:", view=view)

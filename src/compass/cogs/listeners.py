@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 import traceback
@@ -7,18 +8,30 @@ from pathlib import Path
 import discord
 from discord.ext import commands
 from discord.utils import get
-from loguru import logger
 
 from compass.bot import CompassBot
 from compass.config.bot_config import COLORS, COMPASS_SRC, SERVERS, GuildData
 from compass.utils.utils import download, getfilepath
 
+logger = logging.getLogger(__name__)
+
 cog_path = Path(__file__)
+
+
+bot: CompassBot  # set in the cog's __init__ via `global bot`
 
 
 async def setup(bot):
     """Cog setup method"""
     await bot.add_cog(Listeners(bot))
+
+
+### Helpers
+
+
+def is_video(a: discord.Attachment):
+    """Check if an attachment is a video based on its content type."""
+    return (a.content_type or "").startswith("video")
 
 
 class Listeners(commands.Cog):
@@ -69,54 +82,48 @@ class Listeners(commands.Cog):
     @commands.Cog.listener("on_message")
     async def move_videos(self, msg: discord.Message):
         """Move videos to the specified video channel, if it is set."""
-        if msg.author.bot:
+        if msg.author.bot or msg.guild is None:
             return
         vid_channel = bot.db.get_channel_vids(msg.guild.id)
-        if vid_channel is None or msg.channel.id == vid_channel:
+        if not vid_channel or msg.channel.id == vid_channel:
             return
         vid_links = ["youtube.com/watch?", "youtu.be/", "vimeo.com/", "dailymotion.com/video", "tiktok.com"]
-        if not any(i in msg.content for i in vid_links) and not any("video" in a.content_type for a in msg.attachments):
+        if not any(i in msg.content for i in vid_links) and not any(is_video(a) for a in msg.attachments):
             return
-        else:
-            files = []
-            if msg.attachments:
-                for a in filter(
-                    lambda x,: x.size < msg.guild.filesize_limit,
-                    msg.attachments,
-                ):
-                    await download(msg, a, "temp/moved_messages")
-                    files.append(discord.File(getfilepath(msg, f"temp/moved_messages/{a.filename}")))
-            newmessage = (
-                f"{msg.author.mention} has uploaded a video.\n\n-# **__Original Message:__**\n>>> {msg.content}\n"
-            )
-            if any(a.size >= msg.guild.filesize_limit for a in msg.attachments):
-                newmessage += "`Plus some files too large to resend`"
-            # Move the message
-            chan = await bot.fetch_channel(vid_channel)
-            movedmessage = await chan.send(content=newmessage, files=files)
-            # Delete original and notify author
-            await msg.delete()
-            await msg.channel.send(
-                f"{msg.author.mention} - your message contained a video, and was moved to {movedmessage.jump_url}"
-            )
-            return
-
-    @commands.Cog.listener("on_message")
-    async def log_activity(self, message: discord.Message):
-        """Log messages to the database."""
-        if message.author.bot or isinstance(message.channel, discord.DMChannel):
-            return
-        track_activity = bot.db.get_field(message.guild.id, "track_activity")
-        if not track_activity:
-            return
-        bot.db.add_or_update_user_log(
-            message.guild.id, message.guild.name, message.author.id, message.author.name, message.created_at
+        files = []
+        if msg.attachments:
+            for a in filter(
+                lambda x: x.size < msg.guild.filesize_limit,
+                msg.attachments,
+            ):
+                await download(msg, a, "temp/moved_messages")
+                files.append(discord.File(getfilepath(msg, f"temp/moved_messages/{a.filename}")))
+        newmessage = f"{msg.author.mention} has uploaded a video.\n\n-# **__Original Message:__**\n>>> {msg.content}\n"
+        if any(a.size >= msg.guild.filesize_limit for a in msg.attachments):
+            newmessage += "`Plus some files too large to resend`"
+        # Move the message
+        chan = await bot.fetch_channel(vid_channel)
+        movedmessage = await chan.send(content=newmessage, files=files)
+        # Delete original and notify author
+        await msg.delete()
+        await msg.channel.send(
+            f"{msg.author.mention} - your message contained a video, and was moved to {movedmessage.jump_url}"
         )
 
     @commands.Cog.listener("on_message")
-    async def bat_react(self, message: discord.Message):
+    async def log_activity(self, msg: discord.Message):
+        """Log messages to the database."""
+        if msg.author.bot or isinstance(msg.channel, discord.DMChannel):
+            return
+        track_activity = bot.db.get_field(msg.guild.id, "track_activity")
+        if not track_activity:
+            return
+        bot.db.add_or_update_user_log(msg.guild.id, msg.guild.name, msg.author.id, msg.author.name, msg.created_at)
+
+    @commands.Cog.listener("on_message")
+    async def bat_react(self, msg: discord.Message):
         """BATS ONLY: React with a bat emoji to messages with certain trigger words."""
-        if (message.author.bot) or (message.guild.id not in [SERVERS.BATS, SERVERS.GLASS_TEST]):
+        if (msg.author.bot) or (msg.guild is None) or (msg.guild.id not in [SERVERS.BATS, SERVERS.GLASS_TEST]):
             return
         triggers = [
             "bat",
@@ -127,18 +134,18 @@ class Listeners(commands.Cog):
             "<@&1210756079487688774>",  # @Example Role 2
         ]
         emoji = bot.get_emoji(1289965546900557997)  # <:bat_peek:1289965546900557997>
-        if emoji is None and message.guild.id == SERVERS.BATS:
+        if emoji is None and msg.guild.id == SERVERS.BATS:
             logger.error("Bat emoji not found")
-            emoji = str("🦇")
+            emoji = "🦇"
 
         # Extract role mentions first, then clean the rest
-        role_mentions = re.findall(r"<@&\d+>", message.content)
-        msg = re.sub(r"[^a-zA-Z\s]+", "", message.content)  # Clean to letters and spaces
+        role_mentions = re.findall(r"<@&\d+>", msg.content)
+        text = re.sub(r"[^a-zA-Z\s]+", "", msg.content)  # Clean to letters and spaces
         # Add back the role mentions
-        msg = msg + " " + " ".join(role_mentions)
+        text = text + " " + " ".join(role_mentions)
 
-        if any(i.lower() in triggers for i in msg.split()):
-            await message.add_reaction(emoji)
+        if any(i.lower() in triggers for i in text.split()):
+            await msg.add_reaction(emoji)
         # else:
         #     await message.add_reaction(str("❌"))
 
@@ -174,7 +181,7 @@ class Listeners(commands.Cog):
 
                 # Create embed
                 ce = discord.Embed(
-                    title=f"Flagged Message", description=f"A message has been flagged in {flagged_message.channel}"
+                    title="Flagged Message", description=f"A message has been flagged in {flagged_message.channel}"
                 )
                 if flagged_message.content:
                     ce.add_field(name="Message content:", value=flagged_message.content, inline=False)
@@ -221,7 +228,7 @@ class Listeners(commands.Cog):
         chan_id = bot.db.get_channel_logs(glass_guild.id)
         channel = get(glass_guild.text_channels, id=chan_id)
 
-        if bot.db.drop_guild_table(guild.id):
+        if bot.db.drop_guild(guild.id):
             await channel.send(embed=discord.Embed(description=f'Guild "{guild.name}" removed from database.'))
         else:
             await channel.send(embed=discord.Embed(description=f'Guild "{guild.name}" not found in database.'))
@@ -239,6 +246,7 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         import io
+
         import httpx
         from PIL import Image
 
@@ -247,7 +255,7 @@ class Listeners(commands.Cog):
             return
 
         channel_id = bot.db.get_channel_welcome(guild_id=guild.id)
-        if channel_id == 0:
+        if not channel_id:
             return
         channel = get(guild.text_channels, id=channel_id)
 
@@ -269,7 +277,7 @@ class Listeners(commands.Cog):
                 content=f"Welcome, {member.mention}!",
                 embed=discord.Embed(
                     title=f"Welcome to {guild.name}",
-                    description=f"""
+                    description="""
                     Please familiarize yourself with the Harbor <#954197139049816066>, 
                     have a look around, and enjoy your stay!
 
@@ -286,7 +294,7 @@ class Listeners(commands.Cog):
         if guild.id != SERVERS.GLASS_HARBOR:
             return
         channel_id = bot.db.get_channel_logs(guild_id=guild.id)
-        if channel_id is None:
+        if not channel_id:
             return
         channel = get(guild.text_channels, id=channel_id)
         await channel.send(
@@ -296,4 +304,4 @@ class Listeners(commands.Cog):
                 color=COLORS.random(),
             )
         )
-        bot.db.remove_user_log(guild.id, member.id)
+        bot.db.drop_user_log(guild.id, member.id)

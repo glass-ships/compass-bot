@@ -1,14 +1,16 @@
-from typing import List, Optional
+import logging
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from loguru import logger
-
 from compass.bot import CompassBot
 from compass.components.pagination import Pagination
 from compass.config.bot_config import COLORS
+
+logger = logging.getLogger(__name__)
+
+bot: CompassBot  # set in the cog's __init__ via `global bot`
 
 
 async def setup(bot):
@@ -28,7 +30,7 @@ class Main(commands.Cog):
     @app_commands.command(name="help", description="List chat commands")
     async def help(self, itx: discord.Interaction):
         await itx.response.defer()
-        cmds = [c for c in bot.walk_commands()]
+        cmds = list(bot.walk_commands())
         per_page = 10
 
         def _get_page(page: int):
@@ -54,7 +56,7 @@ class Main(commands.Cog):
         await itx.followup.send(f"Pong! Latency: {round(bot.latency, 2)} ms", ephemeral=True)
         return
 
-    async def _profile_autocomplete(self, itx: discord.Interaction, current: str) -> List[app_commands.Choice[str]]:
+    async def _profile_autocomplete(self, itx: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         options = ["User", "Server"]
         return [
             app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()
@@ -62,31 +64,31 @@ class Main(commands.Cog):
 
     @app_commands.command(name="avatar")
     @app_commands.autocomplete(profile=_profile_autocomplete)
-    async def _avatar(self, itx: discord.Interaction, user: Optional[discord.Member] = None, profile: str = "User"):
+    async def _avatar(self, itx: discord.Interaction, user: discord.Member | None = None, profile: str = "User"):
         """Returns a user's Discord avatar"""
         await itx.response.defer()
         u = user or itx.user
         mem = await itx.guild.fetch_member(u.id)
-        avatarURL = mem.avatar.url if profile == "User" else mem.guild_avatar.url
+        avatar_url = mem.avatar.url if profile == "User" else mem.guild_avatar.url
         embed = discord.Embed(description=f"{mem.mention}'s avatar")
-        embed.set_image(url=f"{avatarURL}")
+        embed.set_image(url=f"{avatar_url}")
         await itx.followup.send(embed=embed)
         return
 
     @app_commands.command(name="banner")
     @app_commands.autocomplete(profile=_profile_autocomplete)
-    async def _banner(self, itx: discord.Interaction, user: Optional[discord.Member] = None, profile: str = "User"):
+    async def _banner(self, itx: discord.Interaction, user: discord.Member | None = None, profile: str = "User"):
         """Returns a user's Discord banner"""
         await itx.response.defer()
 
         u = user or itx.user
         # mem = await itx.guild.fetch_member(u.id)
         mem = await bot.fetch_user(u.id)
-        userBannerUrl = mem.banner.url
+        banner_url = mem.banner.url
         description = f"{mem.mention}'s banner"
         if profile == "Server":
             description += "\n(server banners are not currently supported by discord.py)"
         embed = discord.Embed(description=description)
-        embed.set_image(url=f"{userBannerUrl}")
+        embed.set_image(url=f"{banner_url}")
         await itx.followup.send(embed=embed)
         return

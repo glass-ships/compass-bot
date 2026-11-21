@@ -1,14 +1,13 @@
 import asyncio
+import logging
 
-# import aiohttp
 import discord
 import spotipy
-from loguru import logger
 from yt_dlp import YoutubeDL
 
 from compass.config.bot_config import COLORS, Emojis
 from compass.music import music_utils
-from compass.music.dataclasses import Playlist, PlaylistTypes, Search, Sites, Song, YouTubeSearchResults
+from compass.music.dataclasses import Playlist, PlaylistTypes, Search, Sites, Song, UserSearch, YouTubeSearchResults
 from compass.music.music_config import (
     COOKIE_PATH,
     SPOTIFY_ID,
@@ -20,10 +19,10 @@ from compass.music.music_config import (
 )
 from compass.music.queue import Queue
 from compass.utils.command_utils import send_embed
-from compass.utils.exceptions import CustomException
-from compass.utils.utils import ddict, extract_url
+from compass.utils.exceptions import CompassError
+from compass.utils.utils import Ddict, extract_url
 
-# from compass.utils.utils import console
+logger = logging.getLogger(__name__)
 
 
 class Timer:
@@ -43,7 +42,7 @@ class Timer:
         self._task.cancel()
 
 
-class MusicPlayer(object):
+class MusicPlayer:
     """Controls the playback of audio and the sequential playing of the songs.
 
     Attributes:
@@ -127,7 +126,7 @@ class MusicPlayer(object):
             else:
                 playlist = self._get_playlist(user_search.url, user_search.playlist_type)
                 if playlist is None:
-                    raise CustomException("Could not find playlist.")
+                    raise CompassError("Could not find playlist.")
 
                 await itx.followup.send(
                     embed=discord.Embed(
@@ -149,13 +148,13 @@ class MusicPlayer(object):
                 for song in playlist.items[1:]:
                     try:
                         await self._add_to_queue(song, itx.user, itx.channel)
-                    except CustomException as e:
+                    except CompassError as e:
                         logger.warning(e)
                         await send_embed(
                             channel=itx.channel, title=ErrorMessages.SEARCH_ERROR, description=f"```{e}```"
                         )
                         continue
-        except CustomException as e:
+        except CompassError as e:
             logger.warning(e)
             await send_embed(channel=itx.channel, title=ErrorMessages.SEARCH_ERROR, description=f"```{e}```")
         except Exception as e:
@@ -203,7 +202,7 @@ class MusicPlayer(object):
                     name=r["title"],
                     total=r["playlist_count"],
                     items=[
-                        ddict(
+                        Ddict(
                             {
                                 "search": item["title"],
                                 "url": item["original_url"],
@@ -253,7 +252,7 @@ class MusicPlayer(object):
                     total=r["playlist_count"],
                     # items = r['entries'],)
                     items=[
-                        ddict(
+                        Ddict(
                             {
                                 "search": item["title"],
                                 "url": item["original_url"],
@@ -279,12 +278,12 @@ class MusicPlayer(object):
             try:
                 yt_search = music_utils.search_youtube(search.query)
             except Exception as e:
-                raise CustomException(f"Could not find youtube url for {search.query}: {e}.")
+                raise CompassError(f"Could not find youtube url for {search.query}: {e}.") from e
 
         # Get song info from youtube URL
         data = music_utils.get_yt_metadata(yt_search.url)
         if data is None:
-            raise CustomException(f"Could not get metadata for {search.url}.")
+            raise CompassError(f"Could not get metadata for {search.url}.")
 
         song = Song(
             requested_by=requested_by,
@@ -319,21 +318,21 @@ class MusicPlayer(object):
                     yt_url = music_utils.search_youtube(item.search)
                 except Exception as e:
                     logger.warning(f"Could not find youtube url for {item.search}: {e}")
-                    # yield CustomException(f"Could not find youtube url for {item.search}.")
+                    # yield CompassError(f"Could not find youtube url for {item.search}.")
                     continue
 
             # Get song info from youtube URL
             info = music_utils.get_yt_metadata(yt_url)
             if info is None:
                 # raise Exception(f"Could not get metadata for {yt_url}.")
-                yield CustomException(f"Could not get metadata for {yt_url}.")
+                yield CompassError(f"Could not get metadata for {yt_url}.")
                 continue
 
             song = Song(
                 base_url=yt_url,
                 requested_by=requested_by,
                 # base_url = info['url'],
-                uploader=info["uploader"],
+                # uploader=info["uploader"],
                 title=info["title"],
                 duration=info["duration"],
                 webpage_url=info["webpage_url"],
@@ -367,7 +366,7 @@ class MusicPlayer(object):
             # await self.timer.restart()
             self.timer.stop()
             self.timer = Timer(self.timeout_handler)
-            logger.debug(f"Timer restarted")
+            logger.debug("Timer restarted")
         # song = song
         # logger.info(f"Next song: {song}")
 
@@ -390,7 +389,7 @@ class MusicPlayer(object):
                 before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
                 **ffmpeg_options,
             ),
-            after=lambda x: self._next_song(channel),
+            after=lambda _x: self._next_song(channel),
         )
         await channel.send(embed=song.now_playing_embed())
 

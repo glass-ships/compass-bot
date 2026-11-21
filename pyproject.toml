@@ -19,12 +19,11 @@ classifiers = [
 dependencies = [
     ### Core
     "discord-py",
-    "loguru",
     "psutil",
     "rich",
     "typer",
     ### Database
-    "xata",
+    "pymongo",
     ### For Commands
     "dateparser",
     "GitPython",
@@ -40,7 +39,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["mkdocs", "mkdocs-material", "mkdocstrings[python]", "pytest", "ruff"]
+dev = ["mkdocs", "mkdocs-material", "mkdocstrings[python]", "mongomock", "pytest", "pytest-asyncio", "ruff"]
 
 [project.scripts]
 compass = "compass.main:app"
@@ -65,10 +64,10 @@ line-length = 120
 select = [
     "A",
     "ARG",
-    "B",    # flake8-bugbear codes
+    "B",   # flake8-bugbear codes
     "BLE",
-    "C",    # mccabe complexity codes
-    "D",    # pydocstyle codes
+    "C",   # mccabe complexity codes
+    # "D",    # pydocstyle codes
     "E",    # pycodestyle errors
     "F",    # pyflakes codes
     "FURB",
@@ -78,19 +77,15 @@ select = [
     "Q",    # flake8-quotes codes
 ]
 ignore = [
-    "D100", # Missing docstring in public module
-    "D101", # Missing docstring in public class
-    "D104", # Missing docstring in public package
-    "D202", # No blank lines after function docstring
-    "D203", # 1 blank line required before class docstring
-    "D213", # Multi-line docstring summary should start at the first line
-    "D413", # Missing blank line after last section of docstring
-    "D107", # Missing docstring in __init__
-    "F541", # f-strings with no placeholders
+    "BLE001", # blind exception (don't know all the discordpy exceptions)
+    "ARG002", # unused argument (discordpy commands have unused arguments)
 ]
 # exclude = []
 
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-addopts = "--import-mode=importlib"
+addopts = "--import-mode=importlib -m 'not integration'"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = ["integration: hits real external services (MongoDB Atlas, YouTube, ...). Run with: pytest -m integration"]
