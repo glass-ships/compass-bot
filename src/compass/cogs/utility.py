@@ -1,53 +1,64 @@
 import asyncio
+import logging
 import os
-import requests
 import shutil
 from pathlib import Path
-
 
 import discord
 from discord import app_commands
 from discord.ext import commands
-from loguru import logger
 
 from compass.bot import CompassBot
-from compass.config.bot_config import COMPASS_ROOT, GLASS, SERVERS
+from compass.config.bot_config import DOWNLOADS_DIR, GLASS, SERVERS
 from compass.utils import get_resource_path
-from compass.utils.command_utils import get_emojis, send_embed
+from compass.utils.checks import has_mod_ctx
+from compass.utils.command_utils import get_emojis, send_embed, send_embed_long
 
+logger = logging.getLogger(__name__)
+
+bot: CompassBot  # set in the cog's __init__ via `global bot`
 cog_path = Path(__file__)
-
-
-async def mod_check_ctx(ctx: commands.Context):
-    mod_roles = bot.db.get_mod_roles(ctx.guild.id)
-    user_roles = [x.id for x in ctx.author.roles]
-    if ctx.author.guild_permissions.administrator:
-        return True
-    if any(int(i) in user_roles for i in mod_roles):
-        return True
-    await ctx.send("You do not have permission to use this command.", delete_after=5.0)
-    await asyncio.sleep(3)
-    await ctx.message.delete()
-    return False
-
-
-async def mod_check_itx(itx: discord.Interaction):
-    mod_roles = bot.db.get_mod_roles(itx.guild_id)
-    user_roles = [x.id for x in itx.user.roles]
-    if itx.user.guild_permissions.administrator:
-        return True
-    if any(int(i) in user_roles for i in mod_roles):
-        return True
-    await itx.response.send_message("You do not have permission to use this command.", ephemeral=True)
-    return False
-
-
-has_mod_ctx = commands.check(mod_check_ctx)
-has_mod_itx = app_commands.check(mod_check_itx)
 
 
 async def setup(bot):
     await bot.add_cog(Utility(bot))
+
+
+### Helpers
+
+
+def cmds_to_str(cmds: list) -> str:
+    if not cmds:
+        return "No commands found"
+    lines = []
+    for c in cmds:
+        if isinstance(c, app_commands.Group):  # local group: walk nested subcommands
+            lines += [f"/{sub.qualified_name}" for sub in c.walk_commands() if isinstance(sub, app_commands.Command)]
+        elif isinstance(c, app_commands.AppCommand):  # fetched from Discord
+            subs = [o for o in c.options if isinstance(o, app_commands.AppCommandGroup)]
+            lines += [f"/{c.name} {s.name}" for s in subs] or [f"/{c.name}"]
+        else:  # local Command or ContextMenu
+            lines.append(f"/{c.name}")
+    return "\n".join(lines)
+
+
+def sticker_filename(name: str, emoji: str, fmt: str) -> str:
+    """Backup filename for a sticker: `{name}_{emoji}.{fmt}`. The emoji is kept so the sticker can be re-created.
+
+    `emoji` is the raw `GuildSticker.emoji` (Discord's `tags`: a unicode emoji, a name, or a custom emoji ID), which
+    `create_sticker` accepts back as is. Don't resolve IDs to `Emoji`: `str(Emoji)` is `<:name:id>`, invalid on Windows.
+    """
+    return f"{name}_{emoji}.{fmt}"
+
+
+def parse_sticker_filename(filename: str) -> tuple[str, str | None]:
+    """Splits a sticker backup filename into `(name, emoji)`; emoji is None if the file has none (e.g. `who me.png`).
+
+    Splits on the first `_`: emoji tags can contain underscores (`stuck_out_tongue_winking_eye`), sticker names
+    in the backups don't.
+    """
+    name, _, emoji = Path(filename).stem.partition("_")
+    return name, emoji or None
 
 
 class Utility(commands.Cog):
@@ -73,14 +84,16 @@ class Utility(commands.Cog):
         name="clean_activity_log", aliases=["clract"], description="Delete entries for users not in the guild anymore"
     )
     async def _clean_activity_log(self, ctx: commands.Context):
+        removed = 0
         for guild in bot.guilds:
             await ctx.send(f"Clearing user activity in {guild.name}")
-            for member in guild.members:
-                user_log = bot.db.get_user_log(guild.id, member.id)
-                if user_log is not None:
-                    await ctx.send(f"Removing user log for {member.name}")
-                    bot.db.drop_user_log(guild.id, member.id)
-        await ctx.send(f"Activity log cleaned")
+            members = {member.id for member in guild.members}
+            user_logs = bot.db.get_all_user_logs(guild.id)
+            for user_log in user_logs:
+                if user_log["user_id"] not in members:
+                    removed += 1
+                    bot.db.drop_user_log(guild.id, user_log["user_id"])
+        await ctx.send(f"Activity log cleaned. Removed {removed} entries.")
 
     @has_mod_ctx
     @commands.command(name="getcommands", aliases=["gc", "getcmds"], description="List all app commands (debug)")
@@ -91,19 +104,6 @@ class Utility(commands.Cog):
         guild_fetch_cmds = await bot.tree.fetch_commands(guild=g)
         global_fetch_cmds = await bot.tree.fetch_commands()
 
-        def cmds_to_str(list):
-            if not list:
-                return "No commands found"
-            for i in list:
-                if isinstance(i, discord.app_commands.Command):
-                    result = f"/{i.name}\n"
-                elif isinstance(i, discord.app_commands.Group):
-                    for j in i.commands:
-                        result = f"/{i.name} {j.name}\n"
-                else:
-                    result = "No commands found"
-            return result  # type: ignore
-
         msg = f"__**Global Commands (get) ({len(global_get_cmds)}):**__\n"
         msg += cmds_to_str(global_get_cmds)
         msg += f"\n__**Guild Commands (get) ({len(guild_get_cmds)}):**__\n"
@@ -113,7 +113,7 @@ class Utility(commands.Cog):
         msg += f"\n__**Guild Commands (fetch) ({len(guild_fetch_cmds)}):**__\n"
         msg += cmds_to_str(guild_fetch_cmds)
 
-        await ctx.send(embed=discord.Embed(description=msg))
+        await send_embed_long(channel=ctx.channel, description=msg)
 
     @has_mod_ctx
     @commands.command(
@@ -122,28 +122,62 @@ class Utility(commands.Cog):
     async def broadcast(self, ctx: commands.Context, *, msg: str):
         if ctx.author.id != GLASS:
             return
-        for server in bot.guilds:
-            # for channel in server.text_channels:
-            #     try:
-            #         await channel.send(msg)
-            #     except Exception:
-            #         continue
-            #     else:
-            #         break
-            log_channel = bot.db.get_channel_logs(ctx.guild.id)
-            if not log_channel:
-                # log_channel = ctx.guild.system_channel
-                return
-            channel = bot.get_channel(log_channel)
-            await channel.send(msg)
+        sent, skipped = 0, []
+        for guild in bot.guilds:
+            log_channel = bot.db.get_channel_logs(guild.id)
+            channel = bot.get_channel(log_channel) if log_channel else None
+            if channel is None:  # no log channel set, or it was deleted
+                skipped.append(guild.name)
+                continue
+            try:
+                await channel.send(msg)
+                sent += 1
+            except discord.HTTPException as e:  # e.g. missing permissions - don't stop the other servers
+                logger.warning(f"Broadcast to {guild.name} ({guild.id}) failed: {e}")
+                skipped.append(guild.name)
+        summary = f"Broadcast sent to {sent}/{len(bot.guilds)} servers."
+        if skipped:
+            summary += f"\nSkipped: {', '.join(skipped)}"
+        await ctx.send(embed=discord.Embed(description=summary))
 
     @has_mod_ctx
     @commands.command(name="clearcommands", aliases=["cc"])
-    async def _clear_commands(self, ctx: commands.Context, guild_id=None):
-        g = bot.get_guild(int(guild_id) if guild_id else ctx.guild.id)
+    async def _clear_commands(self, ctx: commands.Context, target: str | None = None):
+        """Clear slash commands from this guild, a guild by ID, or `global` (bot owner only).
+
+        Never falls through to global by accident: `guild=None` means global in discord.py, so an unknown guild ID
+        is an error rather than `get_guild(...) -> None`.
+        """
+        if target == "global":
+            if not await bot.is_owner(ctx.author):
+                await ctx.send(
+                    embed=discord.Embed(description="**Error**: Only the bot owner can clear global commands.")
+                )
+                return
+            count = len(bot.tree.get_commands())
+            bot.tree.clear_commands(guild=None)
+            await bot.tree.sync()
+            await ctx.send(
+                embed=discord.Embed(
+                    description=f"{count} global commands cleared. Restart the bot, then `sync`, to restore them."
+                )
+            )
+            return
+
+        if target is None:
+            g = ctx.guild
+        elif target.isdigit():
+            g = bot.get_guild(int(target))
+        else:
+            await ctx.send(embed=discord.Embed(description="**Error**: Expected a guild ID or `global`."))
+            return
+        if g is None:
+            await ctx.send(embed=discord.Embed(description=f"**Error**: I'm not in a guild with ID `{target}`."))
+            return
+        count = len(bot.tree.get_commands(guild=g))
         bot.tree.clear_commands(guild=g)
-        fmt = await bot.tree.sync(guild=g)
-        await ctx.send(embed=discord.Embed(description=f"{len(fmt)} commands cleared from {g.name}"))
+        await bot.tree.sync(guild=g)
+        await ctx.send(embed=discord.Embed(description=f"{count} commands cleared from {g.name}"))
 
     ##############################
     ### Emoji/Sticker Commands ###
@@ -171,37 +205,41 @@ class Utility(commands.Cog):
         aliases=["dlemojis", "dle"],
     )
     async def _download_emojis(self, ctx: commands.Context) -> None:
-        dir = get_resource_path(ctx.guild.name, "emojis")
-        if not dir:
-            dir = f"{COMPASS_ROOT}/downloads/{ctx.guild.name}/emojis"
-            Path(dir, "png").mkdir(parents=True, exist_ok=True)
-            Path(dir, "gif").mkdir(parents=True, exist_ok=True)
+        _dir = get_resource_path(ctx.guild.name, "emojis")
+        if not _dir:
+            _dir = DOWNLOADS_DIR / ctx.guild.name / "emojis"
+        Path(_dir, "static").mkdir(parents=True, exist_ok=True)
+        Path(_dir, "animated").mkdir(parents=True, exist_ok=True)
         guild = bot.get_guild(ctx.guild.id)
         count = 0
         for e in guild.emojis:
-            fn = f"gif/{e.name}.gif" if e.animated else f"png/{e.name}.png"
-            await e.save(fp=os.path.join(dir, fn))
+            fn = f"animated/{e.name}.gif" if e.animated else f"static/{e.name}.png"
+            await e.save(fp=os.path.join(_dir, fn))
             count += 1
         await ctx.send(f"{count} emoji's downloaded")
         return
 
     @has_mod_ctx
     @commands.command(name="syncemojis", description="Syncs emojis from resource repo or local backup")
-    async def _sync_emojis(self, ctx: commands.Context, option: str | None = None):
+    async def _sync_emojis(self, ctx: commands.Context):
         await send_embed(channel=ctx.channel, description="Syncing emojis...")
-        backup_dir_static = get_resource_path(ctx.guild.name, "emojis", "png")
-        backup_dir_anim = get_resource_path(ctx.guild.name, "emojis", "gif")
+        backup_dir_static = get_resource_path(ctx.guild.name, "emojis", "static")
+        backup_dir_anim = get_resource_path(ctx.guild.name, "emojis", "animated")
         if not (backup_dir_static and backup_dir_anim):
             await ctx.send("**Error**: No emoji backup found.")
             return
         backup_static = os.listdir(backup_dir_static)
         backup_anim = os.listdir(backup_dir_anim)
         guild_static, guild_anim = get_emojis(bot.get_guild(ctx.guild.id))
-        to_add = [f"{backup_dir_static}/{e}" for e in backup_static if e[:-4] not in [i.name for i in guild_static]] + [
-            f"{backup_dir_anim}/{e}" for e in backup_anim if e[:-4] not in [i.name for i in guild_anim]
+        static_names = {Path(f).stem for f in backup_static}
+        anim_names = {Path(f).stem for f in backup_anim}
+        guild_static_names = {e.name for e in guild_static}
+        guild_anim_names = {e.name for e in guild_anim}
+        to_add = [f"{backup_dir_static}/{f}" for f in backup_static if Path(f).stem not in guild_static_names] + [
+            f"{backup_dir_anim}/{f}" for f in backup_anim if Path(f).stem not in guild_anim_names
         ]
-        to_remove = [e for e in guild_static if f"{e.name}.png" not in backup_static] + [
-            e for e in guild_anim if f"{e.name}.gif" not in backup_anim
+        to_remove = [e for e in guild_static if e.name not in static_names] + [
+            e for e in guild_anim if e.name not in anim_names
         ]
         if not to_add and not to_remove:
             await ctx.send(embed=discord.Embed(description="Emojis already synced!"))
@@ -214,19 +252,23 @@ class Utility(commands.Cog):
         await ctx.send(embed=discord.Embed(description="Emojis Synced!"))
 
     @has_mod_ctx
-    @commands.command(name="clearemojis", description="Clears all emojis in a guild")
+    @commands.command(name="clearemojis", description="Removes emojis in a guild")
     async def _clear_emojis(self, ctx: commands.Context, emojis: list[discord.Emoji] = None) -> None:
         def _check(m):
             return m.author == ctx.author and m.channel == ctx.channel
 
         to_remove = ctx.guild.emojis if emojis is None else emojis
+        if len(to_remove) == 0:
+            await send_embed(channel=ctx.channel, description="No emojis to remove.")
+            return
+
         await send_embed(
             channel=ctx.channel,
-            description=f"**Warning**: This command will delete all {len(to_remove)} emojis in this server. Proceed? (y/n)",
+            description=f"**Warning**: This will delete {len(to_remove)} emojis in this server. Proceed? (y/n)",
         )
         try:
             msg = await bot.wait_for("message", check=_check, timeout=30.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await send_embed(channel=ctx, description="Command timed out after 30 sec.")
             return
         if not msg.content.lower().startswith("y"):
@@ -243,11 +285,10 @@ class Utility(commands.Cog):
         """Adds emojis to a guild from a list of filepaths"""
         for e in emojis:
             with open(e, "rb") as image:
-                name = e.split("/")[-1]
-                name = name[:-4]
+                name = Path(e).stem
                 try:
                     await ctx.guild.create_custom_emoji(name=name, image=image.read())
-                except Exception as error:
+                except Exception as error:  # noqa: BLE001 - TODO: Fix later
                     await ctx.send(f"Error uploading emoji `{e}`: {error}")
             await asyncio.sleep(1)
         await send_embed(channel=ctx.channel, description=f"{len(emojis)} emojis added")
@@ -264,26 +305,24 @@ class Utility(commands.Cog):
     @has_mod_ctx
     @commands.command(name="downloadstickers", description="Downloads a guild's stickers", aliases=["dlstickers"])
     async def _download_stickers(self, ctx: commands.Context) -> None:
-        dir = get_resource_path(ctx.guild.name, "stickers")
-        if not dir:
-            dir = f"{COMPASS_ROOT}/downloads/{ctx.guild.name}/stickers"
-            Path(dir).mkdir(parents=True, exist_ok=True)
+        _dir = get_resource_path(ctx.guild.name, "stickers")
+        if not _dir:
+            _dir = DOWNLOADS_DIR / ctx.guild.name / "stickers"
+            Path(_dir).mkdir(parents=True, exist_ok=True)
         guild = bot.get_guild(ctx.guild.id)
         count = 0
         for s in guild.stickers:
             try:
-                e = ctx.guild.get_emoji(int(s.emoji))
-            except ValueError:
-                e = s.emoji
-            r = requests.get(s.url)
-            with open(f"{dir}/{s.name}_{e}.{s.format.name}", "wb") as f:
-                f.write(r.content)
+                await s.save(f"{_dir}/{sticker_filename(s.name, s.emoji, s.format.name)}")
+            except TypeError:  # discord.py can't download lottie stickers
+                await ctx.send(f"Skipped `{s.name}`: lottie stickers can't be downloaded.")
+                continue
             count += 1
         await send_embed(channel=ctx, description=f"{count} stickers downloaded")
 
     @has_mod_ctx
     @commands.command(name="syncstickers", description="Syncs stickers from resource repo or local backup")
-    async def _sync_stickers(self, ctx: commands.Context, option: str = None):
+    async def _sync_stickers(self, ctx: commands.Context):
         await send_embed(channel=ctx, description="Syncing stickers...")
         backup_dir = get_resource_path(ctx.guild.name, "stickers")
         if not backup_dir:
@@ -291,28 +330,33 @@ class Utility(commands.Cog):
             return
         backup = os.listdir(backup_dir)
         guild_stickers = bot.get_guild(ctx.guild.id).stickers
-        to_add = [
-            f"{backup_dir}/{e}" for e in backup if e.split(".")[0].split("_")[0] not in [i.name for i in guild_stickers]
-        ]
-        to_remove = [e for e in guild_stickers if f"{e.name}.{e.format.name}" not in backup]
+        # Compare by name only; the emoji in the filename is just for re-creating the sticker
+        backup_names = {parse_sticker_filename(f)[0] for f in backup}
+        guild_names = {s.name for s in guild_stickers}
+        to_add = [f"{backup_dir}/{f}" for f in backup if parse_sticker_filename(f)[0] not in guild_names]
+        to_remove = [s for s in guild_stickers if s.name not in backup_names]
         await self._clear_stickers(ctx, to_remove)
         await self._add_stickers(ctx, to_add)
         await ctx.send(embed=discord.Embed(description="Stickers Synced!"))
 
     @has_mod_ctx
-    @commands.command(name="clearstickers", description="Clears all stickers in a guild")
+    @commands.command(name="clearstickers", description="Removes stickers in a guild")
     async def _clear_stickers(self, ctx: commands.Context, stickers: list[discord.Sticker] = None) -> None:
         def _check(m):
             return m.author == ctx.author and m.channel == ctx.channel
 
         to_remove = ctx.guild.stickers if stickers is None else stickers
+        if len(to_remove) == 0:
+            await send_embed(channel=ctx.channel, description="No stickers to remove.")
+            return
+
         await send_embed(
             channel=ctx.channel,
-            description=f"**Warning**: This command will delete all {len(to_remove)} stickers in this server. Proceed? (y/n)",
+            description=f"**Warning**: This will delete {len(to_remove)} stickers in this server. Proceed? (y/n)",
         )
         try:
             msg = await bot.wait_for("message", check=_check, timeout=30.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await send_embed(channel=ctx, description="Command timed out after 30 sec.")
             return
         if not msg.content.lower().startswith("y"):
@@ -329,26 +373,17 @@ class Utility(commands.Cog):
     async def _add_stickers(self, ctx: commands.Context, stickers: list) -> None:
         """Adds stickers to a guild from a list of filepaths"""
         for s in stickers:
-            parts = s.split("/")[-1].split(".")[0].split("_")
-            await ctx.send(f"Adding sticker `{parts}`")
-            if len(parts) == 1:
-                name = parts[0]
-                emoji = "❓"
-            else:
-                name = parts[0]
-                emoji = parts[1]
-            try:
-                emoji = ctx.guild.get_emoji(int(emoji))
-            except ValueError:
-                emoji = emoji
+            name, emoji = parse_sticker_filename(s)
+            emoji = emoji or "❓"
+            await ctx.send(f"Adding sticker `{name}` ({emoji})")
             try:
                 await ctx.guild.create_sticker(
                     name=name,
-                    description=f"",
+                    description="",
                     emoji=emoji,
                     file=discord.File(s),
                 )
-            except Exception as error:
+            except Exception as error:  # noqa: BLE001 - TODO: Fix later
                 await ctx.send(f"Error uploading sticker `{s}`: {error}")
             await asyncio.sleep(1)
         await send_embed(channel=ctx, description=f"{len(stickers)} stickers added")
@@ -359,11 +394,19 @@ class Utility(commands.Cog):
     #####################
 
     @has_mod_ctx
+    @commands.command(name="resources", description="Prints the resource path for the current guild")
+    async def _resources(self, ctx: commands.Context):
+        await ctx.send(f"Resource path for {ctx.guild.name}: `{get_resource_path(ctx.guild.name)}`")
+
+    @has_mod_ctx
     @commands.command(name="cleardownloads", aliases=["clr", "rm -rf"], description="Clear locally downloaded files")
-    async def _clear_downloads(self, ctx: commands.Context, option: str):
-        shutil.rmtree(f"downloads/")
+    async def _clear_downloads(self, ctx: commands.Context):
         await ctx.message.delete()
-        await ctx.send(f"Downloads cleared!", delete_after=2.0)
+        if not DOWNLOADS_DIR.exists():
+            await ctx.send("Nothing to clear.", delete_after=2.0)
+            return
+        shutil.rmtree(DOWNLOADS_DIR)
+        await ctx.send("Downloads cleared!", delete_after=2.0)
 
     # Purely academic / for personal usage if you want to host your own instance.
     # Not intended for scraping servers for content.
@@ -371,22 +414,19 @@ class Utility(commands.Cog):
     @commands.command(name="download", description="Downloads all attachments in a channel", aliases=["dl"])
     async def _download(self, ctx: commands.Context):
         glass_servers = [SERVERS.GLASS_HARBOR, SERVERS.GLASS_TEST, SERVERS.GLASS_H]
-        if ctx.guild.id not in glass_servers:  # type: ignore
-            await ctx.response.send_message(
-                "This command is only available in the Glass Discord servers.", ephemeral=True
-            )
+        if ctx.guild.id not in glass_servers:
+            await ctx.send("This command is only available in Glass Discord servers.")
             return
-        download_dir = f"./downloads/{ctx.guild.name}/{ctx.channel.name}"  # type: ignore
-        if not os.path.exists(download_dir):
-            os.makedirs(download_dir)
+        download_dir = DOWNLOADS_DIR / ctx.guild.name / ctx.channel.name
+        download_dir.mkdir(parents=True, exist_ok=True)
         count = 0
         async for msg in ctx.channel.history():
             if msg.attachments:
                 logger.debug("attachment(s) found")
                 for a in msg.attachments:
                     try:
-                        await a.save(fp=f"{download_dir}/{a.filename}")
-                    except Exception as e:
+                        await a.save(fp=download_dir / a.filename)
+                    except Exception as e:  # noqa: BLE001 - TODO: Fix later
                         await ctx.send(f"Error downloading attachment from {msg.id}:\n```\n{e}\n```")
                     count += 1
         await ctx.send(f"Success: Downloaded {count} items.")

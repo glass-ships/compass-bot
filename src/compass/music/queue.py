@@ -3,9 +3,9 @@ from collections import deque
 
 import discord
 
-from compass.config.bot_config import Emojis, COLORS
-from compass.music.music_config import InfoMessages, MAX_HISTORY_LENGTH, MAX_TRACKNAME_HISTORY_LENGTH
+from compass.config.bot_config import COLORS, Emojis
 from compass.music.dataclasses import Song
+from compass.music.music_config import MAX_HISTORY_LENGTH, MAX_TRACKNAME_HISTORY_LENGTH, InfoMessages
 
 
 class Queue:
@@ -34,7 +34,7 @@ class Queue:
                 # else:
                 #     queue_entry = f"{counter}. [{song.title if song.title else song.webpage_url}]({song.webpage_url})"
 
-                queue_entry = f"{counter}. [{song.title if song.title else song.base_url}]({song.base_url})"
+                queue_entry = f"{counter}. [{song.title or song.base_url}]({song.base_url})"
 
                 queue_str = "\n".join(queue_list)
                 if len(queue_str) + len(queue_entry) < 4096 and len(queue_list) < 20:

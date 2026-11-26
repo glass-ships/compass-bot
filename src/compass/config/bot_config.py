@@ -1,21 +1,27 @@
-from pathlib import Path
 from dataclasses import dataclass, field
+from pathlib import Path
 from random import choice
-
+from typing import Literal, get_args
 
 import discord
 
 # /path/to/compass-bot/src/compass/
 COMPASS_ROOT = Path(__file__).parent.parent.parent.parent
 COMPASS_SRC = Path(__file__).parent.parent
+# Local downloads, and the fallback for emoji/sticker backups when the resource repo has none
+DOWNLOADS_DIR = COMPASS_ROOT / "downloads"
 
 DEFAULT_PREFIX = ";"
 GLASS = 357738904591532033
 
 exclude_modules = ["__init__", "pinarchiver"]
 MODULES = [f.stem for f in Path(COMPASS_SRC / "cogs").glob("*.py") if f.stem not in exclude_modules]
-CHANNEL_OPTIONS = ["logs", "bot", "welcome", "music", "lfg", "videos"]  # , 'pins']
-ROLE_OPTIONS = ["mod", "member", "required"]
+# Literal aliases become fixed slash-command choices; the lists are derived so there's one source of truth.
+# Changing either requires re-syncing the command tree.
+ChannelOption = Literal["logs", "bot", "welcome", "music", "lfg", "videos"]
+RoleOption = Literal["mod", "member", "required"]
+CHANNEL_OPTIONS: list[str] = list(get_args(ChannelOption))
+ROLE_OPTIONS: list[str] = list(get_args(RoleOption))
 
 
 class SERVERS:
@@ -54,11 +60,11 @@ class COLORS:
 @dataclass
 class Emojis:
     # Music Emojis
-    catChillin = "<a:catChillin:1011104612733952011>"
+    cat_chillin = "<a:catChillin:1011104612733952011>"
     cd = "<a:_music:1011116507587162122>"
     eq = "<a:_eq:1011116489442598922>"
     loop = "<:retweet:1011048385534496862>"
-    musicNote = "<a:_musicNote:1011101467576385556>"
+    music_note = "<a:_musicNote:1011101467576385556>"
     playlist = "<:_playlist:1011048129111543880>"
     shuffle = ":twisted_rightwards_arrows:"
     compass = ":compass:"
@@ -92,6 +98,3 @@ class GuildData:
         self.guild_id = self.guild.id
         self.guild_name = self.guild.name
         self.default_channel = self.guild.system_channel.id if self.guild.system_channel else None
-        # self.chan_bot = self.chan_bot if self.chan_bot else self.default_channel
-        # self.chan_logs = self.chan_logs if self.chan_logs else self.default_channel
-        # self.chan_welcome = self.chan_welcome if self.chan_welcome else self.default_channel

@@ -1,3 +1,4 @@
+import logging
 import re
 import time
 import traceback
@@ -7,18 +8,31 @@ from pathlib import Path
 import discord
 from discord.ext import commands
 from discord.utils import get
-from loguru import logger
 
 from compass.bot import CompassBot
 from compass.config.bot_config import COLORS, COMPASS_SRC, SERVERS, GuildData
+from compass.utils.checks import is_mod
 from compass.utils.utils import download, getfilepath
 
+logger = logging.getLogger(__name__)
+
 cog_path = Path(__file__)
+
+
+bot: CompassBot  # set in the cog's __init__ via `global bot`
 
 
 async def setup(bot):
     """Cog setup method"""
     await bot.add_cog(Listeners(bot))
+
+
+### Helpers
+
+
+def is_video(a: discord.Attachment):
+    """Check if an attachment is a video based on its content type."""
+    return (a.content_type or "").startswith("video")
 
 
 class Listeners(commands.Cog):
@@ -51,7 +65,7 @@ class Listeners(commands.Cog):
         elif isinstance(error, commands.UserInputError):
             message = "Something about your input was wrong, please check your input and try again!"
         elif isinstance(error, commands.CheckFailure):
-            pass
+            return  # The check (e.g. has_mod_ctx) already replied to the user
         else:
             tb = traceback.format_exception(error)
             err_msg = ""
@@ -69,54 +83,53 @@ class Listeners(commands.Cog):
     @commands.Cog.listener("on_message")
     async def move_videos(self, msg: discord.Message):
         """Move videos to the specified video channel, if it is set."""
-        if msg.author.bot:
+        if msg.author.bot or msg.guild is None:
             return
         vid_channel = bot.db.get_channel_vids(msg.guild.id)
-        if vid_channel is None or msg.channel.id == vid_channel:
+        if not vid_channel or msg.channel.id == vid_channel:
+            return
+        # Channels where videos are allowed (/allowvideos); threads follow their parent channel.
+        # int(): entries may be stored as str (GuildData declares list[str]) or int (channel.id)
+        allowed = {int(c) for c in bot.db.get_videos_whitelist(msg.guild.id) or []}
+        if msg.channel.id in allowed or getattr(msg.channel, "parent_id", None) in allowed:
             return
         vid_links = ["youtube.com/watch?", "youtu.be/", "vimeo.com/", "dailymotion.com/video", "tiktok.com"]
-        if not any(i in msg.content for i in vid_links) and not any("video" in a.content_type for a in msg.attachments):
+        if not any(i in msg.content for i in vid_links) and not any(is_video(a) for a in msg.attachments):
             return
-        else:
-            files = []
-            if msg.attachments:
-                for a in filter(
-                    lambda x,: x.size < msg.guild.filesize_limit,
-                    msg.attachments,
-                ):
-                    await download(msg, a, "temp/moved_messages")
-                    files.append(discord.File(getfilepath(msg, f"temp/moved_messages/{a.filename}")))
-            newmessage = (
-                f"{msg.author.mention} has uploaded a video.\n\n-# **__Original Message:__**\n>>> {msg.content}\n"
-            )
-            if any(a.size >= msg.guild.filesize_limit for a in msg.attachments):
-                newmessage += "`Plus some files too large to resend`"
-            # Move the message
-            chan = await bot.fetch_channel(vid_channel)
-            movedmessage = await chan.send(content=newmessage, files=files)
-            # Delete original and notify author
-            await msg.delete()
-            await msg.channel.send(
-                f"{msg.author.mention} - your message contained a video, and was moved to {movedmessage.jump_url}"
-            )
-            return
-
-    @commands.Cog.listener("on_message")
-    async def log_activity(self, message: discord.Message):
-        """Log messages to the database."""
-        if message.author.bot or isinstance(message.channel, discord.DMChannel):
-            return
-        track_activity = bot.db.get_field(message.guild.id, "track_activity")
-        if not track_activity:
-            return
-        bot.db.add_or_update_user_log(
-            message.guild.id, message.guild.name, message.author.id, message.author.name, message.created_at
+        files = []
+        if msg.attachments:
+            for a in filter(
+                lambda x: x.size < msg.guild.filesize_limit,
+                msg.attachments,
+            ):
+                await download(msg, a, "temp/moved_messages")
+                files.append(discord.File(getfilepath(msg, f"temp/moved_messages/{a.filename}")))
+        newmessage = f"{msg.author.mention} has uploaded a video.\n\n-# **__Original Message:__**\n>>> {msg.content}\n"
+        if any(a.size >= msg.guild.filesize_limit for a in msg.attachments):
+            newmessage += "`Plus some files too large to resend`"
+        # Move the message
+        chan = await bot.fetch_channel(vid_channel)
+        movedmessage = await chan.send(content=newmessage, files=files)
+        # Delete original and notify author
+        await msg.delete()
+        await msg.channel.send(
+            f"{msg.author.mention} - your message contained a video, and was moved to {movedmessage.jump_url}"
         )
 
     @commands.Cog.listener("on_message")
-    async def bat_react(self, message: discord.Message):
+    async def log_activity(self, msg: discord.Message):
+        """Log messages to the database."""
+        if msg.author.bot or isinstance(msg.channel, discord.DMChannel):
+            return
+        track_activity = bot.db.get_field(msg.guild.id, "track_activity")
+        if not track_activity:
+            return
+        bot.db.add_or_update_user_log(msg.guild.id, msg.guild.name, msg.author.id, msg.author.name, msg.created_at)
+
+    @commands.Cog.listener("on_message")
+    async def bat_react(self, msg: discord.Message):
         """BATS ONLY: React with a bat emoji to messages with certain trigger words."""
-        if (message.author.bot) or (message.guild.id not in [SERVERS.BATS, SERVERS.GLASS_TEST]):
+        if (msg.author.bot) or (msg.guild is None) or (msg.guild.id not in [SERVERS.BATS, SERVERS.GLASS_TEST]):
             return
         triggers = [
             "bat",
@@ -127,105 +140,92 @@ class Listeners(commands.Cog):
             "<@&1210756079487688774>",  # @Example Role 2
         ]
         emoji = bot.get_emoji(1289965546900557997)  # <:bat_peek:1289965546900557997>
-        if emoji is None and message.guild.id == SERVERS.BATS:
+        if emoji is None and msg.guild.id == SERVERS.BATS:
             logger.error("Bat emoji not found")
-            emoji = str("🦇")
+            emoji = "🦇"
 
         # Extract role mentions first, then clean the rest
-        role_mentions = re.findall(r"<@&\d+>", message.content)
-        msg = re.sub(r"[^a-zA-Z\s]+", "", message.content)  # Clean to letters and spaces
+        role_mentions = re.findall(r"<@&\d+>", msg.content)
+        text = re.sub(r"[^a-zA-Z\s]+", "", msg.content)  # Clean to letters and spaces
         # Add back the role mentions
-        msg = msg + " " + " ".join(role_mentions)
+        text = text + " " + " ".join(role_mentions)
 
-        if any(i.lower() in triggers for i in msg.split()):
-            await message.add_reaction(emoji)
+        if any(i.lower() in triggers for i in text.split()):
+            await msg.add_reaction(emoji)
         # else:
         #     await message.add_reaction(str("❌"))
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):  # reaction, user):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         """Flags and logs a message when a mod reacts to any message with the :mag: emoji"""
-
-        message = await bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-        reaction = payload.emoji
-        emoji = "🔍"
-        user = payload.member
-        channel_id = bot.db.get_channel_logs(message.guild.id)
-        log_channel = get(message.guild.text_channels, id=channel_id)
-        if not log_channel:
-            # await message.channel.send(
-            #     f"Logs channel has not been set!\nUse `;set_logs_channel <#channel>` to set one."
-            # )
+        # Cheap checks first: this fires for every reaction the bot can see, including its own and in DMs
+        if payload.guild_id is None or payload.emoji.name != "🔍" or payload.member is None or payload.member.bot:
             return
-        if reaction.name == emoji:
-            # Check for mod role
-            mod_roles = bot.db.get_mod_roles(payload.guild_id)
-            if mod_roles is None:
-                return
-            roles = [x.id for x in user.roles]
-            if any(int(r) in roles for r in mod_roles):
-                # Remove the reaction
-                await message.remove_reaction("🔍", user)
+        user = payload.member
+        if not is_mod(user, bot.db.get_mod_roles(payload.guild_id)):
+            return
+        guild = bot.get_guild(payload.guild_id)
+        log_channel = get(guild.text_channels, id=bot.db.get_channel_logs(payload.guild_id))
+        if not log_channel:
+            return
 
-                # Get info
-                flagged_message, flagged_user = message, message.author
-                dt = datetime.now()
-                flagged_time = int(time.mktime(dt.timetuple()))
+        # Only now fetch the message (an API call)
+        message = await guild.get_channel_or_thread(payload.channel_id).fetch_message(payload.message_id)
+        await message.remove_reaction("🔍", user)
 
-                # Create embed
-                ce = discord.Embed(
-                    title=f"Flagged Message", description=f"A message has been flagged in {flagged_message.channel}"
-                )
-                if flagged_message.content:
-                    ce.add_field(name="Message content:", value=flagged_message.content, inline=False)
-                ce.add_field(name="Flagged by:", value=user, inline=True)
-                ce.add_field(name="Message Author:", value=flagged_user, inline=True)
-                ce.add_field(
-                    name="Message:",
-                    value=f"[Jump to](https://discordapp.com/channels/{flagged_message.guild.id}/{flagged_message.channel.id}/{flagged_message.id})",
-                    inline=True,
-                )
-                for i in flagged_message.attachments:
-                    ce.add_field(name="Attachment:", value=f"{i.filename}")
-                ce.add_field(name="Flagged at:", value=f"<t:{flagged_time}:R>")
+        # Get info
+        flagged_message, flagged_user = message, message.author
+        dt = datetime.now()
+        flagged_time = int(time.mktime(dt.timetuple()))
 
-                # Send embed to logs
-                await log_channel.send(content=None, embed=ce)
+        # Create embed
+        ce = discord.Embed(
+            title="Flagged Message", description=f"A message has been flagged in {flagged_message.channel}"
+        )
+        if flagged_message.content:
+            ce.add_field(name="Message content:", value=flagged_message.content[:1024], inline=False)  # field limit
+        ce.add_field(name="Flagged by:", value=user, inline=True)
+        ce.add_field(name="Message Author:", value=flagged_user, inline=True)
+        ce.add_field(
+            name="Message:",
+            value=f"[Jump to](https://discordapp.com/channels/{flagged_message.guild.id}/{flagged_message.channel.id}/{flagged_message.id})",
+            inline=True,
+        )
+        for i in flagged_message.attachments:
+            ce.add_field(name="Attachment:", value=f"{i.filename}")
+        ce.add_field(name="Flagged at:", value=f"<t:{flagged_time}:R>")
 
+        # Send embed to logs
+        await log_channel.send(content=None, embed=ce)
         return
 
     #######################
     ### Guild Listeners ###
     #######################
 
+    async def _notify_harbor(self, description: str) -> None:
+        """Post a notice to Glass Harbor's logs channel, if the bot is in Glass Harbor and one is set.
+
+        Skips quietly otherwise (e.g. the dev bot isn't in Glass Harbor). Callers do their DB writes first.
+        """
+        harbor = bot.get_guild(SERVERS.GLASS_HARBOR)
+        if harbor is None:
+            return
+        channel = get(harbor.text_channels, id=bot.db.get_channel_logs(harbor.id))
+        if channel is not None:
+            await channel.send(embed=discord.Embed(description=description))
+
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        # prep sending notif to Glass Harbor (for logging/debug)
-        glass_guild = bot.get_guild(SERVERS.GLASS_HARBOR)
-        chan_id = bot.db.get_channel_logs(glass_guild.id)
-        channel = get(glass_guild.text_channels, id=chan_id)
-
         data = GuildData(guild).__dict__
         del data["guild"]
-
-        if bot.db.add_guild(guild.id, data):
-            await channel.send(embed=discord.Embed(description=f'Guild "{guild.name}" added to database.'))
-        else:
-            await channel.send(embed=discord.Embed(description=f'Guild "{guild.name}" already in database.'))
-        return
+        added = bot.db.add_guild(guild.id, data)
+        await self._notify_harbor(f'Guild "{guild.name}" {"added to" if added else "already in"} database.')
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        # prep sending notif to Glass Harbor (for logging/debug)
-        glass_guild = bot.get_guild(SERVERS.GLASS_HARBOR)
-        chan_id = bot.db.get_channel_logs(glass_guild.id)
-        channel = get(glass_guild.text_channels, id=chan_id)
-
-        if bot.db.drop_guild(guild.id):
-            await channel.send(embed=discord.Embed(description=f'Guild "{guild.name}" removed from database.'))
-        else:
-            await channel.send(embed=discord.Embed(description=f'Guild "{guild.name}" not found in database.'))
-        return
+        removed = bot.db.drop_guild(guild.id)
+        await self._notify_harbor(f'Guild "{guild.name}" {"removed from" if removed else "not found in"} database.')
 
     @commands.Cog.listener()
     async def on_guild_update(self, oldguild, newguild):
@@ -239,6 +239,7 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
         import io
+
         import httpx
         from PIL import Image
 
@@ -247,9 +248,11 @@ class Listeners(commands.Cog):
             return
 
         channel_id = bot.db.get_channel_welcome(guild_id=guild.id)
-        if channel_id == 0:
+        if not channel_id:
             return
         channel = get(guild.text_channels, id=channel_id)
+        if channel is None:  # set, but the channel was deleted
+            return
 
         av = httpx.get(member.display_avatar.url)
         ocean = Image.open(f"{COMPASS_SRC}/images/welcome_background.png")
@@ -269,7 +272,7 @@ class Listeners(commands.Cog):
                 content=f"Welcome, {member.mention}!",
                 embed=discord.Embed(
                     title=f"Welcome to {guild.name}",
-                    description=f"""
+                    description="""
                     Please familiarize yourself with the Harbor <#954197139049816066>, 
                     have a look around, and enjoy your stay!
 
@@ -283,12 +286,15 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member) -> None:
         guild = member.guild
+        bot.db.drop_user_log(guild.id, member.id)
         if guild.id != SERVERS.GLASS_HARBOR:
             return
         channel_id = bot.db.get_channel_logs(guild_id=guild.id)
-        if channel_id is None:
+        if not channel_id:
             return
         channel = get(guild.text_channels, id=channel_id)
+        if channel is None:  # set, but the channel was deleted
+            return
         await channel.send(
             embed=discord.Embed(
                 title=f"Goodbye, {member.name}!",
@@ -296,4 +302,3 @@ class Listeners(commands.Cog):
                 color=COLORS.random(),
             )
         )
-        bot.db.drop_user_log(guild.id, member.id)

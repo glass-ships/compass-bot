@@ -1,22 +1,22 @@
 """Generic utility functions for Compass Bot"""
 
+import logging
 import os
 import re
+import shlex
 import subprocess
 import time
 from collections.abc import Generator
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from datetime import datetime
-from dateutil import tz
-
 import discord
-import shlex
 from dateparser import parse as dt_parse
-from loguru import logger
 from rich.console import Console
 
-from compass.config.bot_config import COMPASS_ROOT
+from compass.config.bot_config import COMPASS_ROOT, DOWNLOADS_DIR
+
+logger = logging.getLogger(__name__)
 
 console = Console(
     stderr=True,
@@ -33,7 +33,7 @@ REPO_URL = f"https://oauth2:{os.getenv('GITLAB_PAT')}@gitlab.com/glass-ships/dis
 URL_REGEX = re.compile(r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
 
-class ddict(dict):
+class Ddict(dict):
     """dot.notation access to dictionary attributes"""
 
     __getattr__ = dict.get
@@ -59,7 +59,7 @@ class URL(str):
 #####################
 
 
-def parse_args(arg_str: str) -> ddict:
+def parse_args(arg_str: str) -> Ddict:
     """Parse arguments from a string into a dictionary
 
     Example:
@@ -91,7 +91,7 @@ def parse_args(arg_str: str) -> ddict:
         else:
             i += 1
 
-    return ddict(opts)
+    return Ddict(opts)
 
 
 def extract_url(content: str) -> str | None:
@@ -117,10 +117,9 @@ async def download(
     path: str | os.PathLike | None,
 ) -> None:
     """Download an attachment from a message"""
-    fp = os.path.join("downloads", msg.guild.name, path or "")
-    fn = attachment.filename
-    Path(fp).mkdir(parents=True, exist_ok=True)
-    await attachment.save(fp=Path(fp) / fn)
+    fp = DOWNLOADS_DIR / msg.guild.name / (path or "")
+    fp.mkdir(parents=True, exist_ok=True)
+    await attachment.save(fp=fp / attachment.filename)
     return
 
 
@@ -131,7 +130,7 @@ def getfilepath(itx, fp) -> str:
         itx (discord.Message): Message context
         fp (str): File path
     """
-    return f"downloads/{itx.guild.name}/{fp}"
+    return str(DOWNLOADS_DIR / itx.guild.name / fp)
 
 
 #######################
@@ -144,24 +143,54 @@ def parse_date(date_str: str):
     return dt_parse(date_str, settings={"TIMEZONE": "UTC"})
 
 
-def check_time_format(t: str):
-    """Check that datetime input is in format `YYYY-MM-DD HH:MM AM/PM TZ`"""
-    pattern = r"\d{4}-\d{1,2}-\d{1,2}\s\d{1,2}:\d{2}\s[a-zA-Z]{2}\s[a-zA-Z]{3}"
-    match = re.match(pattern, t)
-    return bool(match)
+# Timezone abbreviations are fixed UTC offsets (EST is always -5, EDT always -4), so map them
+# explicitly rather than relying on dateutil's tz.gettz(), which doesn't recognize most of them.
+TZ_OFFSETS = {
+    "UTC": 0,
+    "GMT": 0,
+    "EST": -5,
+    "EDT": -4,
+    "CST": -6,
+    "CDT": -5,
+    "MST": -7,
+    "MDT": -6,
+    "PST": -8,
+    "PDT": -7,
+    "BST": 1,
+    "CET": 1,
+    "CEST": 2,
+}
+TIME_FORMATS = ("%Y-%m-%d %I:%M %p", "%Y-%m-%d %H:%M")  # 12-hour with AM/PM, then 24-hour
 
 
-def dt_to_epoch(t: str):
-    """Convert datetime str to epoch time (requires format: `YYYY-MM-DD HH:MM AM/PM TZ`)"""
-    msg_split = t.split()
-    temp = []
-    temp.extend(msg_split[0].split("-"))
-    temp.extend(msg_split[1].split(":"))
-    temp.append(msg_split[2])
-    stream_tz = tz.gettz(msg_split[3])
-    dt = datetime(int(temp[0]), int(temp[1]), int(temp[2]), int(temp[3]), int(temp[4]), tzinfo=stream_tz)
-    et = int(time.mktime(dt.timetuple()))
-    return et
+def check_time_format(t: str) -> bool:
+    """Check that datetime input is in format `YYYY-MM-DD HH:MM [AM/PM] TZ`"""
+    pattern = r"\d{4}-\d{1,2}-\d{1,2}\s\d{1,2}:\d{2}(\s[aApP][mM])?\s[a-zA-Z]{3,4}"
+    return re.fullmatch(pattern, t) is not None
+
+
+def dt_to_epoch(t: str) -> int:
+    """Convert datetime str to epoch time.
+
+    Accepts `YYYY-MM-DD HH:MM AM/PM TZ` (12-hour) or `YYYY-MM-DD HH:MM TZ` (24-hour),
+    where TZ is one of the abbreviations in TZ_OFFSETS.
+
+    Raises:
+        ValueError: If the time or timezone can't be parsed.
+    """
+    date_time, tz_abbr = t.strip().rsplit(" ", 1)
+    offset = TZ_OFFSETS.get(tz_abbr.upper())
+    if offset is None:
+        raise ValueError(f"Unknown timezone {tz_abbr!r}; expected one of {', '.join(TZ_OFFSETS)}")
+    for fmt in TIME_FORMATS:
+        try:
+            dt = datetime.strptime(date_time, fmt)
+            break
+        except ValueError:
+            continue
+    else:
+        raise ValueError(f"Invalid time {date_time!r}; expected 'YYYY-MM-DD HH:MM AM/PM' or 'YYYY-MM-DD HH:MM'")
+    return int(dt.replace(tzinfo=timezone(timedelta(hours=offset))).timestamp())
 
 
 def epoch_to_dt(t):
@@ -210,9 +239,9 @@ def get_resource_path(guild_name: str, *resource: str) -> str | None:
     get_resource_repo()
     if os.path.exists(f"{REPO_PATH}/{guild_name}/{sub_path}"):
         resource_path = f"{REPO_PATH}/{guild_name}/{sub_path}"
-    elif os.path.exists(f"{COMPASS_ROOT}/downloads/{guild_name}"):
-        Path(f"{COMPASS_ROOT}/downloads/{guild_name}/{sub_path}").mkdir(parents=True, exist_ok=True)
-        resource_path = f"{COMPASS_ROOT}/downloads/{guild_name}/{sub_path}"
+    elif (DOWNLOADS_DIR / guild_name).exists():
+        resource_path = f"{DOWNLOADS_DIR}/{guild_name}/{sub_path}"
+        Path(resource_path).mkdir(parents=True, exist_ok=True)
     else:
         return None
     return resource_path

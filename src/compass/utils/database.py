@@ -8,14 +8,14 @@ MONGO_URL = os.getenv("MONGO_URL")
 
 
 class ServerDB:
-    """Class representing the bot's mongo database
-    
+    """Class representing the bot's mongo database.
+
     Required MongoDB Indexes:
     - guilds/dev-guilds collection: {"guild_id": 1} (unique)
     - lfgs collection: {"lfg_id": 1} (unique)
     - activity-log collection: {"_id": 1} (default, composite: "guild_id-user_id")
     """
-    
+
     MAX_CACHE_SIZE = 100  # Maximum number of cached guilds
 
     def __init__(self, dev: bool = False):
@@ -43,12 +43,12 @@ class ServerDB:
         self._cache[guild_id] = (datetime.now(), data)
 
     def _clear_from_cache(self, guild_id: int):
-        """Remove guild from cache after updates"""
+        """Remove guild from cache after updates."""
         self._cache.pop(guild_id, None)
-    
+
     def close(self):
-        """Close the MongoDB connection"""
-        if hasattr(self, 'cluster'):
+        """Close the MongoDB connection."""
+        if hasattr(self, "cluster"):
             self.cluster.close()
 
     ####################
@@ -56,7 +56,8 @@ class ServerDB:
     ####################
 
     def get_field(self, guild_id: int, field: str):
-        """Get specified field from a guild entry
+        """Get specified field from a guild entry.
+
         Args:
             guild_id (int): Guild ID
             field (str): Field to retrieve
@@ -77,8 +78,8 @@ class ServerDB:
             return None
 
     def get_all_guilds(self):
-        """Returns a list of all guild entries
-        
+        """Return a list of all guild entries.
+
         Note: This method intentionally bypasses cache since it needs to return
         ALL guilds, which may exceed cache size and change frequently.
         """
@@ -87,53 +88,51 @@ class ServerDB:
         return guild_ids
 
     def get_guild_name(self, guild_id: int):
-        """Returns the name of a guild by id"""
+        """Return the name of a guild by id."""
         return self.get_field(guild_id, "guild_name")
 
     def get_prefix(self, guild_id: int):
-        """Returns the prefix associated with a guild id"""
+        """Return the prefix associated with a guild id."""
         return self.get_field(guild_id, "prefix")
 
     def get_mod_roles(self, guild_id: int):
-        """Returns a list of mod roles associated with a guild id"""
+        """Return a list of mod roles associated with a guild id."""
         return self.get_field(guild_id, "mod_roles")
 
     def get_mem_role(self, guild_id: int):
-        """Returns the member role associated with a guild id"""
+        """Return the member role associated with a guild id."""
         return self.get_field(guild_id, "mem_role")
 
     def get_required_roles(self, guild_id: int):
-        """Returns the required roles associated with a guild id"""
+        """Return the required roles associated with a guild id."""
         return self.get_field(guild_id, "required_roles")
 
     def get_channel_bot(self, guild_id: int):
-        """Returns the bot channel associated with a guild id"""
+        """Return the bot channel associated with a guild id."""
         return self.get_field(guild_id, "chan_bot")
 
     def get_channel_logs(self, guild_id: int):
-        """Returns the log channel associated with a guild id"""
+        """Return the log channel associated with a guild id."""
         return self.get_field(guild_id, "chan_logs")
 
     def get_channel_music(self, guild_id: int):
-        """Returns the music channel associated with a guild id"""
+        """Return the music channel associated with a guild id."""
         return self.get_field(guild_id, "chan_music")
 
     def get_channel_vids(self, guild_id: int):
-        """Returns the videos channel associated with a guild id"""
+        """Return the videos channel associated with a guild id."""
         return self.get_field(guild_id, "chan_vids")
 
     def get_channel_lfg(self, guild_id: int):
-        """Returns the LFG channel associated with a guild id"""
+        """Return the LFG channel associated with a guild id."""
         return self.get_field(guild_id, "chan_lfg")
 
     def get_channel_welcome(self, guild_id: int):
-        """Returns the welcome channel associated with a guild id"""
+        """Return the welcome channel associated with a guild id."""
         return self.get_field(guild_id, "chan_welcome")
 
     def get_videos_whitelist(self, guild_id: int):
-        """
-        Get videos whitelist associated with a guild id
-        """
+        """Get videos whitelist associated with a guild id."""
         return self.get_field(guild_id, "videos_whitelist")
 
     ##########################
@@ -148,101 +147,101 @@ class ServerDB:
         return False
 
     def add_or_update_field(self, guild_id: int, field: str, value):
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {field: value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         return
 
     def update_guild_id(self, guild_id: int, new_value: int):
         """Update guild ID (WARNING: This changes the document's primary identifier)"""
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {"guild_id": new_value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         self._clear_from_cache(new_value)  # Also invalidate new ID
         return
 
     def update_guild_name(self, guild_id: int, new_value: str):
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {"guild_name": new_value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         return
 
     def update_prefix(self, guild_id: int, new_value: str):
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {"prefix": new_value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         return
 
     def update_mod_roles(self, guild_id: int, new_value: list[int]):
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {"mod_roles": new_value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         return
 
     def update_mem_role(self, guild_id: int, new_value: int):
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {"mem_role": new_value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         return
 
     def update_required_roles(self, guild_id: int, new_value: list[int]):
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {"required_roles": new_value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         return
 
     def update_channel_bot(self, guild_id: int, new_value: int):
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {"chan_bot": new_value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         return
 
     def update_channel_logs(self, guild_id: int, new_value: int):
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {"chan_logs": new_value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         return
 
     def update_channel_welcome(self, guild_id: int, new_value: int):
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {"chan_welcome": new_value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         return
 
     def update_channel_music(self, guild_id: int, new_value: int):
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {"chan_music": new_value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         return
 
     def update_channel_lfg(self, guild_id: int, new_value: int):
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {"chan_lfg": new_value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         return
 
     def update_channel_vids(self, guild_id: int, new_value: int):
-        filter = {"guild_id": guild_id}
+        _filter = {"guild_id": guild_id}
         newval = {"$set": {"chan_vids": new_value}}
-        self.collection.update_one(filter, newval, upsert=True)
+        self.collection.update_one(_filter, newval, upsert=True)
         self._clear_from_cache(guild_id)
         return
 
     def add_videos_whitelist(self, guild_id: int, new_value: int):
-        filter = {"guild_id": guild_id}
-        self.collection.update_one(filter, {"$addToSet": {"videos_whitelist": new_value}})
+        _filter = {"guild_id": guild_id}
+        self.collection.update_one(_filter, {"$addToSet": {"videos_whitelist": new_value}})
         self._clear_from_cache(guild_id)
         return
 
@@ -251,23 +250,23 @@ class ServerDB:
     ####################
 
     def drop_field(self, guild_id: int, field):
-        filter = {"guild_id": guild_id}
-        result = self.collection.update_one(filter, {"$unset": {field: ""}})
+        _filter = {"guild_id": guild_id}
+        result = self.collection.update_one(_filter, {"$unset": {field: ""}})
         self._clear_from_cache(guild_id)
         return result
 
     def drop_guild(self, guild_id: int):
-        filter = {"guild_id": guild_id}
-        result = self.collection.find_one_and_delete(filter)
+        _filter = {"guild_id": guild_id}
+        result = self.collection.find_one_and_delete(_filter)
         self._clear_from_cache(guild_id)
         return result
 
-    def drop_videos_whitelist(self, guild_id: int, channel_id: int, all: bool = False):
-        filter = {"guild_id": guild_id}
-        if all:
-            result = self.collection.update_one(filter, {"$set": {"videos_whitelist": []}})
+    def drop_videos_whitelist(self, guild_id: int, channel_id: int, _all: bool = False):
+        _filter = {"guild_id": guild_id}
+        if _all:
+            result = self.collection.update_one(_filter, {"$set": {"videos_whitelist": []}})
         else:
-            result = self.collection.update_one(filter, {"$pull": {"videos_whitelist": channel_id}})
+            result = self.collection.update_one(_filter, {"$pull": {"videos_whitelist": channel_id}})
         self._clear_from_cache(guild_id)
         return result
 
@@ -341,10 +340,10 @@ class ServerDB:
         user_name: str,
         timestamp: datetime,
     ):
-        id = str(f"{guild_id}-{user_id}")
+        _id = str(f"{guild_id}-{user_id}")
         ts = timestamp.isoformat(timespec="minutes")
         self.activity_log.update_one(
-            {"_id": id},
+            {"_id": _id},
             {
                 "$set": {
                     "guild_id": guild_id,
@@ -358,14 +357,19 @@ class ServerDB:
         )
         return
 
+    def get_all_user_logs(self, guild_id: int):
+        """Returns all user logs for a given guild"""
+        logs = self.activity_log.find({"guild_id": guild_id})
+        return list(logs)
+
     def get_user_log(self, guild_id: int, user_id: int) -> datetime | None:
-        id = str(f"{guild_id}-{user_id}")
-        record = self.activity_log.find_one({"_id": id})
+        _id = str(f"{guild_id}-{user_id}")
+        record = self.activity_log.find_one({"_id": _id})
         if record:
             return datetime.fromisoformat(record["timestamp"])
         return None
 
     def drop_user_log(self, guild_id: int, user_id: int):
-        id = str(f"{guild_id}-{user_id}")
-        result = self.activity_log.delete_one({"_id": id})
+        _id = str(f"{guild_id}-{user_id}")
+        result = self.activity_log.delete_one({"_id": _id})
         return result

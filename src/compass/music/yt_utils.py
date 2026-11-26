@@ -1,8 +1,8 @@
 """Modified from PyYouTube by @mrlokaman (MIT License)"""
 
+import json
 import re
 import urllib.request
-import json
 
 
 class SearchYT:
@@ -23,7 +23,8 @@ class SearchYT:
         )[:limit]
         data_ = []
         for i in data:
-            js_data = {"id": "", "title": "", "thumb": "", "simple_data": ""}
+            # js_data = {"id": "", "title": "", "thumb": "", "simple_data": ""}
+            js_data = {}
             js_data["id"] = i[0]
             js_data["title"] = i[3]
             js_data["thumb"] = i[1], i[2]
@@ -42,11 +43,10 @@ class Data:
         html = urllib.request.urlopen(res)
         self.source = html.read().decode("utf8")
 
-        # Construct a dictionary of the data
-
     def data(self):
+        """Construct a dictionary of the data"""
         videodetails = re.findall(r'"videoDetails":\{(.+?),"isOwnerViewing', self.source)[0] or None
-        id = re.findall(r'"videoId":"(\S{11})', videodetails)[0] or None
+        _id = re.findall(r'"videoId":"(\S{11})', videodetails)[0] or None
         title = re.findall(r'"title":"(.+?)",', videodetails)[0] or None
         duration = re.findall(r'"lengthSeconds":"(\d+)', self.source)[0] or None
         try:
@@ -54,35 +54,35 @@ class Data:
             thumbnail = thumbnail.replace("hqdefault.jpg", "maxresdefault.webp")
             thumbnail = thumbnail.replace("/vi/", "/vi_webp/")
             thumbnail = thumbnail.split("?")[0]
-        except Exception:  # get real exception later
+        except Exception:  # noqa: BLE001 - get real exception later
             thumbnail = None
         try:
-            channelName = re.findall('"channelName":"(.+?)",', self.source)[0] or None
-        except Exception:  # get real exception later
+            channel_name = re.findall('"channelName":"(.+?)",', self.source)[0] or None
+        except Exception:  # noqa: BLE001 - get real exception later
             try:
-                channelName = re.findall('"ownerChannelName":"(.+?)","uploadDate', self.source)[0] or None
-            except Exception:  # get real exception later
-                channelName = None
+                channel_name = re.findall('"ownerChannelName":"(.+?)","uploadDate', self.source)[0] or None
+            except Exception:  # noqa: BLE001 - get real exception later
+                channel_name = None
         category = re.findall('"category":"(.+?)",', self.source)[0] or None
         publish_date = re.findall(r'"publishDate":"(\d{4}-\d{2}-\d{2})', self.source)[0] or None
         tags = re.findall(r'\<meta name="keywords" content="(.+?)">', self.source)[0] or None
         views = re.findall(r'"viewCount":"(\d+)', self.source)[0] or None
 
-        DATA = {
-            "id": id,
-            "url": f"https://www.youtube.com/watch?v={id}",
+        data = {
+            "id": _id,
+            "url": f"https://www.youtube.com/watch?v={_id}",
             "title": title,
             "duration": int(duration),
             "thumbnails": thumbnail,
             "views": views,
             "publishdate": publish_date,
             "category": category,
-            "channel_name": channelName,
+            "channel_name": channel_name,
             "keywords": tags,
         }
-        for k, v in DATA.items():
-            DATA[k] = v.replace("\\u0026", "&") if isinstance(v, str) else v
-        return DATA
+        for k, v in data.items():
+            data[k] = v.replace("\\u0026", "&") if isinstance(v, str) else v
+        return data
 
     # # Get Video id
     # def id(self):
