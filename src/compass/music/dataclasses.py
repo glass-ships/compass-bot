@@ -104,6 +104,6 @@ class Song:
             inline=True,
         )
         embed.add_field(name="Requested by:", value=self.requested_by.mention, inline=True)
-        embed.set_footer(icon_url=self.requested_by.avatar.url)
+        embed.set_footer(icon_url=self.requested_by.display_avatar.url)
 
         return embed

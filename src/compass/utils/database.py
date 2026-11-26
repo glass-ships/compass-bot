@@ -357,6 +357,11 @@ class ServerDB:
         )
         return
 
+    def get_all_user_logs(self, guild_id: int):
+        """Returns all user logs for a given guild"""
+        logs = self.activity_log.find({"guild_id": guild_id})
+        return list(logs)
+
     def get_user_log(self, guild_id: int, user_id: int) -> datetime | None:
         _id = str(f"{guild_id}-{user_id}")
         record = self.activity_log.find_one({"_id": _id})

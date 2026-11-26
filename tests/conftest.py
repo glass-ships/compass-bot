@@ -84,11 +84,15 @@ def seeded_db(db, guild_data) -> database.ServerDB:
 ###########################
 
 
-def make_role(role_id: int, name: str = "role") -> MagicMock:
+def make_role(role_id: int, name: str = "role", position: int = 0) -> MagicMock:
     role = MagicMock()
     role.id = role_id
     role.name = name  # NOTE: MagicMock(name=...) names the mock itself, so set .name afterwards
     role.mention = f"<@&{role_id}>"
+    # Like discord.Role, roles compare by their position in the role list
+    role.position = position
+    role.__lt__ = lambda _self, other: role.position < other.position
+    role.__gt__ = lambda _self, other: role.position > other.position
     return role
 
 

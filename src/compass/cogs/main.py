@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 
 import discord
 from discord import app_commands
@@ -11,6 +12,8 @@ from compass.config.bot_config import COLORS
 logger = logging.getLogger(__name__)
 
 bot: CompassBot  # set in the cog's __init__ via `global bot`
+
+Profile = Literal["User", "Server"]  # fixed slash-command choices
 
 
 async def setup(bot):
@@ -56,39 +59,44 @@ class Main(commands.Cog):
         await itx.followup.send(f"Pong! Latency: {round(bot.latency, 2)} ms", ephemeral=True)
         return
 
-    async def _profile_autocomplete(self, itx: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
-        options = ["User", "Server"]
-        return [
-            app_commands.Choice(name=option, value=option) for option in options if current.lower() in option.lower()
-        ]
-
     @app_commands.command(name="avatar")
-    @app_commands.autocomplete(profile=_profile_autocomplete)
-    async def _avatar(self, itx: discord.Interaction, user: discord.Member | None = None, profile: str = "User"):
+    @app_commands.describe(profile="User: their Discord avatar. Server: their avatar in this server")
+    async def _avatar(self, itx: discord.Interaction, user: discord.Member | None = None, profile: Profile = "User"):
         """Returns a user's Discord avatar"""
         await itx.response.defer()
-        u = user or itx.user
-        mem = await itx.guild.fetch_member(u.id)
-        avatar_url = mem.avatar.url if profile == "User" else mem.guild_avatar.url
-        embed = discord.Embed(description=f"{mem.mention}'s avatar")
-        embed.set_image(url=f"{avatar_url}")
+        mem = await itx.guild.fetch_member((user or itx.user).id)
+        # .avatar / .guild_avatar are None when not set; default_avatar is Discord's generated one
+        avatar = mem.avatar or mem.default_avatar
+        description = f"{mem.mention}'s avatar"
+        if profile == "Server":
+            if mem.guild_avatar:
+                avatar = mem.guild_avatar
+                description = f"{mem.mention}'s server avatar"
+            else:
+                description += " (they have no server avatar)"
+        embed = discord.Embed(description=description)
+        embed.set_image(url=avatar.url)
         await itx.followup.send(embed=embed)
-        return
 
     @app_commands.command(name="banner")
-    @app_commands.autocomplete(profile=_profile_autocomplete)
-    async def _banner(self, itx: discord.Interaction, user: discord.Member | None = None, profile: str = "User"):
+    @app_commands.describe(profile="User: their Discord banner. Server: their banner in this server")
+    async def _banner(self, itx: discord.Interaction, user: discord.Member | None = None, profile: Profile = "User"):
         """Returns a user's Discord banner"""
         await itx.response.defer()
-
         u = user or itx.user
-        # mem = await itx.guild.fetch_member(u.id)
-        mem = await bot.fetch_user(u.id)
-        banner_url = mem.banner.url
-        description = f"{mem.mention}'s banner"
+        banner = None
+        description = f"{u.mention}'s banner"
         if profile == "Server":
-            description += "\n(server banners are not currently supported by discord.py)"
+            banner = (await itx.guild.fetch_member(u.id)).guild_banner
+            if banner:
+                description = f"{u.mention}'s server banner"
+            else:
+                description += " (they have no server banner)"
+        if banner is None:
+            banner = (await bot.fetch_user(u.id)).banner  # only included when the user is fetched
+        if banner is None:  # most users have no banner
+            await itx.followup.send(f"{u.mention} doesn't have a banner.")
+            return
         embed = discord.Embed(description=description)
-        embed.set_image(url=f"{banner_url}")
+        embed.set_image(url=banner.url)
         await itx.followup.send(embed=embed)
-        return

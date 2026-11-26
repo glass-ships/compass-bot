@@ -174,11 +174,30 @@ async def test_sync_current_guild_dev_and_clean(cog, ctx, status_msg, bot):
 
 
 async def test_sync_clean_all_guilds(cog, ctx, status_msg, bot):
-    bot.guilds = []
+    g1, g2 = MagicMock(), MagicMock()
+    bot.guilds = [g1, g2]
     await cog._sync.callback(cog, ctx, sync_args="--clean")
 
-    bot.tree.clear_commands.assert_called_once_with(guild=None)
+    # Regression: cleared guild=None, i.e. the GLOBAL commands, so every slash command broke until a restart
+    assert [c.kwargs["guild"] for c in bot.tree.clear_commands.call_args_list] == [g1, g2]
     assert "Clearing command tree from all guilds" in _last_edit(status_msg)
+
+
+async def test_sync_dev_clean_all_guilds_clears_then_copies_each_guild(cog, ctx, status_msg, bot):
+    # Regression: --dev --clean cleared the global commands first, then copied the now-empty list into every guild
+    g1, g2 = MagicMock(), MagicMock()
+    g1.name, g2.name = "One", "Two"
+    bot.guilds = [g1, g2]
+    calls = MagicMock()
+    calls.attach_mock(bot.tree.clear_commands, "clear")
+    calls.attach_mock(bot.tree.copy_global_to, "copy")
+    calls.attach_mock(bot.tree.sync, "sync")
+
+    await cog._sync.callback(cog, ctx, sync_args="--dev --clean")
+
+    order = [(name, kwargs["guild"]) for name, _, kwargs in calls.mock_calls]
+    assert order == [("clear", g1), ("clear", g2), ("copy", g1), ("sync", g1), ("copy", g2), ("sync", g2)]
+    assert _last_edit(status_msg).endswith("Sync complete!")
 
 
 #########################################

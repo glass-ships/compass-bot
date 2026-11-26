@@ -19,40 +19,46 @@ async def setup(bot):
 
 
 class LFGView(discord.ui.View):
+    """Buttons on an LFG post.
+
+    Persistent (no timeout, registered with `bot.add_view` in `Gaming.cog_load`): a post lives for an hour and must
+    keep working across restarts. All state lives in the DB, keyed by the post's message ID, so one instance serves
+    every post. Every callback must respond to the interaction, or Discord shows "This interaction failed".
+    """
+
     def __init__(self):
-        super().__init__()
+        super().__init__(timeout=None)
+
+    @staticmethod
+    async def _reply(itx: discord.Interaction, content: str | None = None, **kwargs) -> None:
+        await itx.response.send_message(content, ephemeral=True, **kwargs)
+
+    @staticmethod
+    async def _expired(itx: discord.Interaction) -> None:
+        embed = discord.Embed(
+            title="Inactive Post",
+            description="This post is more than 60 minutes old and has expired.",
+            color=COLORS.random(),
+        )
+        await LFGView._reply(itx, embed=embed)
 
     @discord.ui.button(label="View Roster", style=discord.ButtonStyle.primary, emoji="📖", custom_id="lfg_roster")
     async def view_roster(self, itx: discord.Interaction, button: discord.ui.Button):
-        await itx.response.defer()
-
         lfg = bot.db.get_lfg(lfg_id=itx.message.id)
-        leader = bot.get_user(lfg["leader"])
-        logger.debug(f"{lfg=}")
         if lfg is None:
-            embed = discord.Embed(
-                title="Inactive Post",
-                description="This post is more than 60 minutes old and has expired.",
-                color=COLORS.random(),
-            )
-            await itx.channel.send(embed=embed, delete_after=10.0)
+            await self._expired(itx)
             return
+        leader = itx.guild.get_member(lfg["leader"])
         embed = discord.Embed(
-            title=f"{leader.display_name}'s LFG",
+            title=f"{leader.display_name if leader else 'Unknown'}'s LFG",
             color=COLORS().random(),
         )
-        embed.set_thumbnail(url=leader.avatar.url)
-        fireteam = ""
-        fireteam += f"<@{lfg['leader']}>\n"
-        for i in lfg["joined"]:
-            fireteam += f"<@{i}>\n"
-        embed.add_field(name="Fireteam", value=fireteam)
-        if len(lfg["standby"]) > 0:
-            standby = ""
-            for i in lfg["standby"]:
-                standby += f"<@{i}>\n"
-            embed.add_field(name="Standby", value=standby)
-        await itx.channel.send(embed=embed, delete_after=10)
+        if leader:
+            embed.set_thumbnail(url=leader.display_avatar.url)
+        embed.add_field(name="Fireteam", value="\n".join(f"<@{i}>" for i in [lfg["leader"], *lfg["joined"]]))
+        if lfg["standby"]:
+            embed.add_field(name="Standby", value="\n".join(f"<@{i}>" for i in lfg["standby"]))
+        await self._reply(itx, embed=embed)
 
     @discord.ui.button(
         label="Join", style=discord.ButtonStyle.success, emoji="<:_plus:1011101343030726687>", custom_id="lfg_join"
@@ -60,36 +66,26 @@ class LFGView(discord.ui.View):
     async def join_lfg(self, itx: discord.Interaction, button: discord.ui.Button):
         lfg = bot.db.get_lfg(lfg_id=itx.message.id)
         if lfg is None:
-            embed = discord.Embed(
-                title="Inactive Post",
-                description="This post is more than 60 minutes old and has expired.",
-                color=COLORS.random(),
-            )
-            await itx.channel.send(embed=embed, delete_after=10.0)
+            await self._expired(itx)
             return
         if itx.user.id == lfg["leader"]:
-            await itx.channel.send(f"{itx.user.mention} - you cannot join your own LFG post.", delete_after=5.0)
+            await self._reply(itx, "You cannot join your own LFG post.")
             return
         if itx.user.id in lfg["joined"] or itx.user.id in lfg["standby"]:
-            await itx.channel.send(
-                f"{itx.user.mention} You are already in the fireteam or on standby for this LFG post.",
-                delete_after=5.0,
-            )
+            await self._reply(itx, "You are already in the fireteam or on standby for this LFG post.")
             return
         if len(lfg["joined"]) + 1 == lfg["num_players"]:
             await itx.message.add_reaction("🇫")
-        success = bot.db.update_lfg_join(lfg_id=itx.message.id, user_id=itx.user.id)
-        if not success:
-            await itx.channel.send(
-                f"{itx.user.mention} Unable to join - LFG may be full or you may already be in it.", delete_after=5.0
-            )
+        if not bot.db.update_lfg_join(lfg_id=itx.message.id, user_id=itx.user.id):
+            await self._reply(itx, "Unable to join - the LFG may be full or you may already be in it.")
             return
+        await self._reply(itx, "You've joined the fireteam.")
         embed = discord.Embed()
         embed.add_field(
-            name=f"{itx.user.nick or itx.user.name} has joined your LFG",
+            name=f"{itx.user.display_name} has joined your LFG",
             value="To view your roster, click the button below.",
         )
-        await itx.channel.send(content=f"{itx.message.author.mention}", embed=embed, delete_after=5.0)
+        await itx.channel.send(content=f"<@{lfg['leader']}>", embed=embed, delete_after=5.0)
 
     @discord.ui.button(
         label="Leave", style=discord.ButtonStyle.danger, emoji="<:_minus:1011101369245106176>", custom_id="lfg_leave"
@@ -97,32 +93,24 @@ class LFGView(discord.ui.View):
     async def leave_lfg(self, itx: discord.Interaction, button: discord.ui.Button):
         lfg = bot.db.get_lfg(lfg_id=itx.message.id)
         if lfg is None:
-            embed = discord.Embed(
-                title="Inactive Post", description="This post is more than 60 minutes old and has expired."
-            )
-            await itx.channel.send(embed=embed, delete_after=10.0)
+            await self._expired(itx)
             return
         if itx.user.id == lfg["leader"]:
-            await itx.channel.send(f"{itx.user.mention} - you cannot leave your own LFG post.", delete_after=5.0)
+            await self._reply(itx, "You cannot leave your own LFG post.")
             return
         if itx.user.id not in lfg["joined"] and itx.user.id not in lfg["standby"]:
-            await itx.channel.send(
-                f"{itx.user.mention} You are not in the fireteam or on standby for this LFG post.",
-                delete_after=5.0,
-            )
+            await self._reply(itx, "You are not in the fireteam or on standby for this LFG post.")
             return
-        success = bot.db.update_lfg_leave(lfg_id=itx.message.id, user_id=itx.user.id)
-        if not success:
-            await itx.channel.send(
-                f"{itx.user.mention} Unable to leave - you may not be in this LFG.", delete_after=5.0
-            )
+        if not bot.db.update_lfg_leave(lfg_id=itx.message.id, user_id=itx.user.id):
+            await self._reply(itx, "Unable to leave - you may not be in this LFG.")
             return
+        await self._reply(itx, "You've left the fireteam.")
         embed = discord.Embed()
         embed.add_field(
-            name=f"{itx.user.nick or itx.user.name} has left your LFG",
+            name=f"{itx.user.display_name} has left your LFG",
             value="To view your roster, click the button below.",
         )
-        await itx.channel.send(content=f"{itx.message.author.mention}", embed=embed, delete_after=5.0)
+        await itx.channel.send(content=f"<@{lfg['leader']}>", embed=embed, delete_after=5.0)
 
 
 class Gaming(commands.Cog):
@@ -133,6 +121,10 @@ class Gaming(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         logger.info(f"Cog Online: {self.qualified_name}")
+
+    async def cog_load(self) -> None:
+        # Re-attach the LFG buttons to existing posts (they're matched by custom_id), including after a restart
+        bot.add_view(LFGView())
 
     @app_commands.command(name="lfg")
     @app_commands.describe(num_players="Number of players needed")
@@ -150,7 +142,7 @@ class Gaming(commands.Cog):
             color=COLORS().random(),
             description=description,
         )
-        embed.set_footer(text=f"Fireteam Leader: {itx.user.name}", icon_url=itx.user.avatar.url)
+        embed.set_footer(text=f"Fireteam Leader: {itx.user.name}", icon_url=itx.user.display_avatar.url)
 
         # Send the embed with the view attached
         view = LFGView()

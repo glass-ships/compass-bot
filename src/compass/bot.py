@@ -102,19 +102,18 @@ class CompassBot(commands.Bot):
         return
 
     ### Misc
-    async def _get_prefix(self, bot: "CompassBot", msg: discord.Message) -> str | list[str]:
-        """Returns a guild's self prefix, or default if none"""
-        logger.debug(f"Locals: {locals()}")
-        logger.debug(f"Getting prefix for {msg.guild.name}")
-        if not msg.guild:
+    async def _get_prefix(self, bot: "CompassBot", msg: discord.Message) -> list[str]:
+        """Returns a guild's prefix (or the default in DMs / when unset), plus the bot's mention.
+
+        Runs for every message the bot sees, including DMs, so check `msg.guild` before touching it.
+        """
+        if msg.guild is None:
             return commands.when_mentioned_or(DEFAULT_PREFIX)(bot, msg)
         prefix = self.db.get_prefix(msg.guild.id)
-        logger.debug(f"Prefix found: {prefix}")
-        if prefix is None or len(prefix) == 0:
+        if not prefix:
             logger.debug(f"Setting default prefix for {msg.guild.name}")
             self.db.update_prefix(msg.guild.id, DEFAULT_PREFIX)
             prefix = DEFAULT_PREFIX
-        logger.debug(f"Using prefix {prefix} for {msg.guild.name}")
         return commands.when_mentioned_or(prefix)(bot, msg)
 
     ### Shutdown

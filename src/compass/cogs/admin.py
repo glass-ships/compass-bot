@@ -89,12 +89,13 @@ class Admin(commands.Cog):
         msg = await ctx.send(embed=discord.Embed(description=desc, color=COLORS.random()))
 
         if args.clean is True:
-            # This will remove all guild commands from the CommandTree and syncs,
-            # which effectively removes all commands from the guild.
             logger.debug(f"\nClearing command tree from {guild.name if guild else 'all guilds'}...")
             desc += f"\nClearing command tree from {guild.name if guild else 'all guilds'}..."
             await _update_msg(msg, desc)
-            bot.tree.clear_commands(guild=guild)
+            # Per guild only: clear_commands(guild=None) would clear the *global* commands, which every
+            # guild copy (--dev) is made from, wiping all slash commands until a restart
+            for g in [guild] if guild else bot.guilds:
+                bot.tree.clear_commands(guild=g)
 
         if guild is not None:
             if args.dev:

@@ -46,6 +46,14 @@ def test_mod_only_commands_have_mod_check(command):
 ################
 
 
+@pytest.fixture
+def admin_caller(itx):
+    """The invoking user is an admin, so can_manage_role allows any role."""
+    itx.user.guild_permissions.administrator = True
+    return itx.user
+
+
+@pytest.mark.usefixtures("admin_caller")
 async def test_giverole_adds_role(cog, itx, guild, member):
     role = make_role(42, "VIP")
     guild.roles = [role]
@@ -57,6 +65,7 @@ async def test_giverole_adds_role(cog, itx, guild, member):
     assert '"VIP"' in itx.followup.send.call_args.args[0]
 
 
+@pytest.mark.usefixtures("admin_caller")
 async def test_giverole_with_duration_removes_role_afterwards(cog, itx, guild, member):
     role = make_role(42, "VIP")
     guild.roles = [role]
@@ -68,6 +77,7 @@ async def test_giverole_with_duration_removes_role_afterwards(cog, itx, guild, m
     assert "removed" in itx.channel.send.call_args.args[0]
 
 
+@pytest.mark.usefixtures("admin_caller")
 async def test_giverole_user_already_has_role(cog, itx, guild):
     role = make_role(42, "VIP")
     guild.roles = [role]
@@ -84,6 +94,7 @@ async def test_giverole_user_already_has_role(cog, itx, guild):
 ##################
 
 
+@pytest.mark.usefixtures("admin_caller")
 async def test_removerole(cog, itx, guild):
     role = make_role(42, "VIP")
     guild.roles = [role]
@@ -92,8 +103,79 @@ async def test_removerole(cog, itx, guild):
     await cog._take_role.callback(cog, itx, role, user, None)
 
     user.remove_roles.assert_awaited_once_with(role)
+    assert "removed" in itx.followup.send.call_args.args[0]  # answers the deferred interaction
 
 
+@pytest.mark.usefixtures("admin_caller")
+async def test_removerole_with_duration_adds_role_back(cog, itx, guild):
+    role = make_role(42, "VIP")
+    guild.roles = [role]
+    user = make_member(roles=[role])
+
+    await cog._take_role.callback(cog, itx, role, user, 60)
+
+    moderation.asyncio.sleep.assert_awaited_once_with(60)
+    user.add_roles.assert_awaited_once_with(role)
+    # channel.send, not followup: the interaction token may have expired by then
+    assert "added back" in itx.channel.send.call_args.args[0]
+
+
+#########################
+### role hierarchy ###
+#########################
+
+
+@pytest.fixture
+def mod_caller(itx) -> MagicMock:
+    """A non-admin, non-owner caller whose top role is at position 5."""
+    itx.user.guild_permissions.administrator = False
+    itx.user.top_role = make_role(1, "Mod", position=5)
+    itx.user.guild.owner = MagicMock()
+    return itx.user
+
+
+@pytest.mark.usefixtures("mod_caller")
+@pytest.mark.parametrize("command", ["_give_role", "_take_role"])
+@pytest.mark.parametrize("position", [pytest.param(5, id="own top role"), pytest.param(6, id="above")])
+async def test_role_commands_refuse_role_not_below_caller(cog, itx, guild, command, position):
+    # Regression: no hierarchy check, so a mod could give themselves (or strip) roles above their own
+    role = make_role(42, "Admin", position=position)
+    guild.roles = [role]
+    target = make_member(roles=[role] if command == "_take_role" else [])
+
+    await getattr(cog, command).callback(cog, itx, role, target, None)
+
+    target.add_roles.assert_not_awaited()
+    target.remove_roles.assert_not_awaited()
+    assert itx.followup.send.call_args.kwargs["ephemeral"] is True
+
+
+@pytest.mark.usefixtures("mod_caller")
+@pytest.mark.parametrize("command", ["_give_role", "_take_role"])
+async def test_role_commands_allow_role_below_caller(cog, itx, guild, command):
+    role = make_role(42, "VIP", position=4)
+    guild.roles = [role]
+    target = make_member(roles=[role] if command == "_take_role" else [])
+
+    await getattr(cog, command).callback(cog, itx, role, target, None)
+
+    changed = target.remove_roles if command == "_take_role" else target.add_roles
+    changed.assert_awaited_once_with(role)
+
+
+def test_can_manage_role_admin_and_owner_bypass_hierarchy():
+    high = make_role(42, "Top", position=99)
+    admin = make_member(admin=True)
+    admin.top_role = make_role(1, position=1)
+    assert moderation.can_manage_role(admin, high)
+
+    owner = make_member()
+    owner.top_role = make_role(1, position=1)
+    owner.guild.owner = owner
+    assert moderation.can_manage_role(owner, high)
+
+
+@pytest.mark.usefixtures("admin_caller")
 async def test_removerole_user_lacks_role(cog, itx, guild, member):
     role = make_role(42, "VIP")
     guild.roles = [role]
@@ -102,6 +184,53 @@ async def test_removerole_user_lacks_role(cog, itx, guild, member):
 
     member.remove_roles.assert_not_awaited()
     assert "doesn't have it" in itx.followup.send.call_args.args[0]
+
+
+#############
+### purge ###
+#############
+
+
+@pytest.fixture
+def purge_channel(itx) -> AsyncMock:
+    itx.channel.purge = AsyncMock(return_value=[object()] * 3)  # 3 messages actually deleted
+    return itx.channel.purge
+
+
+async def test_purge_deletes_and_reports_actual_count(cog, itx, purge_channel):
+    await cog._purge.callback(cog, itx, 10)
+
+    # ephemeral: a public "thinking..." message would be in the channel and could be purged
+    itx.response.defer.assert_awaited_once_with(ephemeral=True)
+    purge_channel.assert_awaited_once_with(limit=10, before=None, after=None, reason=None)
+    itx.followup.send.assert_awaited_once_with("3 messages purged.", ephemeral=True)
+
+
+# dateparser triggers a CPython strptime DeprecationWarning internally (not from our code)
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+async def test_purge_passes_parsed_times(cog, itx, purge_channel):
+    await cog._purge.callback(cog, itx, 10, before="2026-01-02 12:00", after="2026-01-01 12:00")
+
+    kwargs = purge_channel.call_args.kwargs
+    assert isinstance(kwargs["before"], datetime)
+    assert isinstance(kwargs["after"], datetime)
+    assert kwargs["after"] < kwargs["before"]
+
+
+@pytest.mark.parametrize("field", ["before", "after"])
+async def test_purge_unparseable_time_deletes_nothing(cog, itx, purge_channel, field):
+    # Regression: unparseable text became None, i.e. no filter, so the latest messages were purged instead
+    await cog._purge.callback(cog, itx, 10, **{field: "not a time at all"})
+
+    purge_channel.assert_not_awaited()
+    assert "nothing was deleted" in itx.followup.send.call_args.args[0]
+
+
+def test_purge_number_is_required_and_bounded():
+    # Regression: number defaulted to None, and purge(limit=None) deletes the entire channel
+    (param,) = [p for p in Moderation._purge.parameters if p.name == "number"]
+    assert param.required
+    assert (param.min_value, param.max_value) == (1, 1000)
 
 
 #####################

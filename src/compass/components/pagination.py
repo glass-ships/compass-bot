@@ -60,15 +60,15 @@ class Pagination(discord.ui.View):
         except discord.InteractionResponded:
             await self.response.edit(**args)
 
-    async def itx_check(self, itx: discord.Interaction) -> bool:
-        if itx.user == self.itx.user:
+    async def interaction_check(self, itx: discord.Interaction) -> bool:
+        """Called by discord.py before every button callback (it must have this name): only the author can page."""
+        if itx.user.id == self.itx.user.id:
             return True
-        else:
-            emb = discord.Embed(
-                description="Only the author of the command can perform this action.", color=COLORS.random()
-            )
-            await itx.response.send_message(embed=emb, ephemeral=True)
-            return False
+        emb = discord.Embed(
+            description="Only the author of the command can perform this action.", color=COLORS.random()
+        )
+        await itx.response.send_message(embed=emb, ephemeral=True)
+        return False
 
     async def init(self):
         emb, self.total_pages = self.get_page(self.index)
@@ -116,4 +116,5 @@ class Pagination(discord.ui.View):
 
     @staticmethod
     def compute_total_pages(total_results: int, results_per_page: int) -> int:
-        return ((total_results - 1) // results_per_page) + 1
+        """At least 1, so an empty list still shows its (empty) first page instead of never being sent."""
+        return max(1, ((total_results - 1) // results_per_page) + 1)

@@ -49,8 +49,9 @@ async def mod_check_ctx(ctx: commands.Context) -> bool:
     if is_mod(ctx.author, mod_roles):
         return True
     await ctx.send("You do not have permission to use this command.", delete_after=5.0)
-    await asyncio.sleep(3)
-    await ctx.message.delete()
+    if ctx.guild is not None:  # the bot can't delete other users' messages in DMs (raises Forbidden)
+        await asyncio.sleep(3)
+        await ctx.message.delete()
     return False
 
 

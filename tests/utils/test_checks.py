@@ -96,3 +96,6 @@ async def test_mod_check_ctx_in_dm(ctx):
     ctx.guild = None
     ctx.author = MagicMock(spec=discord.User)
     assert await mod_check_ctx(ctx) is False
+    ctx.send.assert_awaited_once()
+    # Regression: deleting the user's message in a DM raises Forbidden, which surfaced as a traceback embed
+    ctx.message.delete.assert_not_awaited()

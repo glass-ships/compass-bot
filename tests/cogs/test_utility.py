@@ -122,18 +122,17 @@ async def test_test_command_is_noop(cog, ctx):
 
 
 async def test_clean_activity_log(cog, ctx, guild, bot):
-    present = make_member(user_id=30, name="logged")
-    absent = make_member(user_id=31, name="unlogged")
-    guild.members = [present, absent]
-    bot.db.add_or_update_user_log(GUILD_ID, "Test Guild", 30, "logged", __import__("datetime").datetime(2026, 1, 1))
+    # Regression: dropped the logs of current members instead of members who had left
+    when = __import__("datetime").datetime(2026, 1, 1)
+    guild.members = [make_member(user_id=30, name="stayed")]
+    bot.db.add_or_update_user_log(GUILD_ID, "Test Guild", 30, "stayed", when)
+    bot.db.add_or_update_user_log(GUILD_ID, "Test Guild", 31, "left", when)
 
     await cog._clean_activity_log.callback(cog, ctx)
 
-    assert bot.db.get_user_log(GUILD_ID, 30) is None
-    texts = sent_text(ctx.send)
-    assert "Removing user log for logged" in texts
-    assert not any("unlogged" in t for t in texts)
-    assert texts[-1] == "Activity log cleaned"
+    assert bot.db.get_user_log(GUILD_ID, 30) is not None  # current member kept
+    assert bot.db.get_user_log(GUILD_ID, 31) is None  # departed member removed
+    assert sent_text(ctx.send)[-1] == "Activity log cleaned. Removed 1 entries."
 
 
 def _slash(name: str) -> MagicMock:
@@ -277,12 +276,55 @@ async def test_broadcast_continues_after_send_failure(cog, ctx, bot, guild):
     assert "Test Guild" in summary
 
 
-async def test_clear_commands(cog, ctx, bot):
+@pytest.fixture
+def cmd_tree(bot) -> MagicMock:
+    bot.tree.get_commands = MagicMock(return_value=[object(), object()])
     bot.tree.clear_commands = MagicMock()
     bot.tree.sync = AsyncMock(return_value=[])
+    return bot.tree
+
+
+async def test_clear_commands_current_guild(cog, ctx, cmd_tree):
     await cog._clear_commands.callback(cog, ctx)
-    bot.tree.clear_commands.assert_called_once()
-    assert "0 commands cleared from Test Guild" in embed_text(ctx.send)[0]
+    cmd_tree.clear_commands.assert_called_once_with(guild=ctx.guild)
+    cmd_tree.sync.assert_awaited_once_with(guild=ctx.guild)
+    assert "2 commands cleared from Test Guild" in embed_text(ctx.send)[0]
+
+
+async def test_clear_commands_guild_by_id(cog, ctx, bot, cmd_tree):
+    other = MagicMock()
+    other.name = "Other"
+    bot.get_guild = MagicMock(return_value=other)
+    await cog._clear_commands.callback(cog, ctx, "123")
+    bot.get_guild.assert_called_once_with(123)
+    cmd_tree.clear_commands.assert_called_once_with(guild=other)
+    assert "2 commands cleared from Other" in embed_text(ctx.send)[0]
+
+
+@pytest.mark.parametrize("target", ["999", "abc"])
+async def test_clear_commands_bad_target_clears_nothing(cog, ctx, bot, cmd_tree, target):
+    # Regression: an unknown guild ID gave get_guild() -> None, and guild=None cleared and synced GLOBAL commands
+    bot.get_guild = MagicMock(return_value=None)
+    await cog._clear_commands.callback(cog, ctx, target)
+    cmd_tree.clear_commands.assert_not_called()
+    cmd_tree.sync.assert_not_awaited()
+    assert "**Error**" in embed_text(ctx.send)[0]
+
+
+async def test_clear_commands_global_owner(cog, ctx, bot, cmd_tree):
+    bot.is_owner = AsyncMock(return_value=True)
+    await cog._clear_commands.callback(cog, ctx, "global")
+    cmd_tree.clear_commands.assert_called_once_with(guild=None)
+    cmd_tree.sync.assert_awaited_once_with()
+    assert "2 global commands cleared" in embed_text(ctx.send)[0]
+
+
+async def test_clear_commands_global_requires_owner(cog, ctx, bot, cmd_tree):
+    bot.is_owner = AsyncMock(return_value=False)
+    await cog._clear_commands.callback(cog, ctx, "global")
+    cmd_tree.clear_commands.assert_not_called()
+    cmd_tree.sync.assert_not_awaited()
+    assert "Only the bot owner" in embed_text(ctx.send)[0]
 
 
 ######################

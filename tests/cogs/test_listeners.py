@@ -167,6 +167,38 @@ async def test_move_videos_already_in_video_channel(cog, guild):
     msg.delete.assert_not_awaited()
 
 
+@pytest.mark.parametrize(
+    "stored, in_thread",
+    [
+        pytest.param(3000, False, id="allowed channel"),
+        pytest.param("3000", False, id="allowed channel stored as str"),
+        pytest.param(3000, True, id="thread in allowed channel"),
+    ],
+)
+async def test_move_videos_skips_allowed_channels(cog, guild, bot, vids_channel, stored, in_thread):
+    # Regression: /allowvideos saved the whitelist, but move_videos never read it
+    bot.db.collection.update_one({"guild_id": GUILD_ID}, {"$set": {"videos_whitelist": [stored]}})
+    bot.db._clear_from_cache(GUILD_ID)
+    msg = make_message(guild, "https://youtube.com/watch?v=1", channel_id=3001 if in_thread else 3000)
+    msg.channel.parent_id = 3000 if in_thread else None
+
+    await cog.move_videos(msg)
+
+    vids_channel.send.assert_not_awaited()
+    msg.delete.assert_not_awaited()
+
+
+async def test_move_videos_still_moves_outside_allowed_channels(cog, guild, bot, vids_channel):
+    bot.db.add_videos_whitelist(GUILD_ID, 4000)
+    msg = make_message(guild, "https://youtube.com/watch?v=1", channel_id=3000)
+    msg.channel.parent_id = None
+
+    await cog.move_videos(msg)
+
+    vids_channel.send.assert_awaited_once()
+    msg.delete.assert_awaited_once()
+
+
 async def test_move_videos_ignores_non_video_messages(cog, guild, vids_channel):
     png = make_attachment("a.png", "image/png", 10)
     msg = make_message(guild, "just chatting https://example.com", attachments=[png])
@@ -331,15 +363,17 @@ def flag_setup(bot, guild):
     logs = make_channel(LOGS_CHANNEL_ID)
     guild.text_channels = [logs]
     msg = make_message(guild, "suspicious content", attachments=[make_attachment("pic.png", "image/png", 10)])
-    bot.get_channel = MagicMock(return_value=MagicMock(fetch_message=AsyncMock(return_value=msg)))
+    bot.get_guild = MagicMock(return_value=guild)
+    guild.get_channel_or_thread = MagicMock(return_value=MagicMock(fetch_message=AsyncMock(return_value=msg)))
 
-    def payload(emoji: str = "🔍", member=None):
+    def payload(emoji: str = "🔍", member=None, guild_id=GUILD_ID):
         p = MagicMock()
         p.channel_id = 3000
         p.message_id = msg.id
-        p.guild_id = GUILD_ID
+        p.guild_id = guild_id
         p.emoji.name = emoji
         p.member = member or make_member(user_id=2, roles=[make_role(MOD_ROLE_ID, "Mod")])
+        p.member.bot = False
         return p
 
     return msg, logs, payload
@@ -364,6 +398,50 @@ async def test_flag_by_non_mod_is_ignored(cog, flag_setup):
     await cog.on_raw_reaction_add(payload(member=make_member(user_id=9)))
     msg.remove_reaction.assert_not_awaited()
     logs.send.assert_not_awaited()
+
+
+def _fetch(guild) -> AsyncMock:
+    return guild.get_channel_or_thread.return_value.fetch_message
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        pytest.param({"guild_id": None}, id="DM"),
+        pytest.param({"emoji": "🦇"}, id="other emoji"),
+        pytest.param({"member": make_member(user_id=9)}, id="non-mod"),
+    ],
+)
+async def test_reactions_return_before_fetching(cog, guild, flag_setup, kwargs):
+    # Regression: fetched the message (an API call) for every reaction before any check, and crashed in DMs
+    msg, logs, payload = flag_setup
+    await cog.on_raw_reaction_add(payload(**kwargs))
+    _fetch(guild).assert_not_awaited()
+    logs.send.assert_not_awaited()
+
+
+async def test_bot_reactions_are_ignored(cog, guild, flag_setup):
+    _, logs, payload = flag_setup
+    p = payload()
+    p.member.bot = True  # e.g. the bot's own reactions
+    await cog.on_raw_reaction_add(p)
+    _fetch(guild).assert_not_awaited()
+
+
+async def test_admin_without_mod_role_can_flag(cog, flag_setup):
+    # Matches is_mod / the mod commands: admins count as mods
+    msg, logs, payload = flag_setup
+    await cog.on_raw_reaction_add(payload(member=make_member(user_id=9, admin=True)))
+    logs.send.assert_awaited_once()
+
+
+async def test_flag_long_message_is_truncated(cog, flag_setup):
+    # Regression: embed field values are capped at 1024 chars, so flagging a long message failed to log
+    msg, logs, payload = flag_setup
+    msg.content = "x" * 2000
+    await cog.on_raw_reaction_add(payload())
+    values = {f.name: f.value for f in logs.send.call_args.kwargs["embed"].fields}
+    assert values["Message content:"] == "x" * 1024
 
 
 async def test_other_emoji_is_ignored(cog, flag_setup):
@@ -435,6 +513,29 @@ async def test_on_guild_remove(cog, bot, harbor_logs):
 async def test_on_guild_remove_unknown_guild(cog, harbor_logs):
     await cog.on_guild_remove(make_new_guild(8000))
     assert "not found in database" in harbor_logs.send.call_args.kwargs["embed"].description
+
+
+async def test_guild_join_and_remove_without_glass_harbor(cog, bot):
+    # Regression: glass_guild.id raised before the DB write when the bot wasn't in Glass Harbor (e.g. the dev bot),
+    # so joined guilds never got an entry and removed guilds kept theirs
+    bot.get_guild = MagicMock(return_value=None)
+
+    await cog.on_guild_join(make_new_guild())
+    assert 8000 in bot.db.get_all_guilds()
+
+    await cog.on_guild_remove(make_new_guild())
+    assert 8000 not in bot.db.get_all_guilds()
+
+
+async def test_guild_join_and_remove_without_logs_channel(cog, bot, harbor_logs):
+    bot.db.drop_field(SERVERS.GLASS_HARBOR, "chan_logs")
+
+    await cog.on_guild_join(make_new_guild())
+    assert 8000 in bot.db.get_all_guilds()
+    await cog.on_guild_remove(make_new_guild())
+    assert 8000 not in bot.db.get_all_guilds()
+
+    harbor_logs.send.assert_not_awaited()
 
 
 async def test_on_guild_update_renames(cog, bot, guild):
@@ -513,6 +614,26 @@ async def test_on_member_join_welcome_channel_unset(cog, bot, harbor, fake_avata
     member.guild = harbor
     await cog.on_member_join(member)
     fake_avatar.assert_not_called()
+
+
+async def test_on_member_join_welcome_channel_deleted(cog, harbor, fake_avatar):
+    # Regression: a configured but deleted welcome channel is None from get(), and .send raised
+    harbor.text_channels = [make_channel(LOGS_CHANNEL_ID)]  # welcome channel gone
+    member = make_member()
+    member.guild = harbor
+    await cog.on_member_join(member)
+    fake_avatar.assert_not_called()
+
+
+async def test_on_member_remove_logs_channel_deleted(cog, bot, harbor):
+    harbor.text_channels = [make_channel(WELCOME_CHANNEL_ID)]  # logs channel gone
+    member = make_member(user_id=63)
+    member.guild = harbor
+    bot.db.add_or_update_user_log(SERVERS.GLASS_HARBOR, "Glass Harbor", 63, "x", datetime(2026, 11, 1))
+
+    await cog.on_member_remove(member)  # no crash
+
+    assert bot.db.get_user_log(SERVERS.GLASS_HARBOR, 63) is None  # log still dropped
 
 
 async def test_on_member_remove_says_goodbye_and_drops_log(cog, bot, harbor):

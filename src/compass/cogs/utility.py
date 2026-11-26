@@ -84,14 +84,16 @@ class Utility(commands.Cog):
         name="clean_activity_log", aliases=["clract"], description="Delete entries for users not in the guild anymore"
     )
     async def _clean_activity_log(self, ctx: commands.Context):
+        removed = 0
         for guild in bot.guilds:
             await ctx.send(f"Clearing user activity in {guild.name}")
-            for member in guild.members:
-                user_log = bot.db.get_user_log(guild.id, member.id)
-                if user_log is not None:
-                    await ctx.send(f"Removing user log for {member.name}")
-                    bot.db.drop_user_log(guild.id, member.id)
-        await ctx.send("Activity log cleaned")
+            members = {member.id for member in guild.members}
+            user_logs = bot.db.get_all_user_logs(guild.id)
+            for user_log in user_logs:
+                if user_log["user_id"] not in members:
+                    removed += 1
+                    bot.db.drop_user_log(guild.id, user_log["user_id"])
+        await ctx.send(f"Activity log cleaned. Removed {removed} entries.")
 
     @has_mod_ctx
     @commands.command(name="getcommands", aliases=["gc", "getcmds"], description="List all app commands (debug)")
@@ -140,11 +142,42 @@ class Utility(commands.Cog):
 
     @has_mod_ctx
     @commands.command(name="clearcommands", aliases=["cc"])
-    async def _clear_commands(self, ctx: commands.Context, guild_id=None):
-        g = bot.get_guild(int(guild_id) if guild_id else ctx.guild.id)
+    async def _clear_commands(self, ctx: commands.Context, target: str | None = None):
+        """Clear slash commands from this guild, a guild by ID, or `global` (bot owner only).
+
+        Never falls through to global by accident: `guild=None` means global in discord.py, so an unknown guild ID
+        is an error rather than `get_guild(...) -> None`.
+        """
+        if target == "global":
+            if not await bot.is_owner(ctx.author):
+                await ctx.send(
+                    embed=discord.Embed(description="**Error**: Only the bot owner can clear global commands.")
+                )
+                return
+            count = len(bot.tree.get_commands())
+            bot.tree.clear_commands(guild=None)
+            await bot.tree.sync()
+            await ctx.send(
+                embed=discord.Embed(
+                    description=f"{count} global commands cleared. Restart the bot, then `sync`, to restore them."
+                )
+            )
+            return
+
+        if target is None:
+            g = ctx.guild
+        elif target.isdigit():
+            g = bot.get_guild(int(target))
+        else:
+            await ctx.send(embed=discord.Embed(description="**Error**: Expected a guild ID or `global`."))
+            return
+        if g is None:
+            await ctx.send(embed=discord.Embed(description=f"**Error**: I'm not in a guild with ID `{target}`."))
+            return
+        count = len(bot.tree.get_commands(guild=g))
         bot.tree.clear_commands(guild=g)
-        fmt = await bot.tree.sync(guild=g)
-        await ctx.send(embed=discord.Embed(description=f"{len(fmt)} commands cleared from {g.name}"))
+        await bot.tree.sync(guild=g)
+        await ctx.send(embed=discord.Embed(description=f"{count} commands cleared from {g.name}"))
 
     ##############################
     ### Emoji/Sticker Commands ###

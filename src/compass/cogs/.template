@@ -25,6 +25,14 @@ async def setup(bot):
     await bot.add_cog(CogName(bot))
 
 
+########################################################################################################################
+### Helpers
+
+# Add any helper functions here, or just import them from other files.
+# You can also add a class here if you want to use it in your cog.
+
+########################################################################################################################
+
 ###################################
 #### Slash and Regular Commands ###
 ###################################

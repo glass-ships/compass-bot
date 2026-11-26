@@ -24,6 +24,20 @@ async def setup(bot):
     await bot.add_cog(Moderation(bot))
 
 
+########################################################################################################################
+### Helpers
+
+
+def can_manage_role(invoker: discord.Member, role: discord.Role) -> bool:
+    """Check if the invoker can manage the given role."""
+    if invoker.guild_permissions.administrator or invoker == invoker.guild.owner:
+        return True
+    return role < invoker.top_role
+
+
+########################################################################################################################
+
+
 class Moderation(commands.Cog):
     def __init__(self, bot_: CompassBot):
         global bot
@@ -113,19 +127,29 @@ class Moderation(commands.Cog):
 
     @has_mod_itx
     @app_commands.command(name="purge", description="Deletes messages from current channel")
+    @app_commands.describe(
+        number="How many messages to delete (1-1000)",
+        before="Only delete messages before this time",
+        after="Only delete messages after this time",
+    )
     async def _purge(
         self,
         itx: discord.Interaction,
-        number: int | None = None,
+        number: app_commands.Range[int, 1, 1000],  # required: limit=None would delete the whole channel
         before: str = "",
         after: str = "",
         reason: str | None = None,
-        # check: callable = None,
     ):
-        # TODO: look into parsing before/after with https://github.com/scrapinghub/dateparser
-        await itx.response.defer()
-        await itx.channel.purge(limit=number, before=dt_parse(before), after=dt_parse(after), reason=reason)
-        await itx.followup.send(f"{number} messages successfully purged!", ephemeral=True)
+        await itx.response.defer(ephemeral=True)  # ephemeral: not in channel history, so the purge can't delete it
+        before_dt = dt_parse(before) if before else None
+        after_dt = dt_parse(after) if after else None
+        if (before and before_dt is None) or (after and after_dt is None):
+            await itx.followup.send(
+                "Couldn't understand the `before`/`after` time; nothing was deleted.", ephemeral=True
+            )
+            return
+        deleted = await itx.channel.purge(limit=number, before=before_dt, after=after_dt, reason=reason)
+        await itx.followup.send(f"{len(deleted)} messages purged.", ephemeral=True)
 
     @has_mod_itx
     @app_commands.command(name="moveto", description="Move a message to specified channel")
@@ -138,22 +162,20 @@ class Moderation(commands.Cog):
     @app_commands.command(name="giverole", description="Give a role to a user with optional duration")
     async def _give_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: int | None):
         await itx.response.defer()
+        if not can_manage_role(itx.user, role):
+            await itx.followup.send("You cannot give a role higher than your top role!", ephemeral=True)
+            return
         role = get(itx.guild.roles, id=role.id)
-        if not user:
-            target_user = itx.user
-        else:
-            target_user = user
-        roles = [x.id for x in target_user.roles]
+        roles = [x.id for x in user.roles]
         if role.id not in roles:
-            await target_user.add_roles(role)
+            await user.add_roles(role)
             await itx.followup.send(
-                f'<@{target_user.id}> has been given the "{role.name}" role'
-                f"{' for ' + str(dur) + ' sec' if dur else ''}."
+                f'<@{user.id}> has been given the "{role.name}" role{" for " + str(dur) + " sec" if dur else ""}.'
             )
             if dur:
                 await asyncio.sleep(dur)
-                await target_user.remove_roles(role)
-                await itx.channel.send(f'<@{target_user.id}> has had the "{role.name}" role removed.')
+                await user.remove_roles(role)
+                await itx.channel.send(f'<@{user.id}> has had the "{role.name}" role removed.')
         else:
             await itx.followup.send("Cannot give role - user already has it!")
 
@@ -163,20 +185,20 @@ class Moderation(commands.Cog):
     async def _take_role(self, itx: discord.Interaction, role: discord.Role, user: discord.Member, dur: int | None):
         await itx.response.defer()
         role = get(itx.guild.roles, id=role.id)
-        if not user:
-            bonked = itx.user
-        else:
-            bonked = user
-        roles = [x.id for x in bonked.roles]
+        if not can_manage_role(itx.user, role):
+            await itx.followup.send("You cannot remove a role higher than your top role!", ephemeral=True)
+            return
+        roles = [x.id for x in user.roles]
         if role.id in roles:
-            await bonked.remove_roles(role)
+            await user.remove_roles(role)
             await itx.followup.send(
-                f'<@{bonked.id}> has had the "{role.name}" role removed{" for " + str(dur) + " sec" if dur else ""}.'
+                f'<@{user.id}> has had the "{role.name}" role removed{" for " + str(dur) + " sec" if dur else ""}.'
             )
             if dur:
                 await asyncio.sleep(dur)
-                await bonked.add_roles(role)
-                await itx.followup.send(f'<@{bonked.id}> has had the "{role.name}" role added back.')
+                await user.add_roles(role)
+                # channel.send: the interaction token expires after 15 minutes, so a late followup would fail
+                await itx.channel.send(f'<@{user.id}> has had the "{role.name}" role added back.')
         else:
             await itx.followup.send("Cannot remove role - user doesn't have it!")
 
