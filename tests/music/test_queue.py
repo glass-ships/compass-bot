@@ -101,7 +101,7 @@ def test_dummy_song_is_not_trimmed_from_history(q):
 
 @pytest.mark.xfail(
     reason="BUG: with loop on, next() re-queues playhistory[-1] (the PREVIOUS song) before recording "
-    "song_played, so looping replays the wrong song (queue.py:57-58)",
+    "song_played, so looping replays the wrong song",
     strict=True,
 )
 def test_loop_replays_current_song(q):
@@ -112,7 +112,7 @@ def test_loop_replays_current_song(q):
 
 
 @pytest.mark.xfail(
-    reason="BUG: with loop on and empty history, next() raises IndexError on playhistory[-1] (queue.py:58)",
+    reason="BUG: with loop on and empty history, next() raises IndexError on playhistory[-1]",
     raises=IndexError,
     strict=True,
 )
@@ -150,7 +150,7 @@ def test_prev_unknown_song_raises(q):
 
 
 @pytest.mark.xfail(
-    reason="BUG: prev() on the first song in history uses index -1 and wraps to the LAST song (queue.py:76-77)",
+    reason="BUG: prev() on the first song in history uses index -1 and wraps to the LAST song",
     strict=True,
 )
 def test_prev_on_first_history_entry_does_not_wrap(q):
@@ -255,7 +255,7 @@ def test_queue_embed_shows_at_most_20(q):
 
 @pytest.mark.xfail(
     reason="BUG: footer uses `len - counter`, but `counter` is the index of the first song NOT shown, "
-    "so 'Plus N more' is one too low when the list is truncated (queue.py:47)",
+    "so 'Plus N more' is one too low when the list is truncated",
     strict=True,
 )
 def test_queue_embed_footer_counts_hidden_songs(q):

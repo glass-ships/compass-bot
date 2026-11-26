@@ -60,7 +60,7 @@ def paginate(text: str, limit: int = EMBED_DESC_LIMIT) -> list[str]:
     is not carried across page breaks.
     """
     # TODO: close/reopen code blocks and `>>>` quotes across page breaks, and prefer breaking
-    # long lines at spaces (see plans/todo.md)
+    # long lines at spaces
     pages, cur = [], ""
     for line in text.splitlines():
         while len(line) > limit:  # a single line too long for one page: hard-split it
@@ -122,7 +122,7 @@ async def send_embed_long(
 async def move_message(itx: discord.Interaction, channel: discord.TextChannel | discord.Thread, message_id: str):
     await itx.response.defer(ephemeral=True)
     assert itx.channel is not None
-    if not isinstance(itx.channel, (discord.TextChannel, discord.Thread)):
+    if not isinstance(itx.channel, discord.TextChannel | discord.Thread):
         await itx.followup.send("Unable to move messages from a category or forum channel", ephemeral=True)
         return
     message_id = message_id.split("-")[-1]

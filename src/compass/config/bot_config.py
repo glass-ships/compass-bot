@@ -1,20 +1,27 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 from random import choice
+from typing import Literal, get_args
 
 import discord
 
 # /path/to/compass-bot/src/compass/
 COMPASS_ROOT = Path(__file__).parent.parent.parent.parent
 COMPASS_SRC = Path(__file__).parent.parent
+# Local downloads, and the fallback for emoji/sticker backups when the resource repo has none
+DOWNLOADS_DIR = COMPASS_ROOT / "downloads"
 
 DEFAULT_PREFIX = ";"
 GLASS = 357738904591532033
 
 exclude_modules = ["__init__", "pinarchiver"]
 MODULES = [f.stem for f in Path(COMPASS_SRC / "cogs").glob("*.py") if f.stem not in exclude_modules]
-CHANNEL_OPTIONS = ["logs", "bot", "welcome", "music", "lfg", "videos"]  # , 'pins']
-ROLE_OPTIONS = ["mod", "member", "required"]
+# Literal aliases become fixed slash-command choices; the lists are derived so there's one source of truth.
+# Changing either requires re-syncing the command tree.
+ChannelOption = Literal["logs", "bot", "welcome", "music", "lfg", "videos"]
+RoleOption = Literal["mod", "member", "required"]
+CHANNEL_OPTIONS: list[str] = list(get_args(ChannelOption))
+ROLE_OPTIONS: list[str] = list(get_args(RoleOption))
 
 
 class SERVERS:

@@ -109,12 +109,8 @@ async def test_unexpected_error_shows_original_traceback_only(cog, ctx):
     assert "CommandInvokeError" not in description  # cut at "The above exception was the direct cause..."
 
 
-@pytest.mark.xfail(
-    reason="BUG: CheckFailure leaves message empty but still sends an embed with an empty description "
-    "(the mod checks already sent their own reply; Discord rejects empty embeds)",
-    strict=True,
-)
 async def test_check_failure_sends_nothing(cog, ctx):
+    # Regression: sent an embed with an empty description; the mod checks already send their own reply
     await cog.on_command_error(ctx, commands.CheckFailure())
     ctx.send.assert_not_awaited()
 
@@ -199,14 +195,14 @@ async def test_move_videos_moves_video_links(cog, guild, vids_channel, content):
     assert "was moved to" in msg.channel.send.call_args.args[0]
 
 
-async def test_move_videos_moves_video_attachment(cog, guild, vids_channel, no_downloads):
+async def test_move_videos_moves_video_attachment(cog, guild, vids_channel, no_downloads, downloads_dir):
     video = make_attachment("clip.mp4", "video/mp4", 1000)
     msg = make_message(guild, "", attachments=[video])
     await cog.move_videos(msg)
 
     no_downloads.assert_awaited_once_with(msg, video, "temp/moved_messages")
     files = vids_channel.send.call_args.kwargs["files"]
-    assert files == ["File(downloads/Test Guild/temp/moved_messages/clip.mp4)"]
+    assert files == [f"File({downloads_dir / 'Test Guild' / 'temp/moved_messages/clip.mp4'})"]
     msg.delete.assert_awaited_once()
 
 
@@ -532,19 +528,20 @@ async def test_on_member_remove_says_goodbye_and_drops_log(cog, bot, harbor):
 
 
 async def test_on_member_remove_no_logs_channel(cog, bot, harbor):
+    # No goodbye without a logs channel, but the activity log is still dropped
     bot.db.drop_field(SERVERS.GLASS_HARBOR, "chan_logs")
-    member = make_member()
+    member = make_member(user_id=62)
     member.guild = harbor
+    bot.db.add_or_update_user_log(SERVERS.GLASS_HARBOR, "Glass Harbor", 62, "x", datetime(2026, 11, 1))
+
     await cog.on_member_remove(member)
+
     harbor.text_channels[0].send.assert_not_awaited()
+    assert bot.db.get_user_log(SERVERS.GLASS_HARBOR, 62) is None
 
 
-@pytest.mark.xfail(
-    reason="BUG: listeners.py:292 returns early for every guild except Glass Harbor, so drop_user_log "
-    "(line 305) never runs elsewhere and activity-log entries for departed members are never cleaned up",
-    strict=True,
-)
 async def test_on_member_remove_drops_activity_log_in_any_guild(cog, bot, guild):
+    # Regression: returned early outside Glass Harbor, so departed members' logs were never cleaned up
     member = make_member(user_id=61)
     member.guild = guild
     bot.db.add_or_update_user_log(GUILD_ID, "Test Guild", 61, "x", datetime(2026, 11, 1))

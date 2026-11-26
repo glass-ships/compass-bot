@@ -2,11 +2,11 @@
 
 Same pattern as test_moderation.py: build the cog with the fake `bot`, then call
 `cog._command.callback(cog, ctx, ...)` and assert on what it sent or did.
-Filesystem work goes to `tmp_path`; get_resource_path, requests, and asyncio.sleep are patched.
+Filesystem work goes to `tmp_path`; get_resource_path and asyncio.sleep are patched.
 """
 
 import os
-import sys
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import discord
@@ -37,6 +37,8 @@ def make_sticker(name: str, emoji: str = "smile", fmt: str = "png") -> MagicMock
     s.emoji = emoji
     s.url = f"https://cdn.example/{name}.{fmt}"
     s.format.name = fmt
+    # Like Sticker.save(): writes the image to the given path
+    s.save = AsyncMock(side_effect=lambda fp: Path(fp).write_bytes(b"stickerbytes"))
     return s
 
 
@@ -311,12 +313,11 @@ async def test_download_emojis_to_resource_dir(cog, ctx, guild, resource_path, t
 
 
 @pytest.mark.usefixtures("resource_path")  # returns None -> fallback dir
-async def test_download_emojis_falls_back_to_downloads(cog, ctx, guild, tmp_path, monkeypatch):
-    monkeypatch.setattr(utility, "COMPASS_ROOT", tmp_path)
+async def test_download_emojis_falls_back_to_downloads(cog, ctx, guild, downloads_dir):
     guild.emojis = []
     await cog._download_emojis.callback(cog, ctx)
-    assert (tmp_path / "downloads" / "Test Guild" / "emojis" / "static").is_dir()
-    assert (tmp_path / "downloads" / "Test Guild" / "emojis" / "animated").is_dir()
+    assert (downloads_dir / "Test Guild" / "emojis" / "static").is_dir()
+    assert (downloads_dir / "Test Guild" / "emojis" / "animated").is_dir()
 
 
 @pytest.fixture
@@ -440,50 +441,60 @@ async def test_get_stickers(cog, ctx, guild):
     assert "wave" in sent_text(ctx.send)[0]
 
 
-@pytest.fixture
-def fake_requests(monkeypatch):
-    fake = MagicMock()
-    fake.get.return_value = MagicMock(content=b"stickerbytes")
-    monkeypatch.setattr(utility, "requests", fake)
-    return fake
-
-
-async def test_download_stickers(cog, ctx, guild, resource_path, fake_requests, tmp_path):
+async def test_download_stickers(cog, ctx, guild, resource_path, tmp_path):
     resource_path.return_value = str(tmp_path)
-    guild.stickers = [make_sticker("wave", emoji="smile")]
+    s = make_sticker("wave", emoji="smile")
+    guild.stickers = [s]
 
     await cog._download_stickers.callback(cog, ctx)
 
-    fake_requests.get.assert_called_once_with("https://cdn.example/wave.png")
+    s.save.assert_awaited_once_with(f"{tmp_path}/wave_smile.png")
     assert (tmp_path / "wave_smile.png").read_bytes() == b"stickerbytes"
     assert "1 stickers downloaded" in embed_text(ctx.send)
 
 
-@pytest.mark.usefixtures("resource_path", "fake_requests")
-async def test_download_stickers_falls_back_to_downloads(cog, ctx, guild, tmp_path, monkeypatch):
-    monkeypatch.setattr(utility, "COMPASS_ROOT", tmp_path)
+async def test_download_stickers_skips_lottie(cog, ctx, guild, resource_path, tmp_path):
+    resource_path.return_value = str(tmp_path)
+    lottie = make_sticker("dance", fmt="lottie")
+    lottie.save.side_effect = TypeError('Cannot read stickers of format "lottie".')
+    guild.stickers = [lottie, make_sticker("wave")]
+
+    await cog._download_stickers.callback(cog, ctx)
+
+    assert [p.name for p in tmp_path.iterdir()] == ["wave_smile.png"]
+    assert "Skipped `dance`: lottie stickers can't be downloaded." in sent_text(ctx.send)
+    assert "1 stickers downloaded" in embed_text(ctx.send)
+
+
+@pytest.mark.usefixtures("resource_path")
+async def test_download_stickers_falls_back_to_downloads(cog, ctx, guild, downloads_dir):
     guild.stickers = [make_sticker("wave")]
     await cog._download_stickers.callback(cog, ctx)
-    assert (tmp_path / "downloads" / "Test Guild" / "stickers" / "wave_smile.png").exists()
+    assert (downloads_dir / "Test Guild" / "stickers" / "wave_smile.png").exists()
 
 
-@pytest.mark.xfail(
-    sys.platform == "win32",
-    reason="BUG: a custom-emoji sticker's filename embeds str(Emoji) ('<:name:id>'), which is invalid on Windows",
-    strict=True,
-    raises=OSError,
-)
-@pytest.mark.usefixtures("fake_requests")
 async def test_download_stickers_with_custom_emoji(cog, ctx, guild, resource_path, tmp_path):
     resource_path.return_value = str(tmp_path)
     guild.stickers = [make_sticker("wave", emoji="1234")]
-    custom = MagicMock()
-    custom.__str__ = lambda _self: "<:pog:1234>"
-    guild.get_emoji = MagicMock(return_value=custom)
+    guild.get_emoji = MagicMock()
 
     await cog._download_stickers.callback(cog, ctx)
 
-    assert len(list(tmp_path.iterdir())) == 1
+    assert [p.name for p in tmp_path.iterdir()] == ["wave_1234.png"]
+    guild.get_emoji.assert_not_called()
+
+
+async def test_sticker_backup_round_trip_keeps_custom_emoji_id(cog, ctx, guild, resource_path, tmp_path):
+    resource_path.return_value = str(tmp_path)
+    guild.stickers = [make_sticker("wave", emoji="1234")]
+    await cog._download_stickers.callback(cog, ctx)
+
+    guild.stickers = []  # e.g. syncing into a fresh guild that doesn't have the custom emoji
+    await cog._sync_stickers.callback(cog, ctx)
+
+    guild.create_sticker.assert_awaited_once()
+    assert guild.create_sticker.call_args.kwargs["name"] == "wave"
+    assert guild.create_sticker.call_args.kwargs["emoji"] == "1234"
 
 
 @pytest.mark.usefixtures("resource_path")  # returns None -> no backup
@@ -505,20 +516,62 @@ async def test_sync_stickers_adds_missing(cog, ctx, guild, resource_path, tmp_pa
     assert "Stickers Synced!" in embed_text(ctx.send)
 
 
-@pytest.mark.xfail(
-    reason="BUG: syncstickers compares guild stickers against '{name}.{format}', but downloadstickers saves "
-    "'{name}_{emoji}.{format}', so every backed-up sticker is flagged for removal",
-    strict=True,
+@pytest.mark.parametrize(
+    "filename, expected",
+    [
+        ("wave_smile.png", ("wave", "smile")),
+        ("who me.png", ("who me", None)),  # no emoji
+        ("bonnie quirky_stuck_out_tongue_winking_eye.png", ("bonnie quirky", "stuck_out_tongue_winking_eye")),
+        ("jerkin_🌶️.gif", ("jerkin", "🌶️")),
+        ("pog_1234.png", ("pog", "1234")),  # custom emoji ID
+    ],
 )
-async def test_sync_stickers_keeps_backed_up_sticker(cog, ctx, guild, bot, resource_path, tmp_path):
+def test_parse_sticker_filename(filename, expected):
+    assert utility.parse_sticker_filename(filename) == expected
+
+
+def test_sticker_filename_round_trips():
+    filename = utility.sticker_filename("bonnie quirky", "stuck_out_tongue_winking_eye", "png")
+    assert utility.parse_sticker_filename(filename) == ("bonnie quirky", "stuck_out_tongue_winking_eye")
+
+
+@pytest.mark.parametrize(
+    "filename, sticker",
+    [
+        pytest.param("wave_smile.png", make_sticker("wave", emoji="smile"), id="as written by downloadstickers"),
+        pytest.param("wave_smile.png", make_sticker("wave", emoji="grin"), id="emoji changed since backup"),
+        pytest.param("who me.png", make_sticker("who me"), id="no emoji in filename"),
+        pytest.param(
+            "bonnie quirky_stuck_out_tongue_winking_eye.png",
+            make_sticker("bonnie quirky", emoji="stuck_out_tongue_winking_eye"),
+            id="underscores in emoji",
+        ),
+    ],
+)
+async def test_sync_stickers_keeps_backed_up_sticker(cog, ctx, guild, bot, resource_path, tmp_path, filename, sticker):
+    # Regression: compared against '{name}.{format}', so every backed-up sticker was flagged for removal
     resource_path.return_value = str(tmp_path)
-    (tmp_path / "wave_smile.png").write_bytes(b"x")  # as written by downloadstickers
-    guild.stickers = [make_sticker("wave", emoji="smile")]
+    (tmp_path / filename).write_bytes(b"x")
+    guild.stickers = [sticker]
     bot.wait_for.return_value = reply("y")
 
     await cog._sync_stickers.callback(cog, ctx)
 
     guild.delete_sticker.assert_not_awaited()
+    guild.create_sticker.assert_not_awaited()
+
+
+async def test_sync_stickers_removes_sticker_not_in_backup(cog, ctx, guild, bot, resource_path, tmp_path):
+    resource_path.return_value = str(tmp_path)
+    (tmp_path / "wave_smile.png").write_bytes(b"x")
+    keep, extra = make_sticker("wave"), make_sticker("extra")
+    guild.stickers = [keep, extra]
+    bot.wait_for.return_value = reply("y")
+
+    await cog._sync_stickers.callback(cog, ctx)
+
+    guild.delete_sticker.assert_awaited_once_with(extra)
+    guild.create_sticker.assert_not_awaited()
 
 
 async def test_clear_stickers_nothing_to_remove(cog, ctx, bot):
@@ -557,16 +610,15 @@ async def test_add_stickers_name_and_emoji_parsing(cog, ctx, guild, tmp_path):
     custom = tmp_path / "pog_1234.png"
     for p in (no_emoji, custom):
         p.write_bytes(b"x")
-    custom_emoji = MagicMock()
-    guild.get_emoji = MagicMock(return_value=custom_emoji)
+    guild.get_emoji = MagicMock()
     guild.create_sticker.side_effect = [None, RuntimeError("boom")]
 
     await cog._add_stickers(ctx, [no_emoji.as_posix(), custom.as_posix()])
 
     first, second = guild.create_sticker.await_args_list
     assert first.kwargs["name"] == "plain" and first.kwargs["emoji"] == "❓"
-    assert second.kwargs["name"] == "pog" and second.kwargs["emoji"] is custom_emoji
-    guild.get_emoji.assert_called_once_with(1234)
+    assert second.kwargs["name"] == "pog" and second.kwargs["emoji"] == "1234"
+    guild.get_emoji.assert_not_called()
     assert any("boom" in t for t in sent_text(ctx.send))
     assert "2 stickers added" in embed_text(ctx.send)
 
@@ -582,40 +634,30 @@ async def test_resources(cog, ctx, resource_path):
     assert "`/some/path`" in sent_text(ctx.send)[0]
 
 
-async def test_clear_downloads(cog, ctx, tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "downloads" / "x").mkdir(parents=True)
+async def test_clear_downloads(cog, ctx, downloads_dir):
+    (downloads_dir / "x").mkdir(parents=True)
     await cog._clear_downloads.callback(cog, ctx)
-    assert not (tmp_path / "downloads").exists()
+    assert not downloads_dir.exists()
     ctx.message.delete.assert_awaited_once()
     ctx.send.assert_awaited_once_with("Downloads cleared!", delete_after=2.0)
 
 
-@pytest.mark.xfail(
-    reason="BUG: cleardownloads calls shutil.rmtree('downloads/') unguarded, so it raises FileNotFoundError "
-    "when there is nothing to clear",
-    strict=True,
-    raises=FileNotFoundError,
-)
-async def test_clear_downloads_when_empty(cog, ctx, tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
+async def test_clear_downloads_when_empty(cog, ctx, downloads_dir):
+    # Regression: raised FileNotFoundError when there was nothing to clear
+    assert not downloads_dir.exists()
     await cog._clear_downloads.callback(cog, ctx)
-    ctx.send.assert_awaited_once()
+    ctx.message.delete.assert_awaited_once()
+    ctx.send.assert_awaited_once_with("Nothing to clear.", delete_after=2.0)
 
 
-@pytest.mark.xfail(
-    reason="BUG: download (a prefix command) replies via ctx.response.send_message, which Context doesn't have",
-    strict=True,
-    raises=AttributeError,
-)
 async def test_download_rejected_outside_glass_servers(cog, ctx):
+    # Regression: replied via ctx.response.send_message, which a prefix command's Context doesn't have
     ctx = MagicMock(spec=["guild", "channel", "send"], guild=MagicMock(id=1), send=AsyncMock())
     await cog._download.callback(cog, ctx)
     ctx.send.assert_awaited_once()
 
 
-async def test_download_saves_attachments(cog, ctx, guild, tmp_path, monkeypatch):
-    monkeypatch.chdir(tmp_path)
+async def test_download_saves_attachments(cog, ctx, guild, downloads_dir):
     guild.id = SERVERS.GLASS_TEST
     ctx.channel.name = "general"
     ok = MagicMock(filename="a.png", save=AsyncMock())
@@ -629,8 +671,8 @@ async def test_download_saves_attachments(cog, ctx, guild, tmp_path, monkeypatch
 
     await cog._download.callback(cog, ctx)
 
-    assert (tmp_path / "downloads" / "Test Guild" / "general").is_dir()
-    ok.save.assert_awaited_once_with(fp="./downloads/Test Guild/general/a.png")
+    assert (downloads_dir / "Test Guild" / "general").is_dir()
+    ok.save.assert_awaited_once_with(fp=downloads_dir / "Test Guild" / "general" / "a.png")
     texts = sent_text(ctx.send)
     assert any("disk full" in t for t in texts)
     assert texts[-1] == "Success: Downloaded 2 items."

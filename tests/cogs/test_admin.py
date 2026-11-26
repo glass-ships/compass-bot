@@ -45,6 +45,19 @@ def _sent(itx) -> str:
     return itx.response.send_message.call_args.args[0]
 
 
+def _choices(command, param: str = "option") -> list[str]:
+    """The fixed choice values Discord is given for a slash command parameter."""
+    (p,) = [p for p in command.parameters if p.name == param]
+    return [c.value for c in p.choices]
+
+
+def _assert_unknown_option_reply(itx, options: list[str]) -> None:
+    itx.response.send_message.assert_awaited_once()
+    assert "Unknown option" in _sent(itx)
+    assert all(o in _sent(itx) for o in options)
+    assert itx.response.send_message.call_args.kwargs["ephemeral"] is True
+
+
 ##############
 ### Checks ###
 ##############
@@ -78,8 +91,8 @@ def test_admin_slash_commands_require_administrator(command, itx):
 @pytest.mark.parametrize(
     "command",
     [
-        pytest.param("_reload", id="reload (line 134)"),
-        pytest.param("_channel_unset", id="unset channel (line 274)"),
+        pytest.param("_reload", id="reload"),
+        pytest.param("_channel_unset", id="unset channel"),
     ],
 )
 def test_slash_commands_have_permission_checks(command):
@@ -334,14 +347,14 @@ async def test_unset_role(cog, itx, bot, option, getter):
 
 
 async def test_unset_role_unknown_option(cog, itx, bot):
+    # Unreachable from Discord (fixed choices), but the fallback must still reply
     assert await cog._role.callback(cog, itx, "bogus") is False
-    assert "Unknown argument" in _sent(itx)
+    _assert_unknown_option_reply(itx, ROLE_OPTIONS)
     assert bot.db.get_mod_roles(GUILD_ID) == [MOD_ROLE_ID]  # untouched
 
 
-async def test_roles_autocomplete(cog, itx):
-    assert [c.value for c in await Admin._roles_autocomplete(cog, itx, "")] == ROLE_OPTIONS
-    assert [c.value for c in await Admin._roles_autocomplete(cog, itx, "MEM")] == ["member"]
+def test_unset_role_choices():
+    assert _choices(Admin._role) == ROLE_OPTIONS
 
 
 ########################
@@ -369,14 +382,11 @@ async def test_set_channel(cog, itx, bot, option, getter):
     assert _sent(itx) == f"{option.title()} channel set to <#555>."
 
 
-@pytest.mark.xfail(
-    reason="BUG: _channel_set returns False on an unknown option without responding (line 261), "
-    "so Discord shows 'The application did not respond'",
-    strict=True,
-)
-async def test_set_channel_unknown_option_responds(cog, itx):
+async def test_set_channel_unknown_option_responds(cog, itx, bot):
+    before = {g: getattr(bot.db, g)(GUILD_ID) for g in CHANNEL_GETTERS.values()}
     assert await cog._channel_set.callback(cog, itx, "bogus", _channel()) is False
-    itx.response.send_message.assert_awaited_once()
+    _assert_unknown_option_reply(itx, CHANNEL_OPTIONS)
+    assert {g: getattr(bot.db, g)(GUILD_ID) for g in CHANNEL_GETTERS.values()} == before  # nothing saved
 
 
 @pytest.mark.parametrize("option, getter", CHANNEL_GETTERS.items())
@@ -390,12 +400,12 @@ async def test_unset_channel(cog, itx, bot, option, getter):
 
 async def test_unset_channel_unknown_option(cog, itx):
     assert await cog._channel_unset.callback(cog, itx, "bogus") is False
-    assert "Unknown argument" in _sent(itx)
+    _assert_unknown_option_reply(itx, CHANNEL_OPTIONS)
 
 
-async def test_channel_autocomplete(cog, itx):
-    assert [c.value for c in await Admin._channel_autocomplete(cog, itx, "")] == CHANNEL_OPTIONS
-    assert [c.value for c in await Admin._channel_autocomplete(cog, itx, "LO")] == ["logs"]
+@pytest.mark.parametrize("command", ["_channel_set", "_channel_unset"])
+def test_channel_choices(command):
+    assert _choices(getattr(Admin, command)) == CHANNEL_OPTIONS
 
 
 ###################

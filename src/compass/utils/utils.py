@@ -14,7 +14,7 @@ import discord
 from dateparser import parse as dt_parse
 from rich.console import Console
 
-from compass.config.bot_config import COMPASS_ROOT
+from compass.config.bot_config import COMPASS_ROOT, DOWNLOADS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -117,10 +117,9 @@ async def download(
     path: str | os.PathLike | None,
 ) -> None:
     """Download an attachment from a message"""
-    fp = os.path.join("downloads", msg.guild.name, path or "")
-    fn = attachment.filename
-    Path(fp).mkdir(parents=True, exist_ok=True)
-    await attachment.save(fp=Path(fp) / fn)
+    fp = DOWNLOADS_DIR / msg.guild.name / (path or "")
+    fp.mkdir(parents=True, exist_ok=True)
+    await attachment.save(fp=fp / attachment.filename)
     return
 
 
@@ -131,7 +130,7 @@ def getfilepath(itx, fp) -> str:
         itx (discord.Message): Message context
         fp (str): File path
     """
-    return f"downloads/{itx.guild.name}/{fp}"
+    return str(DOWNLOADS_DIR / itx.guild.name / fp)
 
 
 #######################
@@ -240,9 +239,9 @@ def get_resource_path(guild_name: str, *resource: str) -> str | None:
     get_resource_repo()
     if os.path.exists(f"{REPO_PATH}/{guild_name}/{sub_path}"):
         resource_path = f"{REPO_PATH}/{guild_name}/{sub_path}"
-    elif os.path.exists(f"{COMPASS_ROOT}/downloads/{guild_name}"):
-        Path(f"{COMPASS_ROOT}/downloads/{guild_name}/{sub_path}").mkdir(parents=True, exist_ok=True)
-        resource_path = f"{COMPASS_ROOT}/downloads/{guild_name}/{sub_path}"
+    elif (DOWNLOADS_DIR / guild_name).exists():
+        resource_path = f"{DOWNLOADS_DIR}/{guild_name}/{sub_path}"
+        Path(resource_path).mkdir(parents=True, exist_ok=True)
     else:
         return None
     return resource_path

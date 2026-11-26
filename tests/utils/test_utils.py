@@ -1,9 +1,11 @@
 """Unit tests for compass.utils.utils (pure functions, no Discord or network)."""
 
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 
+import compass
 from compass.utils import (
     URL,
     Ddict,
@@ -15,6 +17,7 @@ from compass.utils import (
     parse_args,
 )
 from compass.utils.utils import getfilepath
+from tests.conftest import DOWNLOADS_DIR_MODULES
 
 ##############
 ### Ddict ###
@@ -189,5 +192,17 @@ def test_dt_to_epoch_invalid(t, match):
 ##################
 
 
-def test_getfilepath(itx):
-    assert getfilepath(itx, "temp/file.png") == "downloads/Test Guild/temp/file.png"
+def test_getfilepath(itx, downloads_dir):
+    assert getfilepath(itx, "temp/file.png") == str(downloads_dir / "Test Guild" / "temp/file.png")
+
+
+def test_downloads_dir_fixture_covers_every_module():
+    # Each `import DOWNLOADS_DIR` binds its own copy, so the conftest fixture must patch every importing module,
+    # or that module's tests would write into the real downloads folder
+    src = Path(compass.__file__).parent
+    importers = {
+        ".".join(p.relative_to(src.parent).with_suffix("").parts)
+        for p in src.rglob("*.py")
+        if p.name != "bot_config.py" and "DOWNLOADS_DIR" in p.read_text(encoding="utf-8")
+    }
+    assert importers == {m.__name__ for m in DOWNLOADS_DIR_MODULES}

@@ -5,12 +5,11 @@ import shutil
 from pathlib import Path
 
 import discord
-import requests
 from discord import app_commands
 from discord.ext import commands
 
 from compass.bot import CompassBot
-from compass.config.bot_config import COMPASS_ROOT, GLASS, SERVERS
+from compass.config.bot_config import DOWNLOADS_DIR, GLASS, SERVERS
 from compass.utils import get_resource_path
 from compass.utils.checks import has_mod_ctx
 from compass.utils.command_utils import get_emojis, send_embed, send_embed_long
@@ -41,6 +40,25 @@ def cmds_to_str(cmds: list) -> str:
         else:  # local Command or ContextMenu
             lines.append(f"/{c.name}")
     return "\n".join(lines)
+
+
+def sticker_filename(name: str, emoji: str, fmt: str) -> str:
+    """Backup filename for a sticker: `{name}_{emoji}.{fmt}`. The emoji is kept so the sticker can be re-created.
+
+    `emoji` is the raw `GuildSticker.emoji` (Discord's `tags`: a unicode emoji, a name, or a custom emoji ID), which
+    `create_sticker` accepts back as is. Don't resolve IDs to `Emoji`: `str(Emoji)` is `<:name:id>`, invalid on Windows.
+    """
+    return f"{name}_{emoji}.{fmt}"
+
+
+def parse_sticker_filename(filename: str) -> tuple[str, str | None]:
+    """Splits a sticker backup filename into `(name, emoji)`; emoji is None if the file has none (e.g. `who me.png`).
+
+    Splits on the first `_`: emoji tags can contain underscores (`stuck_out_tongue_winking_eye`), sticker names
+    in the backups don't.
+    """
+    name, _, emoji = Path(filename).stem.partition("_")
+    return name, emoji or None
 
 
 class Utility(commands.Cog):
@@ -156,7 +174,7 @@ class Utility(commands.Cog):
     async def _download_emojis(self, ctx: commands.Context) -> None:
         _dir = get_resource_path(ctx.guild.name, "emojis")
         if not _dir:
-            _dir = f"{COMPASS_ROOT}/downloads/{ctx.guild.name}/emojis"
+            _dir = DOWNLOADS_DIR / ctx.guild.name / "emojis"
         Path(_dir, "static").mkdir(parents=True, exist_ok=True)
         Path(_dir, "animated").mkdir(parents=True, exist_ok=True)
         guild = bot.get_guild(ctx.guild.id)
@@ -256,18 +274,16 @@ class Utility(commands.Cog):
     async def _download_stickers(self, ctx: commands.Context) -> None:
         _dir = get_resource_path(ctx.guild.name, "stickers")
         if not _dir:
-            _dir = f"{COMPASS_ROOT}/downloads/{ctx.guild.name}/stickers"
+            _dir = DOWNLOADS_DIR / ctx.guild.name / "stickers"
             Path(_dir).mkdir(parents=True, exist_ok=True)
         guild = bot.get_guild(ctx.guild.id)
         count = 0
         for s in guild.stickers:
             try:
-                e = ctx.guild.get_emoji(int(s.emoji))
-            except ValueError:
-                e = s.emoji
-            r = requests.get(s.url)
-            with open(f"{_dir}/{s.name}_{e}.{s.format.name}", "wb") as f:
-                f.write(r.content)
+                await s.save(f"{_dir}/{sticker_filename(s.name, s.emoji, s.format.name)}")
+            except TypeError:  # discord.py can't download lottie stickers
+                await ctx.send(f"Skipped `{s.name}`: lottie stickers can't be downloaded.")
+                continue
             count += 1
         await send_embed(channel=ctx, description=f"{count} stickers downloaded")
 
@@ -281,10 +297,11 @@ class Utility(commands.Cog):
             return
         backup = os.listdir(backup_dir)
         guild_stickers = bot.get_guild(ctx.guild.id).stickers
-        to_add = [
-            f"{backup_dir}/{e}" for e in backup if e.split(".")[0].split("_")[0] not in [i.name for i in guild_stickers]
-        ]
-        to_remove = [e for e in guild_stickers if f"{e.name}.{e.format.name}" not in backup]
+        # Compare by name only; the emoji in the filename is just for re-creating the sticker
+        backup_names = {parse_sticker_filename(f)[0] for f in backup}
+        guild_names = {s.name for s in guild_stickers}
+        to_add = [f"{backup_dir}/{f}" for f in backup if parse_sticker_filename(f)[0] not in guild_names]
+        to_remove = [s for s in guild_stickers if s.name not in backup_names]
         await self._clear_stickers(ctx, to_remove)
         await self._add_stickers(ctx, to_add)
         await ctx.send(embed=discord.Embed(description="Stickers Synced!"))
@@ -323,18 +340,9 @@ class Utility(commands.Cog):
     async def _add_stickers(self, ctx: commands.Context, stickers: list) -> None:
         """Adds stickers to a guild from a list of filepaths"""
         for s in stickers:
-            parts = s.split("/")[-1].split(".")[0].split("_")
-            await ctx.send(f"Adding sticker `{parts}`")
-            if len(parts) == 1:
-                name = parts[0]
-                emoji = "❓"
-            else:
-                name = parts[0]
-                emoji = parts[1]
-            try:
-                emoji = ctx.guild.get_emoji(int(emoji))
-            except ValueError:
-                emoji = emoji
+            name, emoji = parse_sticker_filename(s)
+            emoji = emoji or "❓"
+            await ctx.send(f"Adding sticker `{name}` ({emoji})")
             try:
                 await ctx.guild.create_sticker(
                     name=name,
@@ -360,8 +368,11 @@ class Utility(commands.Cog):
     @has_mod_ctx
     @commands.command(name="cleardownloads", aliases=["clr", "rm -rf"], description="Clear locally downloaded files")
     async def _clear_downloads(self, ctx: commands.Context):
-        shutil.rmtree("downloads/")
         await ctx.message.delete()
+        if not DOWNLOADS_DIR.exists():
+            await ctx.send("Nothing to clear.", delete_after=2.0)
+            return
+        shutil.rmtree(DOWNLOADS_DIR)
         await ctx.send("Downloads cleared!", delete_after=2.0)
 
     # Purely academic / for personal usage if you want to host your own instance.
@@ -370,21 +381,18 @@ class Utility(commands.Cog):
     @commands.command(name="download", description="Downloads all attachments in a channel", aliases=["dl"])
     async def _download(self, ctx: commands.Context):
         glass_servers = [SERVERS.GLASS_HARBOR, SERVERS.GLASS_TEST, SERVERS.GLASS_H]
-        if ctx.guild.id not in glass_servers:  # type: ignore
-            await ctx.response.send_message(
-                "This command is only available in the Glass Discord servers.", ephemeral=True
-            )
+        if ctx.guild.id not in glass_servers:
+            await ctx.send("This command is only available in Glass Discord servers.")
             return
-        download_dir = f"./downloads/{ctx.guild.name}/{ctx.channel.name}"  # type: ignore
-        if not os.path.exists(download_dir):
-            os.makedirs(download_dir)
+        download_dir = DOWNLOADS_DIR / ctx.guild.name / ctx.channel.name
+        download_dir.mkdir(parents=True, exist_ok=True)
         count = 0
         async for msg in ctx.channel.history():
             if msg.attachments:
                 logger.debug("attachment(s) found")
                 for a in msg.attachments:
                     try:
-                        await a.save(fp=f"{download_dir}/{a.filename}")
+                        await a.save(fp=download_dir / a.filename)
                     except Exception as e:  # noqa: BLE001 - TODO: Fix later
                         await ctx.send(f"Error downloading attachment from {msg.id}:\n```\n{e}\n```")
                     count += 1

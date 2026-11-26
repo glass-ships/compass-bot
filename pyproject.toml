@@ -1,6 +1,6 @@
 [project]
 name = "compass-bot"
-version = "0.9.4"
+version = "0.9.5"
 description = "A Discord bot in Python"
 authors = [
     { name = "Glass Ships", email = "contact@glass-ships.com" },
@@ -19,6 +19,7 @@ classifiers = [
 dependencies = [
     ### Core
     "discord-py",
+    "loguru",
     "psutil",
     "rich",
     "typer",
@@ -39,7 +40,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["mkdocs", "mkdocs-material", "mkdocstrings[python]", "mongomock", "pytest", "pytest-asyncio", "ruff"]
+dev = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings[python]",
+    "mongomock",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
 
 [project.scripts]
 compass = "compass.main:app"
@@ -88,4 +97,6 @@ pythonpath = ["."]
 addopts = "--import-mode=importlib -m 'not integration'"
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-markers = ["integration: hits real external services (MongoDB Atlas, YouTube, ...). Run with: pytest -m integration"]
+markers = [
+    "integration: hits real external services (MongoDB Atlas, YouTube, ...). Run with: pytest -m integration",
+]

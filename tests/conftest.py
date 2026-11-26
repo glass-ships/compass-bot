@@ -14,10 +14,28 @@ import discord
 import mongomock
 import pytest
 
-from compass.utils import database
+from compass.cogs import utility
+from compass.utils import database, utils
 
 GUILD_ID = 1000
 MOD_ROLE_ID = 2000
+
+#################
+### Downloads ###
+#################
+
+# Every module that imports DOWNLOADS_DIR (each import binds its own copy of the name)
+DOWNLOADS_DIR_MODULES = [utility, utils]
+
+
+@pytest.fixture(autouse=True)
+def downloads_dir(tmp_path, monkeypatch):
+    """Point every DOWNLOADS_DIR at tmp_path, so no test touches the real downloads folder."""
+    d = tmp_path / "downloads"
+    for mod in DOWNLOADS_DIR_MODULES:
+        monkeypatch.setattr(mod, "DOWNLOADS_DIR", d)
+    return d
+
 
 ##################
 ### Database ###

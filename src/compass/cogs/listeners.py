@@ -64,7 +64,7 @@ class Listeners(commands.Cog):
         elif isinstance(error, commands.UserInputError):
             message = "Something about your input was wrong, please check your input and try again!"
         elif isinstance(error, commands.CheckFailure):
-            pass
+            return  # The check (e.g. has_mod_ctx) already replied to the user
         else:
             tb = traceback.format_exception(error)
             err_msg = ""
@@ -291,6 +291,7 @@ class Listeners(commands.Cog):
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member) -> None:
         guild = member.guild
+        bot.db.drop_user_log(guild.id, member.id)
         if guild.id != SERVERS.GLASS_HARBOR:
             return
         channel_id = bot.db.get_channel_logs(guild_id=guild.id)
@@ -304,4 +305,3 @@ class Listeners(commands.Cog):
                 color=COLORS.random(),
             )
         )
-        bot.db.drop_user_log(guild.id, member.id)

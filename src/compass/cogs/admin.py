@@ -12,6 +12,8 @@ from compass.config.bot_config import (
     COLORS,
     MODULES,
     ROLE_OPTIONS,
+    ChannelOption,
+    RoleOption,
 )
 from compass.utils.utils import parse_args
 
@@ -25,6 +27,7 @@ async def setup(bot):
     await bot.add_cog(Admin(bot))
 
 
+########################################################################################################################
 ### Helpers
 
 
@@ -41,6 +44,14 @@ def get_roles_from_string(roles_str: str) -> list[int]:
             raise ValueError(f"Invalid role ID or mention: {role}")
         roles.append(int(match.group(1) or match.group(2)))
     return roles
+
+
+async def _unknown_option(itx: discord.Interaction, options: list[str]) -> bool:
+    await itx.response.send_message(f"Error: Unknown option. Valid options: {', '.join(options)}", ephemeral=True)
+    return False
+
+
+########################################################################################################################
 
 
 class Admin(commands.Cog):
@@ -153,7 +164,6 @@ class Admin(commands.Cog):
 
     @app_commands.command(name="reload", description="Force reloads a bot module")
     @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.autocomplete()
     async def _reload(self, itx: discord.Interaction, module: str):
         """Reloads a module."""
         try:
@@ -227,8 +237,7 @@ class Admin(commands.Cog):
 
     @group_unset.command(name="role", description="Unset a role")
     @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.autocomplete()
-    async def _role(self, itx: discord.Interaction, option: str):
+    async def _role(self, itx: discord.Interaction, option: RoleOption):
         match option:
             case "mod":
                 bot.db.update_mod_roles(itx.guild_id, None)
@@ -236,19 +245,11 @@ class Admin(commands.Cog):
                 bot.db.update_mem_role(itx.guild_id, None)
             case "required":
                 bot.db.update_required_roles(itx.guild_id, None)
-            case _:
-                await itx.response.send_message("Error: Unknown argument. Valid targets: mod, member")
+            case _:  # unreachable from Discord (fixed choices); kept as a safety net
+                await _unknown_option(itx, ROLE_OPTIONS)
                 return False
         await itx.response.send_message(f"{option.title()} role unset.")
         return True
-
-    @_role.autocomplete("option")
-    async def _roles_autocomplete(self, itx: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
-        return [
-            app_commands.Choice(name=option, value=option)
-            for option in ROLE_OPTIONS
-            if current.lower() in option.lower()
-        ]
 
     ########################
     ### Channel Settings ###
@@ -257,8 +258,7 @@ class Admin(commands.Cog):
     @group_set.command(name="channel")
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(option="What to specify a channel for", channel="Which channel to send to")
-    @app_commands.autocomplete()
-    async def _channel_set(self, itx: discord.Interaction, option: str, channel: discord.TextChannel):
+    async def _channel_set(self, itx: discord.Interaction, option: ChannelOption, channel: discord.TextChannel):
         match option:
             case "bot":
                 bot.db.update_channel_bot(itx.guild_id, channel.id)
@@ -272,23 +272,15 @@ class Admin(commands.Cog):
                 bot.db.update_channel_lfg(itx.guild_id, channel.id)
             case "videos":
                 bot.db.update_channel_vids(itx.guild_id, channel.id)
-            case _:
+            case _:  # unreachable from Discord (fixed choices); kept as a safety net
+                await _unknown_option(itx, CHANNEL_OPTIONS)
                 return False
         await itx.response.send_message(f"{option.title()} channel set to <#{channel.id}>.")
         return True
 
-    @_channel_set.autocomplete("option")
-    async def _channel_autocomplete(self, itx: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
-        return [
-            app_commands.Choice(name=option, value=option)
-            for option in CHANNEL_OPTIONS
-            if current.lower() in option.lower()
-        ]
-
     @group_unset.command(name="channel")
     @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.autocomplete(option=_channel_autocomplete)
-    async def _channel_unset(self, itx: discord.Interaction, option: str):
+    async def _channel_unset(self, itx: discord.Interaction, option: ChannelOption):
         match option:
             case "bot":
                 bot.db.update_channel_bot(itx.guild_id, None)
@@ -302,8 +294,8 @@ class Admin(commands.Cog):
                 bot.db.update_channel_lfg(itx.guild_id, None)
             case "videos":
                 bot.db.update_channel_vids(itx.guild_id, None)
-            case _:
-                await itx.response.send_message("Error: Unknown argument. Valid targets: logs, bot, music, videos")
+            case _:  # unreachable from Discord (fixed choices); kept as a safety net
+                await _unknown_option(itx, CHANNEL_OPTIONS)
                 return False
         await itx.response.send_message(f"{option.title()} channel unset.")
         return True
