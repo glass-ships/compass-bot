@@ -1,8 +1,8 @@
 from .utils import (
     URL,
+    Ddict,
     check_time_format,
     chunk_list,
-    ddict,
     download,
     dt_parse,
     dt_to_epoch,
@@ -16,9 +16,9 @@ from .utils import (
 
 __all__ = [
     "URL",
+    "Ddict",
     "check_time_format",
     "chunk_list",
-    "ddict",
     "download",
     "dt_parse",
     "dt_to_epoch",

@@ -1,6 +1,6 @@
 [project]
 name = "compass-bot"
-version = "0.9.4"
+version = "0.9.5"
 description = "A Discord bot in Python"
 authors = [
     { name = "Glass Ships", email = "contact@glass-ships.com" },
@@ -22,7 +22,6 @@ dependencies = [
     "loguru",
     "psutil",
     "rich",
-    "ruff",
     "typer",
     ### Database
     "pymongo",
@@ -41,7 +40,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["mkdocs", "mkdocs-material", "mkdocstrings[python]", "pytest"]
+dev = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocstrings[python]",
+    "mongomock",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
 
 [project.scripts]
 compass = "compass.main:app"
@@ -63,12 +70,33 @@ packages = ["src/compass"]
 line-length = 120
 
 [tool.ruff.lint]
+select = [
+    "A",
+    "ARG",
+    "B",   # flake8-bugbear codes
+    "BLE",
+    "C",   # mccabe complexity codes
+    # "D",    # pydocstyle codes
+    "E",    # pycodestyle errors
+    "F",    # pyflakes codes
+    "FURB",
+    "I",    # isort codes
+    "N",    # naming convention codes
+    "UP",
+    "Q",    # flake8-quotes codes
+]
 ignore = [
-    "F541", # f-strings with no placeholders
+    "BLE001", # blind exception (don't know all the discordpy exceptions)
+    "ARG002", # unused argument (discordpy commands have unused arguments)
 ]
 # exclude = []
 
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-addopts = "--import-mode=importlib"
+addopts = "--import-mode=importlib -m 'not integration'"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "integration: hits real external services (MongoDB Atlas, YouTube, ...). Run with: pytest -m integration",
+]

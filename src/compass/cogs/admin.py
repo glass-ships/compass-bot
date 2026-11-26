@@ -1,9 +1,10 @@
+import logging
+import re
 from typing import Literal
 
 import discord
 from discord import app_commands
 from discord.ext import commands
-from loguru import logger
 
 from compass.bot import CompassBot
 from compass.config.bot_config import (
@@ -11,13 +12,46 @@ from compass.config.bot_config import (
     COLORS,
     MODULES,
     ROLE_OPTIONS,
+    ChannelOption,
+    RoleOption,
 )
 from compass.utils.utils import parse_args
+
+logger = logging.getLogger(__name__)
+
+bot: CompassBot
 
 
 async def setup(bot):
     """Cog setup method"""
     await bot.add_cog(Admin(bot))
+
+
+########################################################################################################################
+### Helpers
+
+
+def get_roles_from_string(roles_str: str) -> list[int]:
+    """Converts a string of role IDs or mentions into a list of role IDs.
+
+    Raises:
+        ValueError: If any entry isn't a role ID or role mention.
+    """
+    roles = []
+    for role in roles_str.split():
+        match = re.fullmatch(r"<@&(\d+)>|(\d+)", role)
+        if not match:
+            raise ValueError(f"Invalid role ID or mention: {role}")
+        roles.append(int(match.group(1) or match.group(2)))
+    return roles
+
+
+async def _unknown_option(itx: discord.Interaction, options: list[str]) -> bool:
+    await itx.response.send_message(f"Error: Unknown option. Valid options: {', '.join(options)}", ephemeral=True)
+    return False
+
+
+########################################################################################################################
 
 
 class Admin(commands.Cog):
@@ -35,7 +69,9 @@ class Admin(commands.Cog):
     @commands.command(name="sync", description="Syncs the bot's command tree")
     @commands.has_permissions(administrator=True)
     async def _sync(self, ctx: commands.Context, *, sync_args: str = ""):
-        """Sync the bot tree
+        """Sync the bot tree.
+
+        A context command, since un-synced app commands are not available.
 
         Args:
             clean: clear tree before syncing
@@ -53,12 +89,13 @@ class Admin(commands.Cog):
         msg = await ctx.send(embed=discord.Embed(description=desc, color=COLORS.random()))
 
         if args.clean is True:
-            # This will remove all guild commands from the CommandTree and syncs,
-            # which effectively removes all commands from the guild.
             logger.debug(f"\nClearing command tree from {guild.name if guild else 'all guilds'}...")
             desc += f"\nClearing command tree from {guild.name if guild else 'all guilds'}..."
             await _update_msg(msg, desc)
-            bot.tree.clear_commands(guild=guild)
+            # Per guild only: clear_commands(guild=None) would clear the *global* commands, which every
+            # guild copy (--dev) is made from, wiping all slash commands until a restart
+            for g in [guild] if guild else bot.guilds:
+                bot.tree.clear_commands(guild=g)
 
         if guild is not None:
             if args.dev:
@@ -127,8 +164,7 @@ class Admin(commands.Cog):
         await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
     @app_commands.command(name="reload", description="Force reloads a bot module")
-    @commands.has_permissions(administrator=True)
-    @app_commands.autocomplete()
+    @app_commands.checks.has_permissions(administrator=True)
     async def _reload(self, itx: discord.Interaction, module: str):
         """Reloads a module."""
         try:
@@ -172,13 +208,11 @@ class Admin(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(mod_roles="List of mod roles (ID or mention)")
     async def _mod_roles(self, itx: discord.Interaction, mod_roles: str):
-        roles_list = mod_roles.split(" ")
-        roles = []
-        for role in roles_list:
-            if role.startswith("<"):
-                roles.append(int(role[3:-1]))
-            else:
-                roles.append(int(role))
+        try:
+            roles = get_roles_from_string(mod_roles)
+        except ValueError as e:
+            await itx.response.send_message(f"Error: {e}", ephemeral=True)
+            return
         bot.db.update_mod_roles(itx.guild_id, roles)
         await itx.response.send_message(f"Mod roles set: {mod_roles}")
 
@@ -192,13 +226,11 @@ class Admin(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(required_roles="List of required roles (ID or mention)")
     async def _required_roles(self, itx: discord.Interaction, required_roles: str):
-        roles_list = required_roles.split(" ")
-        roles = []
-        for role in roles_list:
-            if role.startswith("<"):
-                roles.append(int(role[3:-1]))
-            else:
-                roles.append(int(role))
+        try:
+            roles = get_roles_from_string(required_roles)
+        except ValueError as e:
+            await itx.response.send_message(f"Error: {e}", ephemeral=True)
+            return
         bot.db.update_required_roles(itx.guild_id, roles)
         await itx.response.send_message(f"Required roles set: {required_roles}")
 
@@ -206,8 +238,7 @@ class Admin(commands.Cog):
 
     @group_unset.command(name="role", description="Unset a role")
     @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.autocomplete()
-    async def _role(self, itx: discord.Interaction, option: str):
+    async def _role(self, itx: discord.Interaction, option: RoleOption):
         match option:
             case "mod":
                 bot.db.update_mod_roles(itx.guild_id, None)
@@ -215,19 +246,11 @@ class Admin(commands.Cog):
                 bot.db.update_mem_role(itx.guild_id, None)
             case "required":
                 bot.db.update_required_roles(itx.guild_id, None)
-            case _:
-                await itx.response.send_message("Error: Unknown argument. Valid targets: mod, member")
+            case _:  # unreachable from Discord (fixed choices); kept as a safety net
+                await _unknown_option(itx, ROLE_OPTIONS)
                 return False
         await itx.response.send_message(f"{option.title()} role unset.")
         return True
-
-    @_role.autocomplete("option")
-    async def _roles_autocomplete(self, itx: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
-        return [
-            app_commands.Choice(name=option, value=option)
-            for option in ROLE_OPTIONS
-            if current.lower() in option.lower()
-        ]
 
     ########################
     ### Channel Settings ###
@@ -236,8 +259,7 @@ class Admin(commands.Cog):
     @group_set.command(name="channel")
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(option="What to specify a channel for", channel="Which channel to send to")
-    @app_commands.autocomplete()
-    async def _channel_set(self, itx: discord.Interaction, option: str, channel: discord.TextChannel):
+    async def _channel_set(self, itx: discord.Interaction, option: ChannelOption, channel: discord.TextChannel):
         match option:
             case "bot":
                 bot.db.update_channel_bot(itx.guild_id, channel.id)
@@ -251,25 +273,15 @@ class Admin(commands.Cog):
                 bot.db.update_channel_lfg(itx.guild_id, channel.id)
             case "videos":
                 bot.db.update_channel_vids(itx.guild_id, channel.id)
-            # case "pins":
-            #     bot.db.update_channel_pins(itx.guild_id, channel.id)
-            case _:
+            case _:  # unreachable from Discord (fixed choices); kept as a safety net
+                await _unknown_option(itx, CHANNEL_OPTIONS)
                 return False
         await itx.response.send_message(f"{option.title()} channel set to <#{channel.id}>.")
         return True
 
-    @_channel_set.autocomplete("option")
-    async def _channel_autocomplete(self, itx: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
-        return [
-            app_commands.Choice(name=option, value=option)
-            for option in CHANNEL_OPTIONS
-            if current.lower() in option.lower()
-        ]
-
     @group_unset.command(name="channel")
-    @commands.has_permissions(administrator=True)
-    @app_commands.autocomplete(option=_channel_autocomplete)
-    async def _channel_unset(self, itx: discord.Interaction, option: str):
+    @app_commands.checks.has_permissions(administrator=True)
+    async def _channel_unset(self, itx: discord.Interaction, option: ChannelOption):
         match option:
             case "bot":
                 bot.db.update_channel_bot(itx.guild_id, None)
@@ -283,10 +295,8 @@ class Admin(commands.Cog):
                 bot.db.update_channel_lfg(itx.guild_id, None)
             case "videos":
                 bot.db.update_channel_vids(itx.guild_id, None)
-            # case "pins":
-            #     bot.db.update_channel_pins(itx.guild_id, None)
-            case _:
-                await itx.response.send_message("Error: Unknown argument. Valid targets: logs, bot, music, videos")
+            case _:  # unreachable from Discord (fixed choices); kept as a safety net
+                await _unknown_option(itx, CHANNEL_OPTIONS)
                 return False
         await itx.response.send_message(f"{option.title()} channel unset.")
         return True

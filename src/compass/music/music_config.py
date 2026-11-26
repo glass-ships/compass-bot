@@ -1,9 +1,6 @@
 import os
 from dataclasses import dataclass
 
-# from enum import StrEnum, auto
-# from pathlib import Path
-
 from compass.config.bot_config import COMPASS_ROOT, Emojis
 
 # Re-usable paths
@@ -54,7 +51,7 @@ class ErrorMessages:
     NOT_CONNECTED_MESSAGE = ":exclamation: Compass is not connected to any voice channel"
     WRONG_CHANNEL_MESSAGE = ":exclamation: Please use the correct command channel"
 
-    def WRONG_USER_VC(vc):
+    def wrong_user_vc(self, vc):
         msg = f":exclamation: User is not in <#{vc.id}>. Please use the `/join` command, "
         msg += "or move/disconnect Compass and try again."
         return msg

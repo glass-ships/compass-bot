@@ -1,16 +1,17 @@
 import asyncio
-from loguru import logger
+import logging
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 from compass.bot import CompassBot
-from compass.music import music_utils
-from compass.music.player import Timer
-from compass.music.music_config import ErrorMessages, InfoMessages, MAX_SONG_PRELOAD
 from compass.config.bot_config import COLORS, Emojis
+from compass.music import music_utils
+from compass.music.music_config import MAX_SONG_PRELOAD, ErrorMessages, InfoMessages
+from compass.music.player import Timer
 
+logger = logging.getLogger(__name__)
 
 ### Helpers and Checks ###
 
@@ -71,6 +72,9 @@ async def _play_check(itx: discord.Interaction) -> bool:
 play_check = app_commands.check(_play_check)
 
 ### Setup Cog ###
+
+
+bot: CompassBot  # set in the cog's __init__ via `global bot`
 
 
 async def setup(bot):
@@ -174,7 +178,7 @@ class Music(commands.Cog):
             return
 
         itx.guild.voice_client.stop()  # type: ignore
-        await itx.followup.send(f"Skipped")
+        await itx.followup.send("Skipped")
 
     # @commands.command(name="prev", description="Play the previous song again.")
     async def _prev(self, itx: discord.Interaction):

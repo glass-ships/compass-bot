@@ -1,10 +1,10 @@
-class CustomException(Exception):
+class CompassError(Exception):
     pass
 
 
-class FetchException(CustomException):
+class FetchError(CompassError):
     pass
 
 
-class QueueException(CustomException):
+class QueueError(CompassError):
     pass
